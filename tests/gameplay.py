@@ -453,7 +453,7 @@ def t_world(R, b):
         pg.keyboard.press('Tab'); frames(pg, 5)
     pg.click('.inventory .tab:nth-child(2)'); frames(pg, 3)
     shot(pg, 'inventory_relics')
-    pg.evaluate('''() => { const e = [...document.querySelectorAll('.inventory .inv-list .inv-item')].find((x) => x.textContent.includes(VS.t('item_r_heron_name'))); e.click(); }'''); frames(pg, 3)
+    pg.evaluate('''() => { const e = [...document.querySelectorAll('.inventory .inv-slot:not(.empty)')].find((x) => (x.getAttribute('aria-label') || '').includes(VS.t('item_r_heron_name'))); e.click(); }'''); frames(pg, 3)
     eq = pg.evaluate('VS.state.equipped.includes("r_heron")'); fx = pg.evaluate('VS.state.fx("speed", 1)')
     R.check('inventário: equipar relíquia (Pena de Garça) aumenta a velocidade', eq and fx > 1, f'equipada={eq} speed={fx}')
     for i in range(1, 6):

@@ -22,6 +22,167 @@
     return !!STATIC_SOLID[ch];
   }
 
+
+  // ---------- materiais: padrão de alvenaria por região (sem emendas, 4×4 tiles), visível junto às faces
+  // expostas e a desaparecer no escuro para dentro da massa
+  const MAT_OF = { r1: 'brick', crypt: 'brick', sanct: 'ashlar', r2: 'ashlar', r3: 'plates', r4: 'cobble', r5: 'timber', r6: 'marble', r7: 'marble' };
+  const matCache = {};
+  const P = 4 * T;
+  function wrap(fn) { for (let ox = -P; ox <= P; ox += P) for (let oy = -P; oy <= P; oy += P) fn(ox, oy); }
+  function materialCanvas(R, s) {
+    const key = R.key + ':' + s.toFixed(2);
+    if (matCache[key]) return matCache[key];
+    const cv = document.createElement('canvas'); cv.width = cv.height = Math.round(P * s);
+    const c = cv.getContext('2d'); c.scale(s, s);
+    const rnd = U.rng(U.hash(R.key + 'mat'));
+    const kind = MAT_OF[R.key] || 'brick';
+    const mortar = U.mix(R.stoneDark, R.stone, 0.25);
+    c.fillStyle = mortar; c.fillRect(0, 0, P, P);
+    const tone = () => { const r = rnd(); return r < 0.5 ? U.mix(R.stone, R.stoneLight, r * 0.5) : U.mix(R.stone, R.stoneDark, (r - 0.5) * 0.9); };
+    const speck = (x, y, w, h, n, col, a) => { for (let i = 0; i < n; i++) { c.fillStyle = U.rgba(col, a * (0.5 + rnd() * 0.5)); c.fillRect(x + rnd() * w, y + rnd() * h, 0.4 + rnd() * 1.2, 0.4 + rnd() * 0.8); } };
+    const crack = (x, y, len) => { c.strokeStyle = U.rgba('#000000', 0.55); c.lineWidth = 0.45; c.beginPath(); c.moveTo(x, y); let cx = x, cy = y; for (let i = 0; i < 4; i++) { cx += (rnd() - 0.5) * len * 0.6; cy += len * 0.25 + rnd() * len * 0.2; c.lineTo(cx, cy); } c.stroke(); };
+    // pedra cortada com bisel: luz em cima/esquerda, sombra em baixo/direita
+    const block = (x, y, w, h, col, bev, ox, oy) => {
+      x += ox; y += oy;
+      c.fillStyle = col; c.fillRect(x, y, w, h);
+      const g = c.createLinearGradient(x, y, x + w * 0.35, y + h); g.addColorStop(0, U.rgba(R.stoneLight, 0.22)); g.addColorStop(0.5, U.rgba(R.stoneLight, 0)); g.addColorStop(1, U.rgba('#000000', 0.22));
+      c.fillStyle = g; c.fillRect(x, y, w, h);
+      c.fillStyle = U.rgba(R.stoneLight, 0.35); c.fillRect(x, y, w, bev * 0.5); c.fillRect(x, y, bev * 0.45, h);
+      c.fillStyle = U.rgba('#000000', 0.42); c.fillRect(x, y + h - bev * 0.6, w, bev * 0.6); c.fillRect(x + w - bev * 0.5, y, bev * 0.5, h);
+    };
+    if (kind === 'brick') {
+      const bh = 10;
+      for (let row = 0; row < P / bh; row++) {
+        const off = (row % 2) * 10;
+        for (let bx = -20; bx < P; bx += 20) {
+          const x = bx + off, y = row * bh, col = tone(), chip = rnd(), cr = rnd();
+          wrap((ox, oy) => { block(x + 0.6, y + 0.6, 18.8, bh - 1.2, col, 1.1, ox, oy); });
+          const sx = x + 1 + rnd() * 16, sy = y + 1 + rnd() * 6;
+          wrap((ox, oy) => {
+            if (chip < 0.3) { c.fillStyle = U.rgba('#000000', 0.5); c.beginPath(); c.moveTo(x + 0.6 + ox, y + 0.6 + oy); c.lineTo(x + 3.5 + ox, y + 0.6 + oy); c.lineTo(x + 0.6 + ox, y + 3 + oy); c.fill(); }
+            if (cr < 0.12) { c.save(); c.translate(ox, oy); crack(sx, y + 1, 6); c.restore(); }
+          });
+          speck(((x % P) + P) % P, y, 19, bh, 6, '#000000', 0.25); speck(((x % P) + P) % P, y, 19, bh, 3, R.stoneLight, 0.18);
+        }
+      }
+    } else if (kind === 'ashlar' || kind === 'timber') {
+      const bh = 20;
+      for (let row = 0; row < P / bh; row++) {
+        let bx = (row % 2) ? -20 : 0;
+        while (bx < P) {
+          const w = rnd() < 0.3 ? 20 : 40, x = bx, y = row * bh, col = tone(), cr = rnd(), sx = rnd() * w;
+          wrap((ox, oy) => { block(x + 0.8, y + 0.8, w - 1.6, bh - 1.6, col, 1.6, ox, oy); if (cr < 0.2) { c.save(); c.translate(ox, oy); crack(x + sx, y + 2, 9); c.restore(); } });
+          speck(((x % P) + P) % P, y, w, bh, 14, '#000000', 0.22); speck(((x % P) + P) % P, y, w, bh, 6, R.stoneLight, 0.15);
+          if (R.key === 'r2' && rnd() < 0.5) { c.fillStyle = 'rgba(70,110,80,0.25)'; for (let i = 0; i < 5; i++) { c.beginPath(); c.arc(((x % P) + P) % P + rnd() * w, y + bh - 1 - rnd() * 3, 0.8 + rnd() * 1.6, 0, U.TAU); c.fill(); } }
+          bx += w;
+        }
+      }
+      if (kind === 'timber') {
+        // vigas de madeira escura a atravessar a pedra
+        for (const by of [0, 40]) {
+          const g = c.createLinearGradient(0, by, 0, by + 7); g.addColorStop(0, '#6a4c30'); g.addColorStop(0.5, '#3e2a1a'); g.addColorStop(1, '#1e140c');
+          c.fillStyle = g; c.fillRect(0, by, P, 7);
+          c.strokeStyle = 'rgba(20,12,6,0.7)'; c.lineWidth = 0.4; for (let i = 0; i < 6; i++) { const yy = by + 1 + rnd() * 5; c.beginPath(); c.moveTo(0, yy); c.bezierCurveTo(P * 0.3, yy + (rnd() - 0.5), P * 0.6, yy + (rnd() - 0.5), P, yy); c.stroke(); }
+          for (let x = 8; x < P; x += 40) { c.fillStyle = '#16100a'; c.beginPath(); c.arc(x, by + 3.5, 1.1, 0, U.TAU); c.fill(); c.fillStyle = 'rgba(200,160,110,0.4)'; c.fillRect(x - 0.6, by + 2.6, 0.6, 0.6); }
+        }
+      }
+    } else if (kind === 'plates') {
+      for (let py = 0; py < P; py += 40) for (let px = 0; px < P; px += 40) {
+        const col = U.mix(tone(), '#3a2a26', 0.35);
+        const g = c.createLinearGradient(px, py, px + 40, py + 40); g.addColorStop(0, U.mix(col, R.stoneLight, 0.25)); g.addColorStop(1, U.mix(col, '#000000', 0.35));
+        c.fillStyle = g; c.fillRect(px + 0.7, py + 0.7, 38.6, 38.6);
+        c.fillStyle = U.rgba('#ffd0a0', 0.12); c.fillRect(px + 0.7, py + 0.7, 38.6, 0.8);
+        c.fillStyle = 'rgba(0,0,0,0.5)'; c.fillRect(px + 0.7, py + 38.5, 38.6, 0.8);
+        for (let i = 0; i < 4; i++) for (const [rx, ry] of [[px + 3 + i * 11.3, py + 3], [px + 3 + i * 11.3, py + 37], [px + 3, py + 3 + i * 11.3], [px + 37, py + 3 + i * 11.3]]) {
+          c.fillStyle = '#1a1210'; c.beginPath(); c.arc(rx, ry, 1.15, 0, U.TAU); c.fill(); c.fillStyle = 'rgba(230,180,140,0.45)'; c.beginPath(); c.arc(rx - 0.35, ry - 0.35, 0.45, 0, U.TAU); c.fill();
+        }
+        // ferrugem e fuligem a escorrer
+        for (let i = 0; i < 3; i++) { const sx = px + 5 + rnd() * 30, sy = py + 4 + rnd() * 10, sh = 10 + rnd() * 22; const rg = c.createLinearGradient(0, sy, 0, sy + sh); rg.addColorStop(0, 'rgba(150,70,30,0.35)'); rg.addColorStop(1, 'rgba(150,70,30,0)'); c.fillStyle = rg; c.fillRect(sx, sy, 1 + rnd() * 2.5, sh); }
+        speck(px, py, 40, 40, 22, '#000000', 0.25);
+      }
+      // costura de brasa entre placas
+      c.fillStyle = 'rgba(255,90,20,0.10)'; c.fillRect(0, 39.4, P, 1.2); c.fillRect(39.4, 0, 1.2, P);
+    } else if (kind === 'cobble') {
+      // pedras arredondadas de rio com musgo
+      const pts = [];
+      for (let gy = 0; gy < 6; gy++) for (let gx = 0; gx < 6; gx++) pts.push([gx * P / 6 + rnd() * 6, gy * P / 6 + rnd() * 6, 5 + rnd() * 3.5, 3.6 + rnd() * 2.6, rnd() * 0.6 - 0.3, tone(), rnd()]);
+      for (const [x, y, rx, ry, a, col, m] of pts) wrap((ox, oy) => {
+        c.save(); c.translate(x + ox, y + oy); c.rotate(a);
+        const g = c.createRadialGradient(-rx * 0.3, -ry * 0.4, 0.5, 0, 0, rx * 1.2); g.addColorStop(0, U.mix(col, R.stoneLight, 0.35)); g.addColorStop(1, U.mix(col, '#000000', 0.4));
+        c.fillStyle = g; c.beginPath(); c.ellipse(0, 0, rx, ry, 0, 0, U.TAU); c.fill();
+        c.strokeStyle = 'rgba(0,0,0,0.55)'; c.lineWidth = 0.5; c.stroke();
+        if (m < 0.55) { c.fillStyle = 'rgba(90,150,80,0.45)'; c.beginPath(); c.ellipse(-rx * 0.2, -ry * 0.55, rx * 0.7, ry * 0.35, 0, 0, U.TAU); c.fill(); c.fillStyle = 'rgba(150,210,120,0.25)'; c.beginPath(); c.ellipse(-rx * 0.3, -ry * 0.65, rx * 0.35, ry * 0.15, 0, 0, U.TAU); c.fill(); }
+        c.restore();
+      });
+      // raízes finas
+      c.strokeStyle = 'rgba(20,30,16,0.6)'; c.lineWidth = 0.6;
+      for (let i = 0; i < 4; i++) { const x = rnd() * P; wrap((ox, oy) => { c.beginPath(); c.moveTo(x + ox, oy); c.bezierCurveTo(x + 6 + ox, P * 0.3 + oy, x - 6 + ox, P * 0.6 + oy, x + 3 + ox, P + oy); c.stroke(); }); }
+    } else if (kind === 'marble') {
+      const red = R.key === 'r7';
+      for (let py = 0; py < P; py += 40) for (let px = 0; px < P; px += 40) {
+        const col = U.mix(tone(), red ? '#3a1416' : '#2e2640', 0.3);
+        const g = c.createLinearGradient(px, py, px + 40, py + 40); g.addColorStop(0, U.mix(col, R.stoneLight, 0.3)); g.addColorStop(1, U.mix(col, '#000000', 0.3));
+        c.fillStyle = g; c.fillRect(px + 0.5, py + 0.5, 39, 39);
+        // veios (recortados à laje)
+        c.save(); c.beginPath(); c.rect(px + 0.5, py + 0.5, 39, 39); c.clip();
+        for (let i = 0; i < 3; i++) {
+          c.strokeStyle = U.rgba(red ? '#e0a090' : '#d8d0f0', 0.12 + rnd() * 0.12); c.lineWidth = 0.3 + rnd() * 0.5;
+          c.beginPath(); let vx = px + rnd() * 40, vy = py; c.moveTo(vx, vy);
+          for (let k = 0; k < 5; k++) { const nx = vx + (rnd() - 0.4) * 14, ny = vy + 8 + rnd() * 4; c.quadraticCurveTo(vx + (rnd() - 0.5) * 10, (vy + ny) / 2, nx, ny); vx = nx; vy = ny; }
+          c.stroke();
+        }
+        c.restore();
+        c.fillStyle = U.rgba('#ffffff', 0.08); c.fillRect(px + 0.5, py + 0.5, 39, 0.7);
+      }
+      // filete dourado nas juntas
+      c.fillStyle = U.rgba(R.topAccent, 0.38); for (const q of [0, 40]) { c.fillRect(0, q, P, 0.7); c.fillRect(q, 0, 0.7, P); }
+      c.fillStyle = U.rgba(R.topAccent, 0.6); for (const [x, y] of [[0, 0], [40, 0], [0, 40], [40, 40]]) wrap((ox, oy) => { c.save(); c.translate(x + ox, y + oy); c.rotate(Math.PI / 4); c.fillRect(-1.6, -1.6, 3.2, 3.2); c.restore(); });
+    }
+    // grão fino por cima de tudo
+    speck(0, 0, P, P, 180, '#000000', 0.18); speck(0, 0, P, P, 60, R.stoneLight, 0.1);
+    matCache[key] = cv;
+    return cv;
+  }
+  // profundidade: distância (em tiles) de cada tile sólido até ao ar mais próximo
+  function depthField(room, S) {
+    const W = room.w, H = room.h, d = new Int16Array(W * H).fill(99), q = [];
+    for (let ty = 0; ty < H; ty++) for (let tx = 0; tx < W; tx++) if (!S(tx, ty)) { d[ty * W + tx] = 0; q.push(tx, ty); }
+    for (let i = 0; i < q.length; i += 2) {
+      const x = q[i], y = q[i + 1], v = d[y * W + x];
+      if (v >= 6) continue;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue; const k = ny * W + nx; if (d[k] > v + 1) { d[k] = v + 1; q.push(nx, ny); } }
+    }
+    return d;
+  }
+  const DEPTH_A = [0, 0.08, 0.42, 0.68, 0.84, 0.92, 0.96];
+  function paintMaterial(c, room, R, S, s) {
+    const W = room.w, H = room.h;
+    // máscara dos sólidos (os mesmos retângulos da massa escura)
+    const clip = new Path2D();
+    for (let ty = 0; ty < H; ty++) { let run = -1; for (let tx = 0; tx <= W; tx++) { const sol = tx < W && S(tx, ty) && room.tile(tx, ty) !== null; if (sol && run < 0) run = tx; if (!sol && run >= 0) { clip.rect(run * T, ty * T, (tx - run) * T + 0.5, T + 0.5); run = -1; } } }
+    c.save(); c.clip(clip);
+    const pat = c.createPattern(materialCanvas(R, s), 'repeat');
+    if (pat.setTransform) pat.setTransform(new DOMMatrix().scale(1 / s));
+    c.fillStyle = pat; c.fillRect(0, 0, room.pw, room.ph);
+    // escurecer com a profundidade: campo pequeno ampliado com suavização (gradiente contínuo)
+    const d = depthField(room, S);
+    const dc = document.createElement('canvas'); dc.width = W; dc.height = H;
+    const dx = dc.getContext('2d'), img = dx.createImageData(W, H);
+    const [dr, dg, db] = U.hexToRgb(U.mix(R.stoneDark, R.darkColor || '#000000', 0.5));
+    for (let i = 0; i < W * H; i++) { const v = d[i] === 0 ? 1 : Math.min(d[i], 6); img.data[i * 4] = dr; img.data[i * 4 + 1] = dg; img.data[i * 4 + 2] = db; img.data[i * 4 + 3] = Math.round(DEPTH_A[v] * 255); }
+    dx.putImageData(img, 0, 0);
+    c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+    c.drawImage(dc, -T / 2, -T / 2, room.pw + T, room.ph + T);
+    c.restore();
+  }
+
+  // padrão do material para outros desenhos (parede de fundo dos interiores)
+  Tiles.materialPattern = function (ctx, R, s) {
+    s = Math.max(1, Math.min(2.5, Math.round(s * 4) / 4));
+    const pat = ctx.createPattern(materialCanvas(R, s), 'repeat');
+    if (pat.setTransform) pat.setTransform(new DOMMatrix().scale(1 / s));
+    return pat;
+  };
   Tiles.invalidate = function (room) { room.tileCache = null; };
 
   Tiles.build = function (room) {
@@ -44,12 +205,9 @@
         if (!sol && run >= 0) { c.fillRect(run * T, ty * T, (tx - run) * T + 0.5, T + 0.5); run = -1; }
       }
     }
-    // 2) textura interior subtil
+    // 2) alvenaria da região, a desaparecer no escuro para dentro da massa
     const rnd = U.rng(U.hash(room.id + 'tex'));
-    for (let ty = 0; ty < H; ty++) for (let tx = 0; tx < W; tx++) {
-      if (!S(tx, ty)) continue;
-      if (rnd() < 0.5) { c.fillStyle = U.rgba(R.stone, 0.12 + rnd() * 0.12); c.fillRect(tx * T + rnd() * T, ty * T + rnd() * T, 1 + rnd() * 3, 0.6 + rnd()); }
-    }
+    paintMaterial(c, room, R, S, s);
     // 3) faces expostas: bandas iluminadas, blocos, contorno irregular
     for (let ty = 0; ty < H; ty++) for (let tx = 0; tx < W; tx++) {
       if (!S(tx, ty)) continue;
@@ -57,18 +215,11 @@
       if (!(up || down || left || right)) continue;
       const x = tx * T, y = ty * T;
       const ch = room.tile(tx, ty);
-      if (up) { const g = c.createLinearGradient(0, y, 0, y + 13); g.addColorStop(0, R.stone); g.addColorStop(1, U.rgba(R.stone, 0)); c.fillStyle = g; c.fillRect(x, y, T, 13); }
-      if (left) { const g = c.createLinearGradient(x, 0, x + 8, 0); g.addColorStop(0, U.mix(R.stone, R.stoneDark, 0.3)); g.addColorStop(1, U.rgba(R.stone, 0)); c.fillStyle = g; c.fillRect(x, y, 8, T); }
-      if (right) { const g = c.createLinearGradient(x + T, 0, x + T - 8, 0); g.addColorStop(0, U.mix(R.stone, R.stoneDark, 0.45)); g.addColorStop(1, U.rgba(R.stone, 0)); c.fillStyle = g; c.fillRect(x + T - 8, y, 8, T); }
-      if (down) { const g = c.createLinearGradient(0, y + T, 0, y + T - 7); g.addColorStop(0, U.mix(R.stone, '#000000', 0.5)); g.addColorStop(1, U.rgba(R.stone, 0)); c.fillStyle = g; c.fillRect(x, y + T - 7, T, 7); }
-      // blocos de pedra (coerentes no mundo: 2 tiles de largura, alternados por fiada)
-      c.strokeStyle = U.rgba(R.stoneDark, 0.85); c.lineWidth = 0.7;
-      const rows = up ? [y + 9] : [];
-      if (left || right || up) {
-        const off = (ty % 2) * T;
-        for (let bx = Math.floor((x - off) / (2 * T)) * 2 * T + off; bx < x + T; bx += 2 * T) if (bx > x && bx < x + T && (up || left || right)) { c.beginPath(); c.moveTo(bx, y + (up ? 2 : 0)); c.lineTo(bx, y + T); c.stroke(); }
-      }
-      rows.forEach((ry) => { c.beginPath(); c.moveTo(x, ry); c.lineTo(x + T, ry); c.stroke(); });
+      // luz da face superior (vem de cima) e sombra por baixo das saliências
+      if (up) { const g = c.createLinearGradient(0, y, 0, y + 12); g.addColorStop(0, U.rgba(R.stoneLight, 0.32)); g.addColorStop(1, U.rgba(R.stoneLight, 0)); c.fillStyle = g; c.fillRect(x, y, T, 12); }
+      if (left) { const g = c.createLinearGradient(x, 0, x + 6, 0); g.addColorStop(0, U.rgba(R.stoneLight, 0.14)); g.addColorStop(1, U.rgba(R.stoneLight, 0)); c.fillStyle = g; c.fillRect(x, y, 6, T); }
+      if (right) { const g = c.createLinearGradient(x + T, 0, x + T - 6, 0); g.addColorStop(0, U.rgba('#000000', 0.3)); g.addColorStop(1, U.rgba('#000000', 0)); c.fillStyle = g; c.fillRect(x + T - 6, y, 6, T); }
+      if (down) { const g = c.createLinearGradient(0, y + T, 0, y + T - 8); g.addColorStop(0, U.rgba('#000000', 0.55)); g.addColorStop(1, U.rgba('#000000', 0)); c.fillStyle = g; c.fillRect(x, y + T - 8, T, 8); }
       // fissuras ocasionais
       if (rnd() < 0.25) { c.strokeStyle = U.rgba('#000000', 0.45); c.lineWidth = 0.5; c.beginPath(); let fx = x + rnd() * T, fy = y + 2 + rnd() * 6; c.moveTo(fx, fy); for (let i = 0; i < 3; i++) { fx += (rnd() - 0.5) * 7; fy += 2 + rnd() * 4; c.lineTo(fx, fy); } c.stroke(); }
       if (ch === 'C') crackGlow(c, R, x, y, rnd);

@@ -5,8 +5,14 @@
   const SO = {};
   const glow = (...a) => VS.Sprites.glow(...a);
 
+  const atlas = (...a) => VS.Deco && VS.Deco.atlas(...a);
   SO.altar = function (ctx, a) {
     const x = a.cx, y = a.bottom, lit = a.lit, t = a.t;
+    if (atlas(ctx, 'altar', 0, x, y, { time: t, seed: 0.3, unlit: !lit, flameK: lit ? 1 : 0 })) {
+      if (lit) { ctx.fillStyle = '#fff0c0'; ctx.beginPath(); ctx.ellipse(x, y - 27, 2.2, 3.6 + Math.sin(t * 9) * 0.5, 0, 0, U.TAU); ctx.fill(); glow(ctx, x, y - 28, 30, '#ff9030', 0.55); }
+      else { ctx.fillStyle = '#ff6020'; ctx.globalAlpha = 0.45 + Math.sin(t * 2) * 0.2; ctx.beginPath(); ctx.arc(x, y - 24.6, 1.3, 0, U.TAU); ctx.fill(); ctx.globalAlpha = 1; }
+      return;
+    }
     // degraus e pedestal
     ctx.fillStyle = '#1c1816'; ctx.fillRect(x - 16, y - 4, 32, 4); ctx.fillRect(x - 12, y - 8, 24, 4);
     ctx.fillStyle = '#2c2622'; ctx.beginPath(); ctx.moveTo(x - 7, y - 8); ctx.lineTo(x - 5, y - 20); ctx.lineTo(x + 5, y - 20); ctx.lineTo(x + 7, y - 8); ctx.fill();
@@ -46,12 +52,23 @@
   };
   SO.urn = function (ctx, u, R) {
     const x = u.cx, y = u.bottom;
+    if (atlas(ctx, 'urn', 0, x, y, { still: true, flip: (u.x | 0) % 2 === 1 })) return;
     ctx.fillStyle = U.mix(R.stoneDark, '#4a3a2e', 0.6);
     ctx.beginPath(); ctx.moveTo(x - 4, y); ctx.quadraticCurveTo(x - 9, y - 8, x - 4, y - 13); ctx.lineTo(x - 3, y - 16); ctx.lineTo(x + 3, y - 16); ctx.lineTo(x + 4, y - 13); ctx.quadraticCurveTo(x + 9, y - 8, x + 4, y); ctx.fill();
     ctx.strokeStyle = U.rgba(R.topAccent, 0.4); ctx.lineWidth = 0.6; ctx.beginPath(); ctx.moveTo(x - 6, y - 8); ctx.lineTo(x + 6, y - 8); ctx.stroke();
   };
   SO.inscription = function (ctx, ins, R, read) {
     const x = ins.cx, y = ins.bottom;
+    if (atlas(ctx, 'inscription', 0, x, y, { still: true })) {
+      // runas gravadas: brilham enquanto não foram lidas
+      const a = read ? 0.3 : 0.75 + Math.sin(ins.t * 2) * 0.2;
+      ctx.save(); ctx.strokeStyle = read ? U.rgba('#9aa4c0', a) : U.rgba('#b8ccff', a); ctx.lineWidth = 0.65; ctx.lineCap = 'round';
+      const seed = (ins.iid || 'x').charCodeAt((ins.iid || 'x').length - 1);
+      for (let r = 0; r < 4; r++) { const yy = y - 18.4 + r * 3.1; let xx = x - 4.2; ctx.beginPath(); for (let g = 0; g < 4; g++) { const k = (seed * 7 + r * 5 + g * 3) % 4, w = 1.6; if (k === 0) { ctx.moveTo(xx, yy - 1); ctx.lineTo(xx + w, yy + 1); } else if (k === 1) { ctx.moveTo(xx, yy + 1); ctx.lineTo(xx + w / 2, yy - 1); ctx.lineTo(xx + w, yy + 1); } else if (k === 2) { ctx.moveTo(xx + w / 2, yy - 1); ctx.lineTo(xx + w / 2, yy + 1); ctx.moveTo(xx, yy); ctx.lineTo(xx + w, yy); } else { ctx.moveTo(xx, yy - 1); ctx.lineTo(xx, yy + 1); ctx.lineTo(xx + w, yy + 1); } xx += 2.2; } ctx.stroke(); }
+      ctx.restore();
+      if (!read) glow(ctx, x, y - 14, 16, '#8aa8ff', 0.22 + Math.sin(ins.t * 2) * 0.06);
+      return;
+    }
     ctx.fillStyle = U.mix(R.stoneDark, R.stone, 0.7);
     ctx.beginPath(); ctx.moveTo(x - 10, y); ctx.lineTo(x - 9, y - 16); ctx.quadraticCurveTo(x, y - 24, x + 9, y - 16); ctx.lineTo(x + 10, y); ctx.fill();
     ctx.strokeStyle = U.rgba(R.stoneLight, 0.5); ctx.lineWidth = 0.6; ctx.stroke();
@@ -87,6 +104,12 @@
   };
   SO.lever = function (ctx, l, R) {
     const x = l.cx, y = l.bottom;
+    if (VS.PROP_META && VS.Assets.ok(VS.Assets.img('props/props.png'))) {
+      ctx.save(); ctx.translate(x, y - 4); ctx.rotate(U.lerp(-0.7, 0.7, l.ang)); atlas(ctx, 'lever_arm', 0, 0, 0, { still: true }); ctx.restore();
+      atlas(ctx, 'lever', 0, x, y, { still: true });
+      if (!l.pulled) glow(ctx, x, y - 16, 10, '#ffd080', 0.3);
+      return;
+    }
     ctx.fillStyle = '#1e1a1c'; ctx.fillRect(x - 6, y - 5, 12, 5);
     const a = U.lerp(-0.7, 0.7, l.ang);
     ctx.save(); ctx.translate(x, y - 4); ctx.rotate(a);

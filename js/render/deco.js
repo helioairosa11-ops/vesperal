@@ -39,34 +39,140 @@
     const arena = (room.def.ents || []).some((e) => e.t === 'boss');
     const nF = Math.floor(room.w / 18);
     for (let i = 0; i < nF; i++) { const f = { x: rnd() * room.pw, s: rnd(), top: rnd() < 0.35 }; f.arena = arena; front.push(f); }
-    // pilares de fundo (interiores)
-    const pillars = [];
-    for (let x = 60 + rnd() * 80; x < room.pw; x += 140 + rnd() * 120) pillars.push({ x, w: 26 + rnd() * 20 });
-    return { props, front, pillars };
+    // parede de fundo dos interiores: tramos com pilastras e uma abertura (janela, arco, seteira, grade ou nicho)
+    const bays = [], bw = BACK_W[BACK_OF[R.key] || 'arch'];
+    const kind = BACK_OF[R.key] || 'arch', ow = BACK_OW[kind];
+    const blocks = (ch) => ch === null || ch === '#' || ch === 'C' || ch === 'F' || ch === '=';
+    for (let x = 20 + rnd() * 40; x < room.pw + 200; x += bw + rnd() * 30) {
+      // as aberturas cabem nos vãos livres da coluna do tramo: nunca atravessam chão, teto ou paredes
+      const ww = bw * (kind === 'niche' ? 0.36 : ow), cx = x + bw / 2, rows = [];
+      const tx0 = Math.floor((cx - ww / 2 - 6) / T), tx1 = Math.floor((cx + ww / 2 + 6) / T);
+      let run = -1;
+      for (let ty = 0; ty <= room.h; ty++) {
+        let free = ty < room.h; if (free) for (let tx = tx0; tx <= tx1; tx++) if (blocks(room.tile(tx, ty))) { free = false; break; }
+        if (free && run < 0) run = ty;
+        if (!free && run >= 0) {
+          const top = (run + 1) * T + ww * 0.45, bot = ty * T - T * 0.75, avail = bot - top;
+          const want = kind === 'slit' ? 70 : kind === 'niche' ? 140 : 150;
+          if (avail >= Math.min(want, kind === 'slit' ? 50 : 90)) {
+            const n = Math.max(1, Math.floor((avail + 50) / (want + 50)));
+            const hh = Math.min(want + 20, (avail - (n - 1) * 50) / n);
+            for (let i = 0; i < n; i++) rows.push({ y: top + i * (hh + 50), h: kind === 'slit' ? hh / 0.55 : hh, v: rnd() });
+          }
+          run = -1;
+        }
+      }
+      bays.push({ x, w: bw, rows, v: rnd() });
+    }
+    return { props, front, bays };
   }
   D.get = (room) => room.deco || (room.deco = build(room));
 
+  // estilo da parede de fundo por região
+  const BACK_OF = { sanct: 'arch', r1: 'arch', r2: 'slit', r3: 'grate', r4: 'glass', r5: 'slit', r6: 'lancet', r7: 'lancet', crypt: 'niche' };
+  const BACK_W = { arch: 150, slit: 110, grate: 170, glass: 150, lancet: 130, niche: 90 };
+  const GLASS = ['#c03a50', '#3a5ac0', '#d0a040', '#7a3ac0', '#3a9a80'];
+  const BACK_P = 1; // presa ao mundo: as aberturas ficam sempre entre o chão e o teto
+  const BACK_OW = { arch: 0.5, slit: 0.12, grate: 0.42, glass: 0.56, lancet: 0.36, niche: 0.5 };
+  function openingPath(path, kind, cx, y, w, h) {
+    const x0 = cx - w / 2, x1 = cx + w / 2;
+    if (kind === 'grate' || kind === 'slit') { path.rect(x0, y, w, h); return; }
+    if (kind === 'lancet') { path.moveTo(x0, y + h); path.lineTo(x0, y + w * 0.7); path.quadraticCurveTo(x0, y, cx, y - w * 0.35); path.quadraticCurveTo(x1, y, x1, y + w * 0.7); path.lineTo(x1, y + h); path.closePath(); return; }
+    // arco de volta perfeita
+    path.moveTo(x0, y + h); path.lineTo(x0, y + w / 2); path.arc(cx, y + w / 2, w / 2, Math.PI, 0); path.lineTo(x1, y + h); path.closePath();
+  }
   D.drawBackdrop = function (ctx, room, R, cam) {
-    const d = D.get(room);
-    const x0 = cam.x - 20, y0 = cam.y - 20, w = U.VIEW_W + 40, h = U.VIEW_H + 40;
-    ctx.fillStyle = U.mix(R.stoneDark, R.fog, 0.18); ctx.fillRect(x0, y0, w, h);
-    // grandes blocos de pedra
-    ctx.strokeStyle = U.rgba('#000000', 0.35); ctx.lineWidth = 1;
-    const bh = 30;
-    for (let y = Math.floor(y0 / bh) * bh; y < y0 + h; y += bh) {
-      ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + w, y); ctx.stroke();
-      const off = (Math.floor(y / bh) % 2) * 35;
-      for (let x = Math.floor((x0 - off) / 70) * 70 + off; x < x0 + w; x += 70) { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + bh); ctx.stroke(); }
+    const d = D.get(room), kind = BACK_OF[R.key] || 'arch';
+    const sh = cam.x * (1 - BACK_P), sv = cam.y * (1 - BACK_P);
+    ctx.save(); ctx.translate(sh, sv);
+    const x0 = cam.x - sh - 30, y0 = cam.y - sv - 30, w = U.VIEW_W + 60, h = U.VIEW_H + 60;
+    const vis = d.bays.filter((b) => b.x + b.w > x0 && b.x < x0 + w);
+    // aberturas (mostram os planos distantes por trás)
+    const holes = new Path2D(), ow = BACK_OW[kind];
+    if (kind !== 'niche') for (const b of vis) for (const r of b.rows) { if (r.y + r.h < y0 || r.y - 40 > y0 + h) continue; openingPath(holes, kind, b.x + b.w / 2, r.y, b.w * ow, kind === 'slit' ? r.h * 0.55 : r.h); }
+    const wall = new Path2D(); wall.rect(x0, y0, w, h); wall.addPath(holes);
+    // a pedra da parede: o material da região, mais escuro e mais baço
+    ctx.fillStyle = VS.Tiles.materialPattern(ctx, R, Math.min(2.5, G.scale)); ctx.fill(wall, 'evenodd');
+    ctx.fillStyle = U.rgba(U.mix(R.stoneDark, R.darkColor || '#000000', 0.4), 0.62); ctx.fill(wall, 'evenodd');
+    // vitrais / grades / caixilhos dentro das aberturas
+    for (const b of vis) for (const r of b.rows) {
+      if (r.y + r.h < y0 || r.y - 40 > y0 + h) continue;
+      const cx = b.x + b.w / 2, ww = b.w * ow, hh = kind === 'slit' ? r.h * 0.55 : r.h;
+      const one = new Path2D(); if (kind !== 'niche') openingPath(one, kind, cx, r.y, ww, hh);
+      if (kind === 'lancet' || kind === 'glass') {
+        ctx.save(); ctx.clip(one);
+        const tint = R.key === 'r7' ? ['#a02018', '#d06020', '#601018'] : R.key === 'r4' ? ['#3a8a70', '#6ab090', '#2a5a50'] : GLASS;
+        const cell = 9;
+        for (let yy = r.y - ww * 0.4; yy < r.y + hh; yy += cell) for (let xx = cx - ww / 2; xx < cx + ww / 2; xx += cell * 0.8) {
+          const k = Math.abs(Math.floor(xx * 7 + yy * 3 + r.v * 50)) % tint.length;
+          ctx.fillStyle = U.rgba(tint[k], R.key === 'r4' ? 0.18 : 0.34); ctx.fillRect(xx, yy, cell * 0.8, cell);
+        }
+        const gl = ctx.createLinearGradient(0, r.y, 0, r.y + hh); gl.addColorStop(0, U.rgba(R.light, 0.22)); gl.addColorStop(1, U.rgba(R.light, 0.02)); ctx.fillStyle = gl; ctx.fillRect(cx - ww / 2, r.y - ww * 0.5, ww, hh + ww * 0.5);
+        // chumbo e montantes
+        ctx.strokeStyle = 'rgba(10,6,14,0.85)'; ctx.lineWidth = 0.7; ctx.beginPath();
+        for (let yy = r.y; yy < r.y + hh; yy += cell) { ctx.moveTo(cx - ww / 2, yy); ctx.lineTo(cx + ww / 2, yy); }
+        ctx.stroke(); ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(cx, r.y - ww * 0.35); ctx.lineTo(cx, r.y + hh);
+        if (ww > 24) { ctx.moveTo(cx - ww / 4, r.y + ww * 0.3); ctx.lineTo(cx - ww / 4, r.y + hh); ctx.moveTo(cx + ww / 4, r.y + ww * 0.3); ctx.lineTo(cx + ww / 4, r.y + hh); }
+        ctx.stroke();
+        // rosácea no topo
+        ctx.strokeStyle = 'rgba(10,6,14,0.85)'; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.arc(cx, r.y + ww * 0.15, ww * 0.22, 0, U.TAU); ctx.stroke();
+        ctx.restore();
+      } else if (kind === 'grate') {
+        ctx.save(); ctx.clip(one);
+        const gl = ctx.createLinearGradient(0, r.y, 0, r.y + hh); gl.addColorStop(0, 'rgba(255,90,20,0.05)'); gl.addColorStop(1, 'rgba(255,110,30,0.28)'); ctx.fillStyle = gl; ctx.fillRect(cx - ww / 2, r.y, ww, hh);
+        ctx.fillStyle = '#140c0a'; for (let xx = cx - ww / 2 + 4; xx < cx + ww / 2; xx += 8) ctx.fillRect(xx, r.y, 2.4, hh);
+        for (let yy = r.y + 20; yy < r.y + hh; yy += 34) ctx.fillRect(cx - ww / 2, yy, ww, 3);
+        ctx.restore();
+      } else if (kind === 'slit') {
+        ctx.save(); ctx.clip(one); ctx.fillStyle = U.rgba(R.light, 0.08); ctx.fillRect(cx - ww, r.y, ww * 2, hh); ctx.restore();
+      } else if (kind === 'niche') {
+        // nichos cegos com ossadas (catacumbas)
+        const nw = b.w * 0.36, nh = 34;
+        for (let k = 0, nk = Math.max(1, Math.floor((r.h + 12) / (nh + 12))); k < nk; k++) {
+          const ny = r.y + k * (nh + 12), np = new Path2D(); openingPath(np, 'arch', cx, ny, nw, nh);
+          ctx.fillStyle = 'rgba(2,2,4,0.85)'; ctx.fill(np);
+          ctx.strokeStyle = U.rgba(R.stoneLight, 0.22); ctx.lineWidth = 1.6; ctx.stroke(np);
+          const sk = (r.v * 10 + k * 3.7) % 1;
+          if (sk < 0.7) { ctx.fillStyle = 'rgba(150,142,120,0.55)'; ctx.beginPath(); ctx.arc(cx - nw * 0.18, ny + nh - 6, 4, 0, U.TAU); ctx.fill(); ctx.fillStyle = 'rgba(10,8,8,0.9)'; ctx.fillRect(cx - nw * 0.18 - 2.2, ny + nh - 7, 1.6, 1.6); ctx.fillRect(cx - nw * 0.18 + 0.6, ny + nh - 7, 1.6, 1.6); }
+          if (sk > 0.3) { ctx.fillStyle = 'rgba(140,130,110,0.45)'; ctx.save(); ctx.translate(cx + nw * 0.12, ny + nh - 3); ctx.rotate(-0.2); ctx.fillRect(-8, -1.4, 16, 2.8); ctx.restore(); }
+        }
+      }
+      // moldura de pedra à volta da abertura
+      if (kind !== 'niche') { ctx.strokeStyle = U.rgba(R.stoneLight, 0.28); ctx.lineWidth = 3; ctx.stroke(one); ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 1; ctx.stroke(one); }
+      // peitoril
+      if (kind !== 'niche') { ctx.fillStyle = U.mix(R.stone, R.stoneDark, 0.3); ctx.fillRect(cx - ww / 2 - 5, r.y + hh, ww + 10, 4); ctx.fillStyle = U.rgba(R.stoneLight, 0.3); ctx.fillRect(cx - ww / 2 - 5, r.y + hh, ww + 10, 1); }
     }
-    // pilares e arcos de fundo
-    for (const p of d.pillars) {
-      if (p.x < x0 - 60 || p.x > x0 + w + 60) continue;
-      ctx.fillStyle = U.mix(R.stoneDark, '#000000', 0.25); ctx.fillRect(p.x - p.w / 2, y0, p.w, h);
-      ctx.fillStyle = U.rgba(R.stoneLight, 0.08); ctx.fillRect(p.x - p.w / 2, y0, 3, h);
+    // pilastras entre os tramos: fuste com aresta iluminada, capitel e base
+    for (const b of vis) {
+      const px = b.x, pw = kind === 'niche' ? 12 : 20;
+      const g = ctx.createLinearGradient(px - pw / 2, 0, px + pw / 2, 0);
+      g.addColorStop(0, U.mix(R.stone, R.stoneLight, 0.25)); g.addColorStop(0.35, U.mix(R.stone, R.stoneDark, 0.2)); g.addColorStop(1, U.mix(R.stoneDark, '#000000', 0.35));
+      ctx.fillStyle = g; ctx.fillRect(px - pw / 2, y0, pw, h);
+      ctx.fillStyle = U.rgba('#000000', 0.35); ctx.fillRect(px - pw / 2 + 4, y0, 1.2, h); ctx.fillRect(px + pw / 2 - 5, y0, 1.2, h);
+      for (const r of b.rows) {
+        if (r.y < y0 - 40 || r.y > y0 + h + 40) continue;
+        ctx.fillStyle = U.mix(R.stone, R.stoneLight, 0.2); ctx.fillRect(px - pw / 2 - 4, r.y - 8, pw + 8, 5);
+        ctx.fillStyle = U.rgba('#000000', 0.4); ctx.fillRect(px - pw / 2 - 4, r.y - 3, pw + 8, 1.5);
+        if (R.key === 'r6' || R.key === 'r7') { ctx.fillStyle = U.rgba(R.topAccent, 0.5); ctx.fillRect(px - pw / 2 - 4, r.y - 8, pw + 8, 0.8); }
+      }
     }
+    // tapeçarias no palácio, estandartes no santuário
+    if (R.key === 'r7' || R.key === 'sanct') for (const b of vis) {
+      if (b.v > 0.55) continue;
+      for (const r of b.rows) {
+        if (r.y + r.h < y0 || r.y > y0 + h) continue;
+        const tx = b.x + (b.v < 0.27 ? 18 : -18) - 9, ty = r.y + 6, tw = 18, th = 60 + b.v * 50;
+        ctx.fillStyle = R.key === 'r7' ? '#3a0a10' : '#4a1c14';
+        ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx + tw, ty); ctx.lineTo(tx + tw, ty + th); ctx.lineTo(tx + tw / 2, ty + th - 8); ctx.lineTo(tx, ty + th); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = U.rgba(R.topAccent, 0.55); ctx.fillRect(tx, ty, tw, 2); ctx.fillRect(tx + 2, ty + 2, 1, th - 8); ctx.fillRect(tx + tw - 3, ty + 2, 1, th - 8);
+        ctx.beginPath(); ctx.arc(tx + tw / 2, ty + 22, 4.5, 0, U.TAU); ctx.fill();
+      }
+    }
+    ctx.restore();
+    // escurecer em cima e em baixo (profundidade da nave)
     const g = ctx.createLinearGradient(0, cam.y, 0, cam.y + U.VIEW_H);
-    g.addColorStop(0, U.rgba(R.fog, 0.12)); g.addColorStop(1, U.rgba('#000000', 0.25));
-    ctx.fillStyle = g; ctx.fillRect(x0, y0, w, h);
+    g.addColorStop(0, U.rgba('#000000', 0.35)); g.addColorStop(0.45, U.rgba('#000000', 0)); g.addColorStop(1, U.rgba('#000000', 0.3));
+    ctx.fillStyle = g; ctx.fillRect(cam.x - 20, cam.y - 20, U.VIEW_W + 40, U.VIEW_H + 40);
   };
 
   D.drawBack = function (ctx, room, R, time) {
@@ -112,9 +218,54 @@
     }
   };
 
+  // ---------- adereços pintados (atlas do ateliê) ----------
+  // chama viva: gota com núcleo claro, a tremeluzir; o brilho e a luz vêm do sistema de luzes
+  function flame(ctx, x, y, s, time, seed) {
+    const f = Math.sin(time * 13 + seed * 7.1) * 0.5 + Math.sin(time * 21 + seed * 3.3) * 0.5;
+    const h = (2.6 + f * 0.5) * s, w = 1.05 * s, lean = Math.sin(time * 5 + seed) * 0.35 * s;
+    ctx.fillStyle = 'rgba(255,120,40,0.9)';
+    ctx.beginPath(); ctx.moveTo(x - w, y); ctx.quadraticCurveTo(x - w * 1.1, y - h * 0.5, x + lean, y - h); ctx.quadraticCurveTo(x + w * 1.1, y - h * 0.5, x + w, y); ctx.quadraticCurveTo(x, y + w * 0.6, x - w, y); ctx.fill();
+    ctx.fillStyle = '#ffe9a8';
+    ctx.beginPath(); ctx.moveTo(x - w * 0.45, y); ctx.quadraticCurveTo(x - w * 0.5, y - h * 0.4, x + lean * 0.6, y - h * 0.68); ctx.quadraticCurveTo(x + w * 0.5, y - h * 0.4, x + w * 0.45, y); ctx.closePath(); ctx.fill();
+  }
+  D.flame = flame;
+  // desenha a variante v do adereço k com a âncora em (x, y); devolve false se o atlas ainda não está pronto
+  D.atlas = function (ctx, k, v, x, y, o) {
+    const meta = VS.PROP_META, list = meta && meta.items[k];
+    if (!list) return false;
+    const im = VS.Assets.img('props/props.png');
+    if (!VS.Assets.ok(im)) return false;
+    const e = list[((v % list.length) + list.length) % list.length], S = meta.S, f = e[6] || {};
+    const time = (o && o.time) || 0, seed = (o && o.seed) || 0, flip = o && o.flip;
+    ctx.save(); ctx.translate(x, y);
+    if (flip) ctx.scale(-1, 1);
+    if (f.sway && !(o && o.still)) { const a = Math.sin(time * (1.1 + seed * 0.6) + seed * 9) * f.sway; ctx.rotate(a); }
+    if (f.skew && !(o && o.still)) ctx.transform(1, 0, Math.sin(time * 1.6 + seed * 5) * 0.06, 1, 0, 0);
+    ctx.drawImage(im, e[0], e[1], e[2], e[3], -e[4] / S, -e[5] / S, e[2] / S, e[3] / S);
+    if (f.flames && !(o && o.unlit)) { const k2 = (o && o.flameK) || 1; f.flames.forEach((q, i) => flame(ctx, q[0], q[1], q[2] * k2, time, seed * 10 + i)); }
+    ctx.restore();
+    return f;
+  };
+
   // ---------- adereços ----------
+  const PROP_ATLAS = { rubble: 1, grave: 1, lamppost: 1, barrel: 1, candles: 1, crate: 1, stakes: 1, brazier: 1, anvil: 1, crucible: 1, pipe: 1, pot: 1, smallbell: 1, rope: 1, candelabra: 1, pew: 1, statue: 1, chair: 1, skulls: 1, coffin: 1,
+    sign: 1, banner: 1, hook: 1, lantern: 1, smallbell_h: 1, censer: 1, chandelier: 1, roots: 1, window: 1, sconce: 1, banner_w: 1, vent: 1, glasspane: 1, stained: 1, portrait: 1, niche: 1 };
   function drawProp(ctx, p, R, time) {
     const x = p.x, y = p.y, s = p.s;
+    if (PROP_ATLAS[p.k]) {
+      const list = VS.PROP_META && VS.PROP_META.items[p.k];
+      const v = list ? Math.floor(s * list.length * 0.999) : 0;
+      // apliques encostam à parede (o braço sai para o lado aberto); o resto espelha ao acaso para variar
+      const mir = list && list[0] && list[0][6] && list[0][6].mirror;
+      const ax = mir && p.side ? x + p.side * 7 : x;
+      const flip = mir && p.side ? p.side > 0 : !p.ceil && ((s * 997) | 0) % 2 === 1;
+      const f = D.atlas(ctx, p.k, v, ax, y, { time, seed: s, flip });
+      if (f) {
+        if (f.glowA) { const a = 0.32 + Math.sin(time * 3 + s * 9) * 0.08 + Math.sin(time * 11 + s * 4) * 0.04; ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = a; const col = p.k === 'vent' ? '#ff5010' : p.k === 'stained' ? '#c080ff' : '#ff9040'; ctx.drawImage(G.glowSprite(col), x - 14, y - 14, 28, 28); ctx.restore(); }
+        if (f.smoke && Math.random() < 0.04) { const a = Math.sin(time * (1.1 + s * 0.6) + s * 9) * f.sway; G.emit({ x: x - Math.sin(a) * f.smoke[1], y: y + Math.cos(a) * f.smoke[1], vx: U.rand(-3, 3), vy: -10, life: 4, size: 6, color: 'rgba(180,160,200,0.08)', kind: 'glow', color2: '#000000' }); }
+        return;
+      }
+    }
     switch (p.k) {
       case 'rubble': ctx.fillStyle = R.stoneDark; for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.arc(x - 8 + i * 5 + s * 3, y - 2, 2.5 + ((i * 7 + s * 10) % 3), Math.PI, 0); ctx.fill(); } ctx.fillStyle = U.rgba(R.top, 0.6); ctx.fillRect(x - 9, y - 4, 4, 1); break;
       case 'grave': ctx.fillStyle = U.mix(R.stoneDark, R.stone, 0.6); ctx.beginPath(); ctx.moveTo(x - 6, y); ctx.lineTo(x - 6, y - 14); ctx.quadraticCurveTo(x, y - 20, x + 6, y - 14); ctx.lineTo(x + 6, y); ctx.fill(); ctx.strokeStyle = U.rgba(R.stoneLight, 0.5); ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(x, y - 15); ctx.lineTo(x, y - 7); ctx.moveTo(x - 3, y - 12); ctx.lineTo(x + 3, y - 12); ctx.stroke(); break;

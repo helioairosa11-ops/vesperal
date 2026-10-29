@@ -45,17 +45,17 @@ def main():
         R.check('arsenal: 6 armas', pg.evaluate('VS.state.weapons.length') == 6, pg.evaluate('VS.state.weapons'))
         R.check('traje do Sineiro desbloqueado', pg.evaluate('VS.state.hasLook("sino")'))
         pg.evaluate('VS.Menus.inventory("weapons")'); frames(pg, 2)
-        n = pg.evaluate('document.querySelectorAll(".inventory .inv-item").length')
+        n = pg.evaluate('document.querySelectorAll(".inventory .inv-slot:not(.empty)").length')
         R.check('inventário lista armas + trajes + ferramentas', n >= 8, n)
         # focar a alabarda para mostrar os números
-        pg.evaluate('''(() => { const b = [...document.querySelectorAll('.inventory .inv-item')][3]; b.dispatchEvent(new MouseEvent('mouseenter')); VS.UI.top() && VS.UI.top().onFocus && VS.UI.top().onFocus(b); })()''')
+        pg.evaluate('''(() => { const b = [...document.querySelectorAll('.inventory .inv-slot:not(.empty)')][3]; b.dispatchEvent(new MouseEvent('mouseenter')); VS.UI.top() && VS.UI.top().onFocus && VS.UI.top().onFocus(b); })()''')
         frames(pg, 2)
         pg.screenshot(path=str(OUTA / 'arsenal_inventory.png'))
         R.check('descrição com estatísticas', pg.evaluate('!!document.querySelector(".inventory .wstats")'))
         # equipar o malho clicando
-        pg.evaluate('''[...document.querySelectorAll('.inventory .inv-item')][2].click()''')
+        pg.evaluate('''[...document.querySelectorAll('.inventory .inv-slot:not(.empty)')][2].click()''')
         R.check('equipar pelo inventário', pg.evaluate('VS.state.weaponId') == 'malho', pg.evaluate('VS.state.weaponId'))
-        pg.evaluate('''[...document.querySelectorAll('.inventory .inv-item')].find((b) => b.textContent.includes(VS.t('item_helm_sino_name'))).click()''')
+        pg.evaluate('''[...document.querySelectorAll('.inventory .inv-slot:not(.empty)')].find((b) => (b.getAttribute('aria-label') || '').includes(VS.t('item_helm_sino_name'))).click()''')
         R.check('trocar traje pelo inventário', pg.evaluate('VS.state.look') == 'sino')
         pg.evaluate('VS.UI.closeAll(); VS.App.paused = false; VS.state.look = "capuz"'); frames(pg, 5)
 

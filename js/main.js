@@ -191,7 +191,8 @@
     window.VSDebug = {
       app: App,
       game: () => App.game,
-      warp(room, tx, ty) { const g = App.game; g.loadRoom(room, tx !== undefined ? { x: tx * U.TILE, y: ty * U.TILE } : undefined); },
+      // como uma mudança de sala real (portas, viagem, renascer): carrega e grava
+      warp(room, tx, ty) { const g = App.game; g.loadRoom(room, tx !== undefined ? { x: tx * U.TILE, y: ty * U.TILE } : undefined); g.autosave(); },
       give(id, n) { App.game.state.give(id, n); },
       ability(a) { App.game.state.abilities[a] = true; },
       allAbilities() { Object.keys(App.game.state.abilities).forEach((a) => (App.game.state.abilities[a] = true)); },
