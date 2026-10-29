@@ -60,5 +60,9 @@
     tip_matilheira_wall: "The Pack-Mother slammed into the wall and is stunned — strike! (Climbing the wall or the platforms gets you out of her charge.)",
     inv_hint_use: "Confirm: use / equip",
     inv_hint_unequip: "Confirm: unequip",
+    tip_vael_stuck: "The flail's ball is stuck in the floor! Strike while Vael wrenches it free.",
+    tip_gemeos_friendly: "The Maul can't tell brothers apart: put the Blade between you and the blow.",
+    gemeos_friendly: "Brother…! Out of the way!",
+    tip_ozias_orb: "The chalice orb can be sent back: parry it as it arrives.",
   });
 })(window.VS);

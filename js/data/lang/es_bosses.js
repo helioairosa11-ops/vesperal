@@ -60,5 +60,9 @@
     tip_matilheira_wall: "La Madre de la Jauría chocó contra la pared y está aturdida: ¡ataca! (Trepar la pared o subir a las plataformas te libra de la embestida.)",
     inv_hint_use: "Confirmar: usar / equipar",
     inv_hint_unequip: "Confirmar: desequipar",
+    tip_vael_stuck: "¡La bola del mayal se clavó en el suelo! Ataca mientras Vael la arranca.",
+    tip_gemeos_friendly: "El Mazo no distingue hermanos: pon a la Hoja entre tú y el golpe.",
+    gemeos_friendly: "¡Hermano…! ¡Apártate!",
+    tip_ozias_orb: "El orbe del cáliz puede devolverse: haz parry cuando llegue.",
   });
 })(window.VS);

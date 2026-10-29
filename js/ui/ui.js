@@ -173,16 +173,46 @@
   UI.dialogue = function (lines, choices, cb) {
     lines = lines.map((l) => (typeof l === 'string' ? { k: l } : l));
     const el = h('div', 'dialogue');
-    el.innerHTML = '<div class="dlg-speaker"></div><div class="dlg-text"></div><div class="dlg-choices"></div><div class="dlg-next">▼</div>';
+    el.innerHTML = '<div class="dlg-portrait" aria-hidden="true"></div><div class="dlg-body"><div class="dlg-speaker"></div><div class="dlg-text"></div><div class="dlg-choices"></div></div><div class="dlg-next"></div>';
     UI.root.appendChild(el);
     UI.dlg = { el, lines, i: 0, shown: 0, choices, cb, full: '', choiceIdx: 0, waitChoice: false };
     UI.dlgShow();
     el.addEventListener('click', (ev) => { if (ev.target.closest('.dlg-choice')) return; UI.dlgAdvance(); });
     In.clearAll();
   };
+  // retrato de quem fala: pintado (pessoas) ou recortado da folha do chefe à volta dos olhos
+  const PORTRAIT = { npc_ione: 'ione', npc_hrolf: 'hrolf', npc_maren: 'maren', npc_teodoro: 'teodoro' };
+  const bossPortraits = {};
+  function bossPortrait(id) {
+    if (bossPortraits[id]) return bossPortraits[id];
+    const sh = VS.Assets.sheet('en_b_' + (id === 'gemeos' ? 'gemeo_a' : id));
+    if (!sh || !VS.Assets.ok(sh.img)) return null;
+    const A = sh.meta.anims, f = sh.meta.frames[(A.idle || A[Object.keys(A)[0]]).frames[0]], s = sh.meta.scale;
+    const eye = (f.pts && f.pts.eye) || [0, f.oy * 0.8];
+    const hu = f.h / s, r = Math.max(7.5, Math.min(11, hu * 0.12));
+    const cx = eye[0] - r * 0.2, cy = eye[1] + r * 0.22;
+    const cv = document.createElement('canvas'); cv.width = cv.height = 180;
+    const c = cv.getContext('2d');
+    const g = c.createRadialGradient(80, 70, 0, 90, 90, 130); g.addColorStop(0, 'rgba(110,60,50,0.55)'); g.addColorStop(0.6, 'rgba(24,16,20,0.96)'); g.addColorStop(1, '#08060a');
+    c.fillStyle = g; c.fillRect(0, 0, 180, 180);
+    const k = 180 / (r * 2);
+    c.imageSmoothingEnabled = true; c.imageSmoothingQuality = 'high';
+    c.drawImage(sh.img, f.x, f.y, f.w, f.h, (f.ox - (cx - r)) * k, (f.oy - (cy - r)) * k, (f.w / s) * k, (f.h / s) * k);
+    const vg = c.createLinearGradient(0, 120, 0, 180); vg.addColorStop(0, 'rgba(8,6,10,0)'); vg.addColorStop(1, 'rgba(8,6,10,0.9)'); c.fillStyle = vg; c.fillRect(0, 0, 180, 180);
+    return (bossPortraits[id] = cv);
+  }
+  function setPortrait(el, s) {
+    const box = el.querySelector('.dlg-portrait'); box.innerHTML = '';
+    let node = null;
+    if (s && PORTRAIT[s]) { node = new Image(); node.src = 'assets/portraits/' + PORTRAIT[s] + '.png'; node.alt = ''; }
+    else if (s && /^boss_/.test(s)) { const cv = bossPortrait(s.slice(5)); if (cv) { node = document.createElement('canvas'); node.width = node.height = 180; node.getContext('2d').drawImage(cv, 0, 0); } }
+    if (node) box.appendChild(node);
+    el.classList.toggle('has-portrait', !!node);
+  }
   UI.dlgShow = function () {
     const d = UI.dlg, l = d.lines[d.i];
     d.full = VS.t(l.k, l.p); d.shown = 0;
+    setPortrait(d.el, l.s);
     d.el.querySelector('.dlg-speaker').textContent = l.s ? VS.t(l.s) : '';
     d.el.querySelector('.dlg-speaker').style.display = l.s ? '' : 'none';
     d.el.querySelector('.dlg-text').textContent = '';

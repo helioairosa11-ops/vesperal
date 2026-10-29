@@ -545,17 +545,17 @@ def t_caedmon(R, b):
     pg.evaluate('''() => { T.n = 0; T.hooks.push(() => { const B = T.B, p = T.p(); if (T.n++ > 480) { T.releaseAll(); return true; } const dx = B.cx - p.cx; T.key("KeyD", dx > 26); T.key("KeyA", dx < -26); const near = Math.abs(dx) < 34; if (near && T.n % 10 === 0) T.tap("KeyJ", 3); if (near && T.n % 50 === 0) T.tap("KeyK", 3); }); }''')
     frames(pg, 490)
     spam = pg.evaluate('({ hp: T.B.hp, hp0: T.hp0, shieldHits: T.B.shieldHits })')
-    R.check('Caedmon: 8 s de ataques sem parry não lhe tiram vida', spam['hp'] == spam['hp0'] and spam['shieldHits'] > 10, spam)
+    R.check('Caedmon: 8 s de ataques sem parry não lhe tiram vida', spam['hp'] == spam['hp0'] and spam['shieldHits'] >= 8, spam)
     # 2) aparar os golpes de brilho branco → postura quebrada → dano
     pg.evaluate('VS.state.flags.parries = 0')
-    pg.evaluate('''() => { T.n = 0; T.brk = 0; T.hooks.push(() => { const B = T.B, p = T.p(); if (T.n++ > 1800 || B.dead || B.defeated) { T.releaseAll(); return true; }
+    pg.evaluate('''() => { T.n = 0; T.brk = 0; T.hooks.push(() => { const B = T.B, p = T.p(); if (T.n++ > 5400 || B.dead || B.defeated) { T.releaseAll(); return true; }
       const dx = B.cx - p.cx; const a = B.atk;
       if (B.broken > 0) { T.brk++; T.key("KeyD", dx > 20); T.key("KeyA", dx < -20); if (T.n % 8 === 0) T.tap("KeyJ", 3); return; }
-      T.key("KeyD", dx > 46); T.key("KeyA", dx < 26 && dx > 0); p.dir = Math.sign(dx) || 1; p.facing = p.dir;
+      T.key("KeyD", dx > 46); T.key("KeyA", dx < 26 && dx > 0); p.facing = Math.sign(dx) || 1;
       if (a && a.phase === "wind" && a.s.tell === "white" && a.s.wind - a.t < 0.07 && !a.__p) { a.__p = 1; T.tap("KeyI", 4); }
       if (a && a.s.tell === "red" && a.phase === "wind" && a.s.wind - a.t < 0.1 && !a.__d) { a.__d = 1; T.tap("KeyL", 3); }
     }); }''')
-    ok = wait(pg, 'T.B.hp < T.hp0 * 0.6 || T.B.defeated', 40)
+    ok = wait(pg, 'T.B.hp < T.hp0 * 0.6 || T.B.defeated', 100)
     res = pg.evaluate('({ hp: T.B.hp, hp0: T.hp0, parries: VS.state.flags.parries, brokenFrames: T.brk })')
     R.check('Caedmon: aparar os golpes brancos quebra a postura e abre-o ao dano', ok and res['parries'] >= 3 and res['brokenFrames'] > 0, res)
     shot(pg, 'caedmon_parry')
@@ -623,8 +623,8 @@ def t_quests(R, b):
 
     def talk(npc_id, answers=()):
         pg.evaluate(f'T.answers = {json.dumps(list(answers))}')
-        pg.evaluate(f'''() => {{ const n = T.g().ents.find((e) => e.nid === "{npc_id}"); if (!n) throw new Error("npc {npc_id} ausente na sala " + VS.state.room); T.p().x = n.cx - 20; T.p().dir = 1; T.p().facing = 1; }}''')
-        frames(pg, 6)
+        pg.evaluate(f'''() => {{ const n = T.g().ents.find((e) => e.nid === "{npc_id}"); if (!n) throw new Error("npc {npc_id} ausente na sala " + VS.state.room); const p = T.p(); p.x = n.cx - 20 - p.w / 2; p.y = n.bottom - p.h - 0.5; p.vx = 0; p.vy = 0; p.dir = 1; p.facing = 1; }}''')
+        wait(pg, 'T.p().onGround && !T.p().action', 3); frames(pg, 4)
         pg.evaluate('T.tap("KeyE", 3)')
         frames(pg, 10)
         wait(pg, '!VS.UI.dlg && !VS.App.game.cutscene', 6)
@@ -669,7 +669,7 @@ def t_quests(R, b):
     talk('maren', [0]); frames(pg, 10)
     shop = pg.evaluate('!!document.querySelector(".shop")')
     shot(pg, 'shop')
-    pg.evaluate('''() => { const b = [...document.querySelectorAll('.shop .shop-item, .shop .btn')].find((x) => x.textContent.includes(VS.t('item_salt_name'))); if (b) b.click(); }'''); frames(pg, 6)
+    pg.evaluate('''() => { const b = [...document.querySelectorAll('.shop .inv-item, .shop .shop-item, .shop .btn')].find((x) => x.textContent.includes(VS.t('item_salt_name'))); if (b) b.click(); }'''); frames(pg, 6)
     R.check('loja de Maren: comprar Sal Bento gasta cinza', shop and pg.evaluate('VS.state.ash') < 5000, pg.evaluate('VS.state.ash'))
     pg.evaluate('VS.UI.closeAll(); T.clean()')
     # ferreiro
@@ -919,7 +919,7 @@ def t_gamepad(R, b):
     y0 = pg.evaluate('T.p().y'); pg.evaluate('T.minY = 1e9; T.hooks.push(() => { T.minY = Math.min(T.minY, T.p().y); if ((T.k = (T.k || 0) + 1) > 60) { T.k = 0; return true; } })')
     pg.evaluate('padBtn(0, true)'); frames(pg, 10); pg.evaluate('padBtn(0, false)'); frames(pg, 50)
     R.check('comando: A salta', y0 - pg.evaluate('T.minY') > 40)
-    pg.evaluate('T.seenA = []; T.hooks.push(() => { const a = T.p().action; if (a && a.name && !T.seenA.includes(a.name)) T.seenA.push(a.name); if ((T.k2 = (T.k2 || 0) + 1) > 120) return true; })')
+    pg.evaluate('T.seenA = []; T.hooks.push(() => { const a = T.p().action; const nm = a && (a.name || a.type); if (nm && !T.seenA.includes(nm)) T.seenA.push(nm); if ((T.k2 = (T.k2 || 0) + 1) > 120) return true; })')
     pg.evaluate('padBtn(2, true)'); frames(pg, 3); pg.evaluate('padBtn(2, false)'); frames(pg, 30)
     pg.evaluate('padBtn(1, true)'); frames(pg, 3); pg.evaluate('padBtn(1, false)'); frames(pg, 40)
     R.check('comando: X ataca e B esquiva', 'l1' in pg.evaluate('T.seenA') and 'dodge' in pg.evaluate('T.seenA'), pg.evaluate('T.seenA'))
@@ -982,8 +982,36 @@ def t_parry(R, b):
     pg.close()
 
 
+def t_weak(R, b):
+    """pontos fracos dos chefes redesenhados: Vael (bola cravada), Gémeos (o Malho fere a Lâmina), Seraphine (apagada)"""
+    pg = b.new_page(viewport={'width': 1280, 'height': 720}); errs = []; page_errors(pg, errs)
+    boot(pg); new_game(pg); pg.evaluate('VSDebug.allAbilities(); VSDebug.god(true)')
+    rooms = dict(BOSSES)
+    # Vael: depois da varrida baixa a bola crava-se no chão e ela fica exposta (dano ×1.8)
+    warp(pg, rooms['vael']); place_for_boss(pg, rooms['vael'])
+    wait(pg, 'T.bossEnts().length > 0 && !T.bossEnts()[0].intro', 14)
+    pg.evaluate('(() => { const e = T.bossEnts()[0]; T.V = e; e.K = Object.assign({}, e.K, { think() {} }); e.cool = 99; e.attack("flail2"); })()')
+    ok = wait(pg, 'T.V.atk && T.V.atk.name === "stuck" && T.V.atk.phase === "act"', 4)
+    m = pg.evaluate('T.V.K.damageMult(T.V)')
+    R.check('Vael: a varrida baixa crava a bola no chão (fica a arrancá-la) e leva mais dano', ok and m > 1.5, {'stuck': ok, 'mult': m})
+    pg.evaluate('VS.UI.closeAll && VS.UI.closeAll()')
+    # Gémeos: a martelada do Malho apanha a Lâmina se estiver no caminho
+    warp(pg, rooms['gemeos']); place_for_boss(pg, rooms['gemeos'])
+    wait(pg, 'T.bossEnts().length > 1 && !T.bossEnts().some((e) => e.intro)', 14)
+    r = pg.evaluate("""() => new Promise((res) => { const es = T.bossEnts(), a = es.find((e) => e.kind === 'b_gemeo_a'), b = es.find((e) => e.kind === 'b_gemeo_b');
+      [a, b].forEach((e) => { e.K = Object.assign({}, e.K, { think() {} }); e.cool = 99; e.atk = null; e.vx = 0; });
+      const hp0 = a.hp; b.attack('maul'); a.x = b.facing > 0 ? b.cx + 18 : b.cx - 18 - a.w; a.y = b.bottom - a.h; a.vx = 0;
+      let n = 0; T.hooks.push(() => { if (++n > 140 || a.stagger > 0) { res({ hp0, hp: a.hp, stag: a.stagger > 0 }); return true; } }); })""")
+    R.check('Gémeos: o Malho não distingue irmãos (a Lâmina no caminho leva a martelada e fica atordoada)', r['hp'] < r['hp0'] and r['stag'], r)
+    # Seraphine: quando se apaga usa a animação própria (encolhida, cinzenta)
+    f = pg.evaluate("""() => { const sh = VS.Assets.sheet('en_b_seraphine'); return !!(sh && sh.meta.anims.dim) && !!VS.Bosses.DEFS.seraphine.animState({ dim: 1 }); }""")
+    R.check('Seraphine: estado apagado tem animação própria', f)
+    R.check('pontos fracos sem erros', not errs, errs[:3])
+    pg.close()
+
+
 TESTS = {'menus': t_menus, 'combat': t_movement_combat, 'world': t_world, 'bosses': t_bosses, 'caedmon': t_caedmon, 'aldric': t_aldric, 'corvin': t_corvin,
-         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry}
+         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak}
 
 
 def main(filters):

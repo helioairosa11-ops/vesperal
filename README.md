@@ -1,12 +1,12 @@
 # Vesperal: A Última Chama
 
-> **Versão em desenvolvimento.** O jogo ainda não está terminado: faltam fundos novos, o redesenho de alguns chefes e NPCs, e o teste completo de uma partida do início ao fim.
+> **Versão em desenvolvimento.** O jogo ainda não está terminado: faltam os fundos novos das regiões e o teste completo de uma partida do início ao fim.
 
 Metroidvania 2D de fantasia sombria para o navegador. O Desperto acorda numa cova de cinza, sem nome nem memória, com uma pequena chama no peito, e atravessa uma cidade morta até ao trono de Aldric.
 
 - 7 regiões ligadas num só mapa, com altares de brasas, paredes falsas e passagens secretas
-- 14 chefes, cada um com a sua música; a maioria tem um ponto fraco e uma dica
-- Missões dos NPC e 3 finais
+- 14 chefes, cada um com a sua música, um ponto fraco que se vê na luta e uma dica
+- Missões dos NPC (com retratos no diálogo) e 3 finais
 - Escalada de paredes, esquiva, parry e guarda, armas com ritmos diferentes
 - Português, English, Español e Français
 - Música e sons sintetizados em tempo real (Web Audio), sem ficheiros de áudio

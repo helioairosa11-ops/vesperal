@@ -145,7 +145,13 @@ input[type=range] { accent-color: #c88a4a; width: min(36vw, 200px); }
 .dlg-speaker { font-family: var(--title); color: var(--ember); letter-spacing: .14em; font-size: clamp(14px, 1.7vw, 17px); margin-bottom: 6px; }
 .dlg-text { font-size: clamp(16px, 2vw, 21px); line-height: 1.5; min-height: 2.8em; white-space: pre-line; }
 .dialogue.narration .dlg-text { font-style: italic; text-align: center; color: #e6d8c4; }
-.dlg-next { position: absolute; right: 14px; bottom: 6px; color: var(--ember); font-size: 11px; animation: blink 1.2s infinite; }
+.dlg-next { position: absolute; right: 16px; bottom: 10px; width: 8px; height: 8px; border-right: 2px solid var(--ember); border-bottom: 2px solid var(--ember); transform: rotate(45deg); animation: blink 1.2s infinite; }
+/* retrato de quem fala, numa moldura dourada à esquerda */
+.dlg-portrait { display: none; }
+.dialogue.has-portrait { display: flex; gap: 18px; align-items: flex-start; padding-left: 16px; }
+.dialogue.has-portrait .dlg-portrait { display: block; flex: 0 0 auto; width: clamp(74px, 11vw, 112px); aspect-ratio: 1 / 1; margin-top: -34px; border: 1px solid rgba(214,178,120,.6); box-shadow: 0 0 0 3px rgba(10,8,12,.95), 0 0 0 4px rgba(214,178,120,.35), 0 10px 24px rgba(0,0,0,.7); background: #0a080c; overflow: hidden; }
+.dlg-portrait img, .dlg-portrait canvas { width: 100%; height: 100%; display: block; object-fit: cover; }
+.dlg-body { flex: 1 1 auto; min-width: 0; }
 @keyframes blink { 50% { opacity: .2; } }
 .dlg-choices { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
 .dlg-choice { font-family: var(--body); font-size: clamp(15px, 1.8vw, 18px); text-align: left; background: rgba(255,255,255,.02); color: var(--ink); border: 1px solid var(--line); padding: 7px 14px; cursor: pointer; }

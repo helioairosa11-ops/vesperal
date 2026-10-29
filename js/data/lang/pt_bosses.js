@@ -60,5 +60,9 @@
     tip_matilheira_wall: "A Matilheira embateu na parede e está atordoada — ataca! (Trepar a parede ou subir às plataformas livra-te da investida.)",
     inv_hint_use: "Confirmar: usar / equipar",
     inv_hint_unequip: "Confirmar: desequipar",
+    tip_vael_stuck: "A bola do mangual cravou-se no chão! Ataca enquanto Vael a arranca.",
+    tip_gemeos_friendly: "O Malho não distingue irmãos: põe a Lâmina entre ti e a martelada.",
+    gemeos_friendly: "Irmão…! Sai da frente!",
+    tip_ozias_orb: "O orbe do cálice pode ser devolvido: faz parry quando ele chegar.",
   });
 })(window.VS);

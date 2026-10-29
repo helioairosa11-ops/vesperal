@@ -489,10 +489,14 @@
   // INQUISIDORA VAEL — subchefe da Catedral
   // ======================================================================
   Bosses.def('vael', {
-    cfg: { w: 22, h: 40, hp: 560, music: 'sb_vael', phases: [0.5], heavy: true },
+    cfg: { w: 28, h: 62, hp: 560, music: 'sb_vael', phases: [0.5], heavy: true },
     attacks: {
       flail: { wind: 0.45, act: 0.16, rec: 0.3, dmg: 18, tell: 'white', sfx: 'whip', hb: (e) => front(e, 0, 6, 56, 28), cool: 0.2, onEnd(e) { if (e.phase && Math.random() < 0.6) e.attack('flail2'); } },
-      flail2: { wind: 0.3, act: 0.16, rec: 0.5, dmg: 18, tell: 'white', sfx: 'whip', hb: (e) => front(e, -10, 0, 66, 22) },
+      flail2: { wind: 0.3, act: 0.16, rec: 0.2, dmg: 18, tell: 'white', sfx: 'whip', hb: (e) => front(e, -10, 0, 66, 22), onEnd(e) { e.attack('stuck'); } },
+      // ponto fraco: a bola crava-se no chão depois da varrida baixa e ela tem de a arrancar (fica exposta)
+      stuck: { wind: 0.05, act: 1.5, rec: 0.35, tell: null, sfx: 'crush', onAct(e, g) { G.addShake(0.25); VS.FX.impact(e.cx + e.facing * 34, e.bottom - 2, 'stone', e.facing, 1.2); if (!e.stuckHint) { e.stuckHint = true; VS.UI.toast(VS.t('tip_vael_stuck'), 5); } },
+        during(e, g) { if (Math.random() < 0.08) G.burst(e.cx + e.facing * 34, e.bottom - 2, 2, { color: 'rgba(170,150,130,0.6)', speed: 60, life: 0.5, size: 1.6, g: 300 }); },
+        onEnd(e, g) { A.sfx('break'); G.burst(e.cx + e.facing * 34, e.bottom - 4, 10, { color: '#8a8078', speed: 140, life: 0.6, size: 2, g: 500, kind: 'flake' }); } },
       pillars: { wind: 0.5, act: 1.4, rec: 0.5, tell: null, sfx: 'charge', onAct(e, g) { e.pX = []; const n = e.phase ? 4 : 3; for (let i = 0; i < n; i++) e.pX.push(U.clamp(g.player.cx + (i - (n - 1) / 2) * 80, 40, g.room.pw - 40)); },
         during(e, g) { const a = e.atk; for (const x of e.pX) { if (a.t < 0.6) { if (Math.random() < 0.3) G.emit({ x: x + U.rand(-6, 6), y: e.arena.floor - 2, vy: -40, life: 0.4, size: 1.6, color: '#ff6020', add: true }); } else { if (Math.random() < 0.8) G.emit({ x: x + U.rand(-8, 8), y: e.arena.floor, vy: U.rand(-480, -300), life: 0.5, size: U.rand(2, 5), color: U.pick(['#ffb040', '#ff4010']), add: true, shrink: true }); e.attackHBs.push({ x: x - 12, y: e.arena.floor - 160, w: 24, h: 160, dmg: 18, id: a.id + x, unblockable: true, parryable: false, src: { cx: x } }); } } if (a.t > 0.6 && !a.fired) { a.fired = true; A.sfx('fire'); } } },
       smoke: { wind: 0.4, act: 0.5, rec: 0.3, tell: null, sfx: 'wind', onAct(e, g) { G.burst(e.cx, e.cy, 30, { color: 'rgba(170,150,190,0.5)', speed: 120, life: 1, size: 6 }); const p = g.player; e.x = U.clamp(p.cx - p.facing * 70 - e.w / 2, 40, g.room.pw - 40 - e.w); G.burst(e.cx, e.cy, 30, { color: 'rgba(170,150,190,0.5)', speed: 120, life: 1, size: 6 }); e.face(); }, onEnd(e) { e.attack('flail'); } },
@@ -503,10 +507,11 @@
       e.face(); const d = Math.abs(e.dx());
       if (e.cool > 0) { e.walk(d > 90 ? e.facing : d < 40 ? -e.facing : 0, 80, dt); return; }
       const r = Math.random();
-      if (d < 60) e.attack(r < 0.6 ? 'flail' : 'smoke');
-      else if (d < 200) e.attack(r < 0.4 ? 'pillars' : r < 0.7 ? 'censer' : 'smoke');
+      if (d < 70) e.attack(r < 0.38 ? 'flail2' : r < 0.75 ? 'flail' : 'smoke');
+      else if (d < 200) e.attack(r < 0.3 ? 'pillars' : r < 0.55 ? 'censer' : r < 0.75 ? 'flail2' : 'smoke');
       else e.attack(r < 0.5 ? 'pillars' : 'smoke');
     },
+    damageMult(e) { const a = e.atk; return a && a.name === 'stuck' && a.phase !== 'wind' ? 1.8 : 1; },
     light(e) { G.light(e.cx + e.facing * 16, e.cy, 90, '#ff8040', 0.7, 2); },
   });
 
@@ -514,7 +519,7 @@
   // OS GÉMEOS DA GUARDA — dois guardas coordenados (o Lâmina aparável, o Malho pesado)
   // ======================================================================
   Bosses.def('gemeo_a', {
-    cfg: { w: 20, h: 40, hp: 360, music: 'sb_gemeos', heavy: true },
+    cfg: { w: 26, h: 60, hp: 360, music: 'sb_gemeos', heavy: true },
     attacks: {
       cut: { wind: 0.45, act: 0.12, rec: 0.15, dmg: 16, tell: 'white', hb: (e) => front(e, 4, 6, 40, 28), lunge: 140, cool: 0, onEnd(e) { if (Math.random() < 0.6 + (e.enraged ? 0.3 : 0)) e.attack('cut2'); } },
       cut2: { wind: 0.3, act: 0.12, rec: 0.5, dmg: 16, tell: 'white', hb: (e) => front(e, 4, 4, 40, 32), lunge: 140 },
@@ -528,11 +533,22 @@
       e.attack(d < 60 ? 'cut' : 'dash');
     },
   });
+  // ponto fraco dos Gémeos: o malho não distingue irmãos — a Lâmina no caminho leva com a martelada
+  function brotherHit(e, g, box, dmg, stag) {
+    const o = e.partner;
+    if (!o || o.defeated || o.dead || !U.overlap(box, o)) return;
+    o.hp = Math.max(1, o.hp - dmg); o.flash = 0.2; o.lastHitT = 0; o.atk = null; o.attackHBs = [];
+    o.doStagger(stag, g, true); o.vx = e.facing * 220;
+    G.addShake(0.5); g.hitstop && g.hitstop(0.1); A.sfx('hit_metal'); VS.FX.sparks(o.cx, o.cy - 10, 18, e.facing, { speed: 300 });
+    VS.UI.bark('boss_gemeos', 'gemeos_friendly');
+  }
   Bosses.def('gemeo_b', {
-    cfg: { w: 28, h: 44, hp: 420, music: 'sb_gemeos', heavy: true },
+    cfg: { w: 34, h: 66, hp: 420, music: 'sb_gemeos', heavy: true },
     attacks: {
-      maul: { wind: 0.8, act: 0.15, rec: 0.8, dmg: 26, tell: 'red', sfx: 'swing_heavy', hb: (e) => front(e, 4, 0, 46, 40), armor: true, onAct(e, g) { G.addShake(0.4); A.sfx('crush'); g.spawn(P({ x: e.cx + e.facing * 40, y: e.bottom - 7, vx: e.facing * 210, w: 16, h: 12, dmg: 14, kind: 'shockwave', color: '#c08050', life: 1.3, solid: false, parryable: false, reflectable: false })); } },
-      sweep: { wind: 0.6, act: 0.2, rec: 0.6, dmg: 20, tell: 'white', sfx: 'swing_heavy', hb: (e) => front(e, -8, 4, 60, 26) },
+      maul: { wind: 0.8, act: 0.15, rec: 0.8, dmg: 26, tell: 'red', sfx: 'swing_heavy', hb: (e) => front(e, 4, 0, 46, 40), armor: true,
+        onWind(e) { if (!e.friendHint && e.partner && !e.partner.defeated) { e.friendHint = true; VS.UI.toast(VS.t('tip_gemeos_friendly'), 5); } },
+        onAct(e, g) { G.addShake(0.4); A.sfx('crush'); brotherHit(e, g, front(e, 4, 0, 46, 40), 70, 2.4); g.spawn(P({ x: e.cx + e.facing * 40, y: e.bottom - 7, vx: e.facing * 210, w: 16, h: 12, dmg: 14, kind: 'shockwave', color: '#c08050', life: 1.3, solid: false, parryable: false, reflectable: false })); } },
+      sweep: { wind: 0.6, act: 0.2, rec: 0.6, dmg: 20, tell: 'white', sfx: 'swing_heavy', hb: (e) => front(e, -8, 4, 60, 26), onAct(e, g) { brotherHit(e, g, front(e, -8, 4, 60, 26), 45, 1.6); } },
     },
     think(e, dt, g) {
       if (e.atk) return;

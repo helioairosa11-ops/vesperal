@@ -38,9 +38,12 @@
     b.e('altar', 15, 13, { id: 'a_sanct', name: 'altar_sanct' });
     b.e('lastflame', 15, 4);
     b.e('npc', 23, 14, { id: 'ione', cond: (s) => !s.bosses.aldric || !!s.ending });
-    b.e('npc', 6, 14, { id: 'maren', cond: (s) => s.quests.maren >= 2 && s.quests.maren < 90 });
-    b.e('npc', 26, 14, { id: 'hrolf', cond: (s) => s.quests.hrolf >= 2 && s.quests.hrolf < 50 });
-    b.e('npc', 4, 14, { id: 'teodoro', cond: (s) => s.quests.teodoro === 3 });
+    // a Maren muda-se para o Santuário com a primeira brasa — ou logo que o irmão lá chega (o reencontro é aqui)
+    b.e('npc', 6, 14, { id: 'maren', cond: (s) => (s.embers >= 1 || s.quests.maren >= 2 || s.quests.teodoro === 3) && s.quests.maren < 90 });
+    // o Hrolf muda-se para o Santuário depois de cair o Caedmon ("a menina Ione não devia estar sozinha") e fica
+    // lá depois de saber a verdade; se lhe mentiram parte à procura da mestra (estado 60)
+    b.e('npc', 26, 14, { id: 'hrolf', cond: (s) => (s.bosses.caedmon || s.quests.hrolf >= 50) && s.quests.hrolf !== 60 });
+    b.e('npc', 3, 14, { id: 'teodoro', cond: (s) => s.quests.teodoro === 3 });
     b.e('inscription', 9, 13, { id: 'i03' });
     b.e('trigger', 10, 9, { h: 6, once: 'met_ione_trigger', run: (g) => VS.Story.meetIone(g) });
     b.prop('statue', 4, 14); b.prop('statue', 27, 14);
@@ -81,7 +84,7 @@
     b.plat(20, 26, 11); b.plat(34, 40, 10);
     b.solid(4, 13, 5, 14);
     b.item('ash_steel', 37, 9);
-    b.e('npc', 9, 14, { id: 'hrolf', cond: (s) => s.quests.hrolf < 2 });
+    b.e('npc', 9, 14, { id: 'hrolf', cond: (s) => !s.bosses.caedmon && s.quests.hrolf < 50 });
     b.enemy('husk', 16, 14); b.enemy('husk', 30, 14); b.enemy('crawler', 44, 14); b.enemy('wisp', 57, 8);
     b.e('urn', 24, 14); b.e('urn', 46, 14); b.e('urn', 60, 14);
     b.prop('anvil', 6, 14); b.prop('crucible', 3, 12);

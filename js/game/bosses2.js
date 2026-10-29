@@ -224,11 +224,12 @@
   // BISPO OZIAS — pilares de luz, vidro, orbe do cálice (reflete com parry), varrimento (agachar ou saltar)
   // ======================================================================
   B.def('ozias', {
-    cfg: { w: 24, h: 46, hp: 900, music: 'b_ozias', flying: true, phases: [0.6, 0.3], introTime: 1.8, heavy: true },
+    cfg: { w: 30, h: 64, hp: 900, music: 'b_ozias', flying: true, phases: [0.6, 0.3], introTime: 1.8, heavy: true },
+    sheetAnchor: 'center',
     attacks: {
       pillars: { wind: 0.3, act: 1.3, rec: 0.4, tell: null, sfx: 'chime', onAct(e, g) { const p = g.player; const n = 3 + e.phase; e.plX = []; for (let i = 0; i < n; i++) e.plX.push(U.clamp(p.cx + (i - (n - 1) / 2) * 70, 30, g.room.pw - 30)); }, during(e, g) { columns(e, g, e.plX, { warn: 0.75, h: 300, w: 13, dmg: 20, sfx: 'light', warnCol: '#ffe8a0', cols: ['#fff8e0', '#ffe0a0'] }); } },
       shards: { wind: 0.5, act: 0.1, rec: 0.7, tell: null, sfx: 'glass', onAct(e, g) { const n = 7 + e.phase * 3; for (let i = 0; i < n; i++) g.spawn(P({ x: U.rand(30, g.room.pw - 30), y: U.rand(-60, 0), vx: U.rand(-20, 20), vy: U.rand(160, 230), w: 7, h: 7, dmg: 11, kind: 'glass', color: U.pick(['#ff6080', '#6080ff', '#ffd060', '#a060ff']), life: 4, solid: true })); } },
-      orb: { wind: 0.7, act: 0.1, rec: 0.6, tell: 'white', sfx: 'light', onAct(e, g) { const p = g.player; const a = Math.atan2(p.cy - e.cy, p.cx - e.cx); g.spawn(P({ x: e.cx, y: e.cy, vx: Math.cos(a) * 140, vy: Math.sin(a) * 140, w: 18, h: 18, dmg: 18, kind: 'holy', color: '#ffe8a0', life: 6, solid: false, homing: 0.9, reflectable: true, isChaliceOrb: true })); } },
+      orb: { wind: 0.7, act: 0.1, rec: 0.6, tell: 'white', sfx: 'light', onAct(e, g) { if (!e.orbHint) { e.orbHint = true; VS.UI.toast(VS.t('tip_ozias_orb'), 5); } const p = g.player; const a = Math.atan2(p.cy - e.cy, p.cx - e.cx); g.spawn(P({ x: e.cx, y: e.cy, vx: Math.cos(a) * 140, vy: Math.sin(a) * 140, w: 18, h: 18, dmg: 18, kind: 'holy', color: '#ffe8a0', life: 6, solid: false, homing: 0.9, reflectable: true, isChaliceOrb: true })); } },
       sweep: { wind: 0.9, act: 0.9, rec: 0.6, tell: null, sfx: 'light', onWind(e, g) { e.sweepLow = Math.random() < 0.5; VS.UI.toast(VS.t(e.sweepLow ? 'tip_jump' : 'tip_crouch'), 1.4); }, during(e, g) { const a = e.atk; const k = a.t / 0.9; const fromLeft = e.cx > g.room.pw / 2; const x = fromLeft ? k * g.room.pw : g.room.pw * (1 - k); const y = e.sweepLow ? e.arena.floor - 14 : e.arena.floor - 34; e.sweepLine = { y, x }; e.attackHBs.push({ x: x - 30, y: y - 6, w: 60, h: 12, dmg: 20, id: a.id, unblockable: true, parryable: false, src: { cx: x } }); }, onEnd(e) { e.sweepLine = null; } },
       blink: { wind: 0.3, act: 0.3, rec: 0.2, tell: null, sfx: 'light', onAct(e, g) { G.burst(e.cx, e.cy, 20, { color: '#fff0c0', speed: 120, life: 0.5, size: 1.6, add: true }); const spots = [g.room.pw * 0.2, g.room.pw * 0.5, g.room.pw * 0.8]; let best = spots[0], bd = 0; spots.forEach((s) => { const d = Math.abs(s - g.player.cx); if (d > bd) { bd = d; best = s; } }); e.x = best - e.w / 2; e.y = e.arena.floor - 120; G.burst(e.cx, e.cy, 20, { color: '#fff0c0', speed: 120, life: 0.5, size: 1.6, add: true }); } },
     },
@@ -375,13 +376,16 @@
   // O ECO DE SERAPHINE — chefe secreto (final 3): devolve a luz com parries
   // ======================================================================
   B.def('seraphine', {
-    cfg: { w: 30, h: 50, hp: 1000, music: 'b_seraphine', flying: true, phases: [0.6, 0.3], introTime: 2.4, heavy: true },
+    cfg: { w: 30, h: 64, hp: 1000, music: 'b_seraphine', flying: true, phases: [0.6, 0.3], introTime: 2.4, heavy: true },
     attacks: {
       burst: { wind: 0.8, act: 0.1, rec: 0.7, tell: null, sfx: 'light', onAct(e, g) { const n = 10 + e.phase * 4; const off = Math.random(); for (let i = 0; i < n; i++) { const a = (i + off) / n * U.TAU; g.spawn(P({ x: e.cx, y: e.cy, vx: Math.cos(a) * 120, vy: Math.sin(a) * 120, w: 12, h: 12, dmg: 14, kind: 'light', color: '#fff0c0', life: 5, solid: false, reflectable: true, isLight: true })); } e.count++; } },
       lance: { wind: 0.6, act: 0.6, rec: 0.5, tell: 'white', sfx: 'light', during(e, g) { const a = e.atk; const k = Math.floor(a.t / 0.2); if (k !== a.k && k < 3) { a.k = k; const p = g.player; const ang = Math.atan2(p.cy - e.cy, p.cx - e.cx); g.spawn(P({ x: e.cx, y: e.cy, vx: Math.cos(ang) * 230, vy: Math.sin(ang) * 230, w: 14, h: 14, dmg: 16, kind: 'light', color: '#fff8e0', life: 4, solid: false, reflectable: true, isLight: true })); A.sfx('chime'); } }, onEnd(e) { e.count++; } },
       embrace: { wind: 0.8, act: 0.9, rec: 0.6, tell: 'red', sfx: 'wind', onAct(e, g) { const p = g.player; const a = Math.atan2(p.cy - e.cy, p.cx - e.cx); e.vx = Math.cos(a) * 360; e.vy = Math.sin(a) * 360; }, during(e) { e.attackHBs.push({ x: e.x, y: e.y, w: e.w, h: e.h, dmg: 26, id: e.atk.id, unblockable: true, parryable: false, src: e }); }, onEnd(e) { e.vx *= 0.2; e.vy *= 0.2; e.count++; } },
       beams: { wind: 0.3, act: 1.3, rec: 0.5, tell: null, sfx: 'chime', onAct(e, g) { const p = g.player; e.plX = [p.cx, p.cx - 90, p.cx + 90]; }, during(e, g) { columns(e, g, e.plX, { warn: 0.8, h: 300, w: 12, dmg: 18, sfx: 'light', warnCol: '#ffffff', cols: ['#ffffff', '#fff0c0'] }); }, onEnd(e) { e.count++; } },
     },
+    sheetAnchor: 'center',
+    // apagada: animação própria (encolhida, cinzenta) enquanto dura a janela para lhe bater
+    animState(e) { return e.dim > 0 && !e.defeated ? { anim: 'dim' } : null; },
     init(e) { e.count = 0; e.dim = 0; },
     think(e, dt, g) {
       const p = g.player;

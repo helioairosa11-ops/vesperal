@@ -8,7 +8,7 @@
     b.fill(); b.carve(0, 3, 31, 14); b.ragged(4, 27, 3, 2);
     b.carve(14, 0, 17, 2); b.plat(13, 18, 12); b.plat(14, 17, 9); b.plat(13, 18, 6); b.plat(14, 17, 3);
     b.e('altar', 6, 14, { id: 'a_r2_gate', name: 'altar_r2_gate' });
-    b.e('npc', 24, 14, { id: 'maren', cond: (s) => s.embers < 1 && s.quests.maren < 90 });
+    b.e('npc', 24, 14, { id: 'maren', cond: (s) => s.embers < 1 && s.quests.maren < 2 && s.quests.teodoro !== 3 });
     b.e('inscription', 10, 14, { id: 'i08' });
     b.prop('brazier', 2, 14); b.prop('brazier', 29, 14);
   });

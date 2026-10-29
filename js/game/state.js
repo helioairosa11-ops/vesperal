@@ -49,7 +49,7 @@
 
     // ---------- itens ----------
     count(id) { return this.items[id] || 0; }
-    has(id) { return this.count(id) > 0; }
+    has(id) { return this.count(id) > 0 || (this.relics || []).includes(id); }
     give(id, n) {
       n = n === undefined ? 1 : n;
       const it = VS.ITEMS[id];

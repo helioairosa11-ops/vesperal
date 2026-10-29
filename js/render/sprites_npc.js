@@ -77,5 +77,20 @@
   N.hrolf_body = (ctx, n) => body(ctx, n, '#4a3428');
   N.teodoro_body = (ctx, n) => body(ctx, n, '#2a2232');
 
-  VS.SpritesNPC = { draw(ctx, n, g) { (N[n.nid] || N.teodoro)(ctx, n, g); } };
+  // folhas do ateliê (npc_<id>): parado, a falar (enquanto o diálogo dela está aberto) e caído (consequências)
+  function sheetDraw(ctx, n) {
+    const dead = /_body$/.test(n.nid), id = n.nid.replace(/_body$/, '');
+    const sh = VS.Assets.sheet('npc_' + id);
+    if (!sh || !VS.Assets.ok(sh.img)) return false;
+    const A = sh.meta.anims, an = dead && A.dead ? 'dead' : n.talking && A.talk ? 'talk' : 'idle';
+    const f = VS.Assets.frame(sh, an, (n.t || 0) * A[an].fps + (n.seed || 0));
+    if (!f) return false;
+    ctx.save(); ctx.translate(n.cx, n.bottom); ctx.scale(dead ? 1 : n.facing, 1);
+    VS.Assets.drawFrame(ctx, sh, f);
+    ctx.restore();
+    if (id === 'ione' && !dead) glow(ctx, n.cx + n.facing * 1.5, n.bottom - 19, 16, '#ffd8a0', 0.22 + Math.sin((n.t || 0) * 2) * 0.04);
+    if (dead && n.interactable) glow(ctx, n.cx, n.bottom - 6, 12, '#ffe8c0', 0.3 + Math.sin(n.t * 3) * 0.1);
+    return true;
+  }
+  VS.SpritesNPC = { draw(ctx, n, g) { if (sheetDraw(ctx, n)) return; (N[n.nid] || N.teodoro)(ctx, n, g); } };
 })(window.VS);

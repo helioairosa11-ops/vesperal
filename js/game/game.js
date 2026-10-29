@@ -222,7 +222,8 @@
       let best = null, bd = 1e9;
       if (!p.action && p.onGround) for (const e of this.ents) {
         if (!e.interactable || e.remove || (e.canInteract && !e.canInteract(this))) continue;
-        const d = Math.abs(e.cx - p.cx) + Math.abs(e.bottom - p.bottom) * 0.5;
+        // entre dois alvos perto, prefere aquele para quem se está a olhar
+        const d = Math.abs(e.cx - p.cx) + Math.abs(e.bottom - p.bottom) * 0.5 + ((e.cx - p.cx) * p.facing < -4 ? 14 : 0);
         if (d < (e.range || 28) && d < bd) { best = e; bd = d; }
       }
       this.interactTarget = best;

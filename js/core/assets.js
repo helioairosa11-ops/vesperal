@@ -25,13 +25,16 @@
     for (const e of def.ents) {
       if (e.t === 'boss' && e.boss) { Assets.sheet('en_b_' + e.boss); if (e.boss === 'gemeos') { Assets.sheet('en_b_gemeo_a'); Assets.sheet('en_b_gemeo_b'); } }
       else if (e.t === 'enemy' && e.k) Assets.sheet('en_' + e.k);
+      else if (e.t === 'npc' && e.id) Assets.sheet('npc_' + String(e.id).replace(/_body$/, ''));
     }
   };
   // folha de sprites: imagem + metadados (VS.SPRITE_META, gerados pelo ateliê)
+  const sheets = {};
   Assets.sheet = function (name) {
+    if (sheets[name]) return sheets[name];
     const meta = VS.SPRITE_META && VS.SPRITE_META[name];
     if (!meta) return null;
-    return { img: Assets.img('sprites/' + name + '.png'), meta };
+    return (sheets[name] = { img: Assets.img('sprites/' + name + '.png'), meta });
   };
   // espera que uma lista de caminhos esteja pronta (para o ecrã de carregamento)
   Assets.ready = function (paths, timeout = 15000) {

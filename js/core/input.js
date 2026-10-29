@@ -28,6 +28,7 @@
     ACTIONS, UI_ACTIONS, REMAPPABLE, DEFAULT_KEYS,
     keys: U.deepClone(DEFAULT_KEYS),
     raw: {},          // código -> pressionado
+    latch: {},        // código -> premido desde o último passo (um toque mais curto que um passo lógico não se perde)
     touchTap: {},     // toques rápidos (premido e largado no mesmo frame): contam como um frame premido
     touch: {},        // ação -> pressionado (controlos táteis)
     touchAxis: { x: 0, y: 0 },
@@ -59,13 +60,13 @@
         if (e.code !== 'Escape') rb.cb(e.code); else rb.cb(null);
         return;
       }
-      In.raw[e.code] = true; In.lastDevice = 'keyboard';
+      In.raw[e.code] = true; if (!e.repeat) In.latch[e.code] = true; In.lastDevice = 'keyboard';
       if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code)) e.preventDefault();
     });
     window.addEventListener('keyup', (e) => { In.raw[e.code] = false; });
-    window.addEventListener('blur', () => { In.raw = {}; In.touch = {}; });
+    window.addEventListener('blur', () => { In.raw = {}; In.latch = {}; In.touch = {}; });
     if (canvas) {
-      canvas.addEventListener('mousedown', (e) => { if (In.rebinding) { const rb = In.rebinding; In.rebinding = null; rb.cb('Mouse' + e.button); return; } In.raw['Mouse' + e.button] = true; In.lastDevice = 'keyboard'; });
+      canvas.addEventListener('mousedown', (e) => { if (In.rebinding) { const rb = In.rebinding; In.rebinding = null; rb.cb('Mouse' + e.button); return; } In.raw['Mouse' + e.button] = true; In.latch['Mouse' + e.button] = true; In.lastDevice = 'keyboard'; });
       window.addEventListener('mouseup', (e) => { In.raw['Mouse' + e.button] = false; });
       canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     }
@@ -82,7 +83,7 @@
 
   function keyDown(action) {
     const codes = In.keys[action] || UI_KEYS[action] || [];
-    for (const c of codes) if (In.raw[c]) return true;
+    for (const c of codes) if (In.raw[c] || In.latch[c]) return true;
     if (action.startsWith('ui_')) return false;
     return false;
   }
@@ -126,6 +127,7 @@
       if (s.pressed) In.buffer[a] = 0; else In.buffer[a] += dt;
     }
     In.touchTap = {};
+    In.latch = {};
   };
 
   In.down = (a) => In.state[a].down;
@@ -140,6 +142,7 @@
   };
   In.clearAll = function () {
     for (const a in In.state) { In.state[a].pressed = false; In.buffer[a] = 99; }
+    In.latch = {};
   };
   In.startRebind = function (action, cb) { In.rebinding = { action, cb }; };
   In.keyLabel = function (code) {

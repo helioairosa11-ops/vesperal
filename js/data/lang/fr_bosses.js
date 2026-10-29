@@ -60,5 +60,9 @@
     tip_matilheira_wall: "La Mère de Meute s'est fracassée contre le mur et est étourdie — frappe ! (Grimper au mur ou sur les plateformes te protège de sa charge.)",
     inv_hint_use: "Valider : utiliser / équiper",
     inv_hint_unequip: "Valider : déséquiper",
+    tip_vael_stuck: "La boule du fléau s'est plantée dans le sol ! Frappe pendant que Vael l'arrache.",
+    tip_gemeos_friendly: "Le Marteau ne distingue pas les frères : place la Lame entre toi et le coup.",
+    gemeos_friendly: "Frère… ! Écarte-toi !",
+    tip_ozias_orb: "L'orbe du calice peut être renvoyé : pare-le à son arrivée.",
   });
 })(window.VS);

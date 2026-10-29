@@ -185,9 +185,9 @@
   // ---------- NPC ----------
   class NPC extends VS.Entity {
     constructor(d) { super(d.x * T, (d.y + 1) * T - 30, 16, 30); this.nid = d.id; this.interactable = true; this.range = 34; this.z = 1; this.facing = d.face || -1; this.anim = 0; }
-    interact(game) { const n = VS.NPCS[this.nid]; if (n) { this.facing = game.player.cx < this.cx ? -1 : 1; n.talk(game, this); } }
+    interact(game) { const n = VS.NPCS[this.nid]; if (n) { this.facing = game.player.cx < this.cx ? -1 : 1; this.talking = true; n.talk(game, this); } }
     promptKey() { return 'act_talk'; }
-    update(dt, game) { super.update(dt, game); const n = VS.NPCS[this.nid]; if (n && n.update) n.update(dt, game, this); }
+    update(dt, game) { super.update(dt, game); if (this.talking && !VS.UI.dlg) this.talking = false; const n = VS.NPCS[this.nid]; if (n && n.update) n.update(dt, game, this); }
     emitLight() { const n = VS.NPCS[this.nid]; if (n && n.light) G.light(this.cx, this.cy, n.light[1], n.light[0], 0.8, 1); }
     draw(ctx, game) { VS.SpritesNPC.draw(ctx, this, game); }
   }
