@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<title>Ateliê de Vesperal</title>
+<style>
+  :root { --bg: #111; }
+  html, body { margin: 0; background: var(--bg); color: #ddd; font: 12px monospace; }
+</style>
+</head>
+<body>
+<script src="lib.js"></script>
+<script src="kit.js"></script>
+<script src="chars/hero.js"></script>
+<script src="chars/en_crawler.js"></script>
+<script src="chars/en_husk.js"></script>
+<script src="chars/en_wisp.js"></script>
+<script src="chars/en_sexton.js"></script>
+<script src="chars/en_courtier.js"></script>
+<script src="chars/en_sentinel.js"></script>
+<script src="chars/en_crossbow.js"></script>
+<script src="chars/en_hound.js"></script>
+<script src="chars/en_thrall.js"></script>
+<script src="chars/en_slag.js"></script>
+<script src="chars/en_smelter.js"></script>
+<script src="chars/en_thornmaid.js"></script>
+<script src="chars/en_drowned.js"></script>
+<script src="chars/en_moth.js"></script>
+<script src="chars/en_gargoyle.js"></script>
+<script src="chars/en_acolyte.js"></script>
+<script src="chars/en_raven.js"></script>
+<script src="chars/en_penitent.js"></script>
+<script src="chars/en_vitrail.js"></script>
+<script src="chars/en_choir.js"></script>
+<script src="chars/en_royalguard.js"></script>
+<script src="chars/en_torch.js"></script>
+<script src="chars/bo_coveiro.js"></script>
+<script src="chars/bo_aldric.js"></script>
+<script src="chars/bo_matilheira.js"></script>
+<script src="chars/bo_caedmon.js"></script>
+<script src="chars/bo_automato.js"></script>
+<script src="chars/bo_hilde.js"></script>
+<script src="chars/bo_mariposa.js"></script>
+<script src="chars/bo_elowen.js"></script>
+<script src="chars/bo_sineiro.js"></script>
+<script src="chars/bo_corvin.js"></script>
+<script src="weapons.js"></script>
+<script src="fx_proj.js"></script>
+<script src="hud.js"></script>
+<script src="icons.js"></script>
+<script>
+  // API para o construtor (build.py): ART.run(nome) → { png, meta } ; ART.list() → nomes
+  window.ART.list = () => Object.keys(window.ART.registry);
+  window.ART.run = (name) => {
+    const r = window.ART.registry[name]();
+    if (r.canvas) return { png: r.canvas.toDataURL('image/png'), meta: r.meta || null, kind: r.kind || 'sheet' };
+    if (r.images) return { images: Object.fromEntries(Object.entries(r.images).map(([k, cv]) => [k, cv.toDataURL('image/png')])), meta: r.meta || null, kind: 'images' };
+    return null;
+  };
+  window.ART.previewAny = (name) => (name.startsWith('hero') || name === 'weapons' ? (window.ART.preview ? window.ART.preview(name) : null) : window.ART.previewSheet(window.ART.registry[name](), 3, window.ART.previewCell && window.ART.previewCell[name]));
+  document.title = 'ready';
+</script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+'use strict';
+(window.VS = window.VS || {}).WEAPON_META = {"desperto":{"ox":20.4,"oy":16.4,"scale":4,"len":13.6,"back":3.6,"dual":false,"two":0},"navalhas":{"ox":17.2,"oy":13.2,"scale":4,"len":7.2,"back":2.8,"dual":true,"two":0},"malho":{"ox":19.6,"oy":20.4,"scale":4,"len":14.4,"back":3.4,"dual":false,"two":2.2},"alabarda":{"ox":24,"oy":19.6,"scale":4,"len":20.5,"back":4.5,"dual":false,"two":2.6},"espirito":{"ox":18.8,"oy":16.4,"scale":4,"len":13.8,"back":3.2,"dual":false,"two":0},"montante":{"ox":22.8,"oy":22,"scale":4,"len":20,"back":4.2,"dual":false,"two":2.6}};

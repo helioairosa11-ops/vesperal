@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#07060a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Vesperal: A Última Chama</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&display=swap">
+<link rel="stylesheet" href="css/game.css">
+</head>
+<body>
+<div id="wrap">
+  <canvas id="game"></canvas>
+  <div id="ui">
+    <div id="area-title"></div>
+    <div id="toast"></div>
+  </div>
+  <div id="touch"></div>
+  <div id="rotate"><div>⟳</div><div data-i18n="rotate_hint">Rode o dispositivo</div></div>
+  <div id="loading">VESPERAL</div>
+</div>
+<!-- núcleo -->
+<script src="js/core/util.js"></script>
+<script src="js/core/i18n.js"></script>
+<script src="js/core/input.js"></script>
+<script src="js/core/save.js"></script>
+<script src="js/core/audio.js"></script>
+<script src="js/core/assets.js"></script>
+<!-- dados -->
+<script src="js/data/music.js"></script>
+<script src="js/data/music_bosses.js"></script>
+<script src="js/data/audio_overrides.js"></script>
+<script src="js/data/regions.js"></script>
+<script src="js/data/items.js"></script>
+<script src="js/data/weapons.js"></script>
+<!-- recursos gerados pelo ateliê (tools/art): metadados das folhas de sprites e das armas -->
+<script src="assets/weapons/weapons.js"></script>
+<script src="assets/sprites/_index.js"></script>
+<script src="assets/ui/hud.js"></script>
+<script src="js/data/lang/en.js"></script>
+<script src="js/data/lang/pt.js"></script>
+<script src="js/data/lang/es.js"></script>
+<script src="js/data/lang/fr.js"></script>
+<script src="js/data/lang/en_story.js"></script>
+<script src="js/data/lang/en_lore.js"></script>
+<script src="js/data/lang/pt_story.js"></script>
+<script src="js/data/lang/pt_lore.js"></script>
+<script src="js/data/lang/es_story.js"></script>
+<script src="js/data/lang/es_lore.js"></script>
+<script src="js/data/lang/fr_story.js"></script>
+<script src="js/data/lang/fr_lore.js"></script>
+<script src="js/data/lang/pt_arsenal.js"></script>
+<script src="js/data/lang/en_arsenal.js"></script>
+<script src="js/data/lang/es_arsenal.js"></script>
+<script src="js/data/lang/fr_arsenal.js"></script>
+<script src="js/data/lang/pt_bosses.js"></script>
+<script src="js/data/lang/en_bosses.js"></script>
+<script src="js/data/lang/es_bosses.js"></script>
+<script src="js/data/lang/fr_bosses.js"></script>
+<!-- render -->
+<script src="js/render/gfx.js"></script>
+<script src="js/render/tiles.js"></script>
+<script src="js/render/backgrounds.js"></script>
+<script src="js/render/deco.js"></script>
+<script src="js/render/sprites.js"></script>
+<script src="js/render/sprites_obj.js"></script>
+<script src="js/render/sprites_enemies.js"></script>
+<script src="js/render/sprites_bosses.js"></script>
+<script src="js/render/sprites_npc.js"></script>
+<script src="js/render/hero_render.js"></script>
+<script src="js/render/fx.js"></script>
+<script src="js/render/enemy_render.js"></script>
+<!-- jogo -->
+<script src="js/game/world.js"></script>
+<script src="js/game/state.js"></script>
+<script src="js/game/entity.js"></script>
+<script src="js/game/player.js"></script>
+<script src="js/game/objects.js"></script>
+<script src="js/game/enemies.js"></script>
+<script src="js/game/bosses.js"></script>
+<script src="js/game/bosses2.js"></script>
+<script src="js/game/game.js"></script>
+<script src="js/game/story.js"></script>
+<script src="js/game/npcs.js"></script>
+<script src="js/game/endings.js"></script>
+<!-- mundo -->
+<script src="js/data/builder.js"></script>
+<script src="js/data/lore.js"></script>
+<script src="js/data/rooms_r1.js"></script>
+<script src="js/data/rooms_r2.js"></script>
+<script src="js/data/rooms_r3.js"></script>
+<script src="js/data/rooms_r4.js"></script>
+<script src="js/data/rooms_r5.js"></script>
+<script src="js/data/rooms_r6.js"></script>
+<script src="js/data/rooms_r7.js"></script>
+<!-- interface -->
+<script src="js/ui/icons.js"></script>
+<script src="js/ui/ui.js"></script>
+<script src="js/ui/menus.js"></script>
+<script src="js/ui/touch.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
