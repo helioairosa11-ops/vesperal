@@ -49,6 +49,7 @@
     set_fpscap: "Frame rate limit",
     fps_display: "Display",
     set_showfps: "Show frame rate",
+    set_fullscreen: "Fullscreen",
     set_particles: "Particles and effects",
     set_video_note: "If the game isn't smooth, choose Medium or Low quality and a 60 limit. Automatic lowers the internal resolution on its own when the PC can't keep up.",
     hint_climb: "Against a wall in mid-air: ↑ climbs, ↓ slides. Stamina refills on the ground.",

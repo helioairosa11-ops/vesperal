@@ -236,16 +236,18 @@
         if (rnd() < 0.6) { c.fillStyle = '#6a6458'; c.beginPath(); c.arc(x + 17, y + 20, 7, 0, U.TAU); c.fill(); c.fillStyle = '#08080c'; c.fillRect(x + 12, y + 18, 3, 3); c.fillRect(x + 19, y + 18, 3, 3); } }
       fogGrad(c, R.fog, 100, 360, 0.5);
     } });
-    layers.push({ p: 0.4, draw(c, rnd) { for (let i = 0; i < 6; i++) arch(c, i * 170, 360, 150, 250, 20, U.mix(R.stoneDark, '#000000', 0.2)); } });
+    layers.push({ p: 0.4, draw(c, rnd) { for (let i = 0; i < 6; i++) arch(c, 5 + i * 160, 360, 150, 250, 20, U.mix(R.stoneDark, '#000000', 0.2)); } });
   };
 
   function buildRegion(R) {
     const layers = [];
     (STYLES[R.bg] || STYLES.city)(R, layers);
     const rnd = U.rng(U.hash(R.key + 'bg'));
+    // resolução das faixas: a da camada de fundo no ecrã (mais nítida num monitor grande), entre 1,5 e 2,25
+    const bs = Math.max(BS, Math.min(2.25, (VS.Gfx && VS.Gfx.bgScale) || BS));
     layers.forEach((L) => {
-      const can = document.createElement('canvas'); can.width = LW * BS; can.height = LH * BS;
-      const c = can.getContext('2d'); c.scale(BS, BS);
+      const can = document.createElement('canvas'); can.width = Math.round(LW * bs); can.height = Math.round(LH * bs);
+      const c = can.getContext('2d'); c.scale(can.width / LW, can.height / LH);
       L.draw(c, rnd);
       // ponta-a-ponta: duplicar a borda para emendar
       L.canvas = can;
@@ -254,7 +256,15 @@
   }
 
   const BG = {};
-  BG.get = function (R) { if (!cache[R.key]) cache[R.key] = buildRegion(R); return cache[R.key]; };
+  // só se guardam os fundos das últimas regiões visitadas (cada uma ocupa várias telas grandes — no telemóvel conta)
+  const recent = [];
+  BG.get = function (R) {
+    if (!cache[R.key]) {
+      cache[R.key] = buildRegion(R); recent.push(R.key);
+      while (recent.length > 3) { const old = recent.shift(), set = cache[old]; if (set) for (const L of set.layers) { L.canvas.width = 1; L.canvas.height = 1; } delete cache[old]; }
+    }
+    return cache[R.key];
+  };
   BG.drawSky = function (ctx, R, time, vw, vh) {
     vw = vw || U.VIEW_W; vh = vh || U.VIEW_H;
     const k = R.key + vh; let g = skyG[k];
@@ -276,7 +286,9 @@
       if (oy > 0) { ctx.fillStyle = R.stoneDark; ctx.fillRect(0, oy + LH - 1, vw, vh); }
     }
   };
-  BG.clear = () => { for (const k in cache) delete cache[k]; };
+  BG.clear = () => { for (const k in cache) delete cache[k]; recent.length = 0; };
 
+  // as regiões podem ser redesenhadas noutro ficheiro (bg_art.js) — expõe o essencial
+  BG.STYLES = STYLES; BG.LW = LW; BG.LH = LH; BG.fogGrad = fogGrad;
   VS.BG = BG;
 })(window.VS);

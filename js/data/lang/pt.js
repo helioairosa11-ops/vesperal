@@ -2,7 +2,7 @@
 'use strict';
 (function (VS) {
   VS.LANG.pt = Object.assign(VS.LANG.pt || {}, {
-    subtitle: 'A Última Chama', mm_hint: 'Teclado, comando ou toque', mm_continue: 'Continuar', mm_play: 'Jogar', mm_settings: 'Definições', mm_credits: 'Créditos', mm_endings: 'Finais vistos: {n} de 3',
+    subtitle: 'A Última Chama', mm_hint: 'Teclado, comando ou toque', mm_continue: 'Continuar', mm_play: 'Jogar', mm_settings: 'Definições', mm_credits: 'Créditos', mm_quit: 'Sair do jogo', mm_endings: 'Finais vistos: {n} de 3',
     slots_title: 'Escolhe uma memória', slot_info: '{time} · Brasas {embers}/6 · {pct}%', slot_empty: 'Memória vazia — novo jogo', slot_n: 'Memória {n}', slot_load: 'Continuar', slot_new: 'Recomeçar nesta memória', slot_erase: 'Apagar', back: 'Voltar',
     confirm_overwrite: 'Começar de novo apaga esta memória. Continuar?', confirm_erase: 'Apagar esta memória para sempre?', confirm_quit: 'Sair para o menu principal? O progresso foi guardado.', yes: 'Sim', no: 'Não', ok: 'Aceitar', close: 'Fechar', copy: 'Copiar', copied: 'Copiado.',
     pause_title: 'Pausa', pause_resume: 'Continuar', pause_map: 'Mapa', pause_journal: 'Diário', pause_inventory: 'Inventário', pause_settings: 'Definições', pause_quit: 'Sair para o menu principal', pause_info: 'Tempo {time} · Conclusão {pct}% · Mortes {deaths}',

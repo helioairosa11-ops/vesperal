@@ -49,6 +49,7 @@
     set_fpscap: "Limite de imagens/s",
     fps_display: "Do ecrã",
     set_showfps: "Mostrar imagens/s",
+    set_fullscreen: "Ecrã inteiro",
     set_particles: "Partículas e efeitos",
     set_video_note: "Se o jogo não estiver fluido, escolhe qualidade Média ou Baixa e limite de 60. A Automática baixa a resolução interna sozinha quando o PC não aguenta.",
     hint_climb: "Encostada à parede no ar: ↑ trepa, ↓ desliza. O fôlego renova-se no chão.",

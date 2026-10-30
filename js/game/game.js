@@ -469,7 +469,9 @@
       bc.setTransform(G.bgScale, 0, 0, G.bgScale, 0, 0);
       VS.BG.drawSky(bc, R, this.time);
       if (this.lightning > 0) { bc.fillStyle = `rgba(200,220,255,${this.lightning * 0.35})`; bc.fillRect(0, 0, U.VIEW_W, U.VIEW_H); }
-      VS.BG.draw(bc, R, cam, room.ph, G.bgScale);
+      const rdef = VS.ROOMS[room.id], bcam = this._bgCam || (this._bgCam = { x: 0, y: 0 });
+      bcam.x = cam.x + ((rdef && rdef.x) || 0) * U.CELL_W * U.TILE; bcam.y = cam.y;
+      VS.BG.draw(bc, R, bcam, room.ph, G.bgScale);
       bc.fillStyle = R.haze; bc.fillRect(0, 0, U.VIEW_W, U.VIEW_H);
       ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = true;
       ctx.drawImage(G.bgCanvas, 0, 0, G.bgCanvas.width, G.bgCanvas.height, 0, 0, G.canvas.width, G.canvas.height);

@@ -2,7 +2,7 @@
 'use strict';
 (function (VS) {
   VS.LANG.es = Object.assign(VS.LANG.es || {}, {
-    subtitle: 'La Última Llama', mm_hint: 'Teclado, mando o pantalla táctil', mm_continue: 'Continuar', mm_play: 'Jugar', mm_settings: 'Ajustes', mm_credits: 'Créditos', mm_endings: 'Finales vistos: {n} de 3',
+    subtitle: 'La Última Llama', mm_hint: 'Teclado, mando o pantalla táctil', mm_continue: 'Continuar', mm_play: 'Jugar', mm_settings: 'Ajustes', mm_credits: 'Créditos', mm_quit: 'Salir del juego', mm_endings: 'Finales vistos: {n} de 3',
     slots_title: 'Elige una memoria', slot_info: '{time} · Brasas {embers}/6 · {pct}%', slot_empty: 'Memoria vacía — partida nueva', slot_n: 'Memoria {n}', slot_load: 'Continuar', slot_new: 'Empezar de nuevo en esta memoria', slot_erase: 'Borrar', back: 'Volver',
     confirm_overwrite: 'Empezar de nuevo borra esta memoria. ¿Continuar?', confirm_erase: '¿Borrar esta memoria para siempre?', confirm_quit: '¿Salir al menú principal? Tu progreso se ha guardado.', yes: 'Sí', no: 'No', ok: 'Aceptar', close: 'Cerrar', copy: 'Copiar', copied: 'Copiado.',
     pause_title: 'Pausa', pause_resume: 'Continuar', pause_map: 'Mapa', pause_journal: 'Diario', pause_inventory: 'Inventario', pause_settings: 'Ajustes', pause_quit: 'Salir al menú principal', pause_info: 'Tiempo {time} · Progreso {pct}% · Muertes {deaths}',

@@ -1,0 +1,31 @@
+// Envio de uma versão para a Steam (SteamPipe). Troca os números pelos da tua aplicação no Steamworks:
+//   AppID  = o número da aplicação;  os depósitos = os números dos depósitos (normalmente AppID+1, AppID+2...).
+// Corre a partir desta pasta:  steamcmd +login O_TEU_UTILIZADOR +run_app_build "%CD%\app_build.vdf" +quit
+"AppBuild"
+{
+	"AppID" "1000000"
+	"Desc" "Vesperal 0.15"
+	"ContentRoot" "..\dist\"
+	"BuildOutput" "..\steam-output\"
+	"Depots"
+	{
+		"1000001"
+		{
+			"FileMapping"
+			{
+				"LocalPath" "win-unpacked\*"
+				"DepotPath" "."
+				"recursive" "1"
+			}
+		}
+		"1000002"
+		{
+			"FileMapping"
+			{
+				"LocalPath" "linux-unpacked\*"
+				"DepotPath" "."
+				"recursive" "1"
+			}
+		}
+	}
+}

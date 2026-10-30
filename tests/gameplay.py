@@ -1389,8 +1389,56 @@ def t_custodio(R, b):
     R.check('Custódio sem erros de JavaScript', not errs, errs[:3])
     pg.close()
 
+def t_desktop(R, b):
+    """versão de computador (Steam): o menu mostra "Sair do jogo" e as definições o ecrã inteiro, ligados à janela"""
+    ctx = b.new_context(viewport={'width': 1280, 'height': 720})
+    ctx.add_init_script("window.__desk = { quit: 0, fs: [] }; window.vesperalDesktop = { quit() { __desk.quit++; }, setFullscreen(v) { __desk.fs.push(v); __desk.cur = v; }, isFullscreen() { return !!__desk.cur; } };")
+    pg = ctx.new_page(); errs = []; page_errors(pg, errs)
+    boot(pg); pg.evaluate('VS.Menus.main()'); pg.wait_for_timeout(200)
+    labels = pg.evaluate('[...document.querySelectorAll(".mainmenu .menu-list .btn")].map((b) => b.textContent)')
+    quit_label = pg.evaluate('VS.t("mm_quit")')
+    R.check('versão de computador: "Sair do jogo" no menu principal', quit_label in labels, labels)
+    pg.evaluate('[...document.querySelectorAll(".mainmenu .menu-list .btn")].find((b) => b.textContent === VS.t("mm_quit")).click()')
+    R.check('"Sair do jogo" fecha a janela', pg.evaluate('__desk.quit') == 1)
+    pg.evaluate('VS.Menus.settings()'); pg.wait_for_timeout(100)
+    pg.evaluate('[...document.querySelectorAll(".settings .tab")][1].click()'); pg.wait_for_timeout(100)
+    rows = pg.evaluate('[...document.querySelectorAll(".settings .set-row .set-label")].map((e) => e.textContent)')
+    fsl = pg.evaluate('VS.t("set_fullscreen")')
+    ok = fsl in rows
+    if ok:
+        pg.evaluate('[...document.querySelectorAll(".settings .set-row")].find((r) => r.querySelector(".set-label").textContent === VS.t("set_fullscreen")).click()')
+        pg.evaluate('[...document.querySelectorAll(".settings .set-row")].find((r) => r.querySelector(".set-label").textContent === VS.t("set_fullscreen")).click()')
+    R.check('ecrã inteiro nas definições de vídeo, a mandar na janela', ok and pg.evaluate('__desk.fs') == [True, False], {'rows': rows, 'fs': pg.evaluate('__desk.fs')})
+    pg.close(); ctx.close()
+    # no navegador normal não há "Sair do jogo"
+    pg = b.new_page(viewport={'width': 1280, 'height': 720}); boot(pg); pg.wait_for_timeout(200)
+    labels = pg.evaluate('[...document.querySelectorAll(".mainmenu .menu-list .btn")].map((b) => b.textContent)')
+    R.check('no navegador o menu não mostra "Sair do jogo"', pg.evaluate('VS.t("mm_quit")') not in labels, labels)
+    R.check('fontes do jogo carregadas de dentro do jogo (sem rede)', pg.evaluate('(async () => { await document.fonts.ready; return document.fonts.check("600 20px Cinzel") && document.fonts.check(\'400 16px "EB Garamond"\'); })()'))
+    R.check('versão de computador sem erros de JavaScript', not errs, errs[:3])
+    pg.close()
+
+
+def t_bgart(R, b):
+    """fundos pintados: cada região constrói-se sem erros, emenda nas pontas e não deixa nada cortado no topo"""
+    pg = b.new_page(viewport={'width': 1280, 'height': 720}); errs = []; page_errors(pg, errs)
+    boot(pg)
+    info = pg.evaluate("""(() => { const out = {}; for (const k of ['r1','r2','r3','r4','r5','r6','r7','sanct','crypt']) {
+      VS.BG.clear(); const t = performance.now(); const set = VS.BG.get(VS.REGIONS[k]); const ms = Math.round(performance.now() - t);
+      const seams = set.layers.map((L) => { const c = L.canvas.getContext('2d'), w = L.canvas.width, h = L.canvas.height;
+        // degraus de opacidade entre duas colunas vizinhas; a junção (última → primeira) não pode ter mais do que as vizinhas normais
+        const steps = (x0, x1) => { const a = c.getImageData(x0, 0, 1, h).data, z = c.getImageData(x1, 0, 1, h).data; let n = 0; for (let i = 3; i < a.length; i += 4) if (Math.abs(a[i] - z[i]) > 100) n++; return n; };
+        const inner = []; for (let i = 1; i <= 60; i++) { const x = Math.floor(i / 61 * (w - 2)); inner.push(steps(x, x + 1)); } inner.sort((p, q) => p - q);
+        return Math.max(0, steps(w - 1, 0) - Math.max(24, 1.5 * inner[Math.floor(inner.length * 0.95)])); });
+      out[k] = { ms, layers: set.layers.length, seam: Math.max(...seams) }; } return out; })()""")
+    R.check('fundos de todas as regiões constroem-se', all(v['layers'] >= 2 for v in info.values()), info)
+    R.check('as faixas emendam nas pontas (a junção não tem mais degraus do que duas colunas vizinhas quaisquer)', all(v['seam'] == 0 for v in info.values()), {k: v['seam'] for k, v in info.items()})
+    R.check('fundos sem erros de JavaScript', not errs, errs[:3])
+    pg.close()
+
+
 TESTS = {'menus': t_menus, 'combat': t_movement_combat, 'world': t_world, 'bosses': t_bosses, 'caedmon': t_caedmon, 'aldric': t_aldric, 'corvin': t_corvin,
-         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach, 'giants': t_giants, 'traps': t_traps, 'structs': t_structs, 'wanderer': t_wanderer, 'custodio': t_custodio}
+         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach, 'giants': t_giants, 'traps': t_traps, 'structs': t_structs, 'wanderer': t_wanderer, 'custodio': t_custodio, 'desktop': t_desktop, 'bgart': t_bgart}
 
 
 def main(filters):

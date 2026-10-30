@@ -2,7 +2,7 @@
 'use strict';
 (function (VS) {
   VS.LANG.en = Object.assign(VS.LANG.en || {}, {
-    subtitle: 'The Last Flame', mm_hint: 'Keyboard, gamepad or touch', mm_continue: 'Continue', mm_play: 'Play', mm_settings: 'Settings', mm_credits: 'Credits', mm_endings: 'Endings seen: {n} of 3',
+    subtitle: 'The Last Flame', mm_hint: 'Keyboard, gamepad or touch', mm_continue: 'Continue', mm_play: 'Play', mm_settings: 'Settings', mm_credits: 'Credits', mm_quit: 'Quit game', mm_endings: 'Endings seen: {n} of 3',
     slots_title: 'Choose a memory', slot_info: '{time} · Embers {embers}/6 · {pct}%', slot_empty: 'Empty memory — new game', slot_n: 'Memory {n}', slot_load: 'Continue', slot_new: 'Start over in this memory', slot_erase: 'Erase', back: 'Back',
     confirm_overwrite: 'Starting over erases this memory. Continue?', confirm_erase: 'Erase this memory forever?', confirm_quit: 'Quit to the main menu? Your progress has been saved.', yes: 'Yes', no: 'No', ok: 'Accept', close: 'Close', copy: 'Copy', copied: 'Copied.',
     pause_title: 'Paused', pause_resume: 'Resume', pause_map: 'Map', pause_journal: 'Journal', pause_inventory: 'Inventory', pause_settings: 'Settings', pause_quit: 'Quit to main menu', pause_info: 'Time {time} · Completion {pct}% · Deaths {deaths}',

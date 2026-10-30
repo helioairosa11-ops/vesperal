@@ -7,8 +7,9 @@ Podes jogar, partilhar e adaptar o jogo, desde que dês o crédito ao autor, nã
 comerciais e partilhes as adaptações com esta mesma licença.
 Resumo da licença: https://creativecommons.org/licenses/by-nc-sa/4.0/
 
-As fontes Cinzel e EB Garamond são carregadas do Google Fonts e têm a sua própria licença
-(SIL Open Font License 1.1); não fazem parte deste repositório.
+As fontes Cinzel e EB Garamond, que vão dentro do jogo (css/fonts.css), não estão sob esta licença:
+têm a sua própria, a SIL Open Font License 1.1 (textos em assets/fonts/OFL-Cinzel.txt e
+assets/fonts/OFL-EBGaramond.txt).
 
 ------------------------------------------------------------------------------------------
 Texto integral da licença (versão oficial em inglês):

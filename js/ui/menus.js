@@ -17,6 +17,7 @@
     add(t('mm_play'), () => M.slots());
     add(t('mm_settings'), () => M.settings());
     add(t('mm_credits'), () => M.credits(false));
+    if (window.vesperalDesktop) add(t('mm_quit'), () => window.vesperalDesktop.quit());
     if (prof.endings && prof.endings.length) { const s = h('div', 'mm-endings', esc(t('mm_endings', { n: prof.endings.length }))); el.appendChild(s); }
     // o idioma escolhe-se só nas Definições (não no menu principal)
     UI.open({ el, onBack: () => { }, noX: true });
@@ -301,6 +302,14 @@
     else if (VS.App.mode === 'menu') M.main();
     M.settings(tab);
   };
+  // ecrã inteiro: a janela da versão de computador, ou a API do navegador (o pedido só vale com um clique ou tecla)
+  let fsWant = null;
+  const fsGet = () => (window.vesperalDesktop ? window.vesperalDesktop.isFullscreen() : fsWant !== null ? fsWant : !!document.fullscreenElement);
+  function fsSet(v) {
+    if (window.vesperalDesktop) { window.vesperalDesktop.setFullscreen(v); return; }
+    fsWant = v; const done = () => { fsWant = null; };
+    try { const p = v ? document.documentElement.requestFullscreen() : document.exitFullscreen(); if (p && p.then) p.then(done, done); else done(); } catch (e) { done(); }
+  }
   M.settings = function () {
     const s = VS.settings;
     const el = h('div', 'panel settings');
@@ -343,6 +352,7 @@
         body.appendChild(choice(t('set_quality'), [['auto', t('q_auto')], ['high', t('q_high')], ['medium', t('q_medium')], ['low', t('q_low')]], () => s.quality || 'auto', (v) => { s.quality = v; }));
         body.appendChild(choice(t('set_fpscap'), [[0, t('fps_display')], [60, '60'], [30, '30']], () => s.fpsCap || 0, (v) => { s.fpsCap = v; }));
         body.appendChild(toggle(t('set_showfps'), () => !!s.showFps, (v) => { s.showFps = v; }));
+        if (window.vesperalDesktop || document.fullscreenEnabled) body.appendChild(toggle(t('set_fullscreen'), fsGet, fsSet));
         body.appendChild(toggle(t('set_particles'), () => s.particles !== false, (v) => { s.particles = v; }));
         body.appendChild(h('div', 'set-note', esc(t('set_video_note'))));
       } else if (k === 'audio') {

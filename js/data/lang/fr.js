@@ -2,7 +2,7 @@
 'use strict';
 (function (VS) {
   VS.LANG.fr = Object.assign(VS.LANG.fr || {}, {
-    subtitle: 'La Dernière Flamme', mm_hint: 'Clavier, manette ou écran tactile', mm_continue: 'Continuer', mm_play: 'Jouer', mm_settings: 'Options', mm_credits: 'Crédits', mm_endings: 'Fins découvertes : {n} sur 3',
+    subtitle: 'La Dernière Flamme', mm_hint: 'Clavier, manette ou écran tactile', mm_continue: 'Continuer', mm_play: 'Jouer', mm_settings: 'Options', mm_credits: 'Crédits', mm_quit: 'Quitter le jeu', mm_endings: 'Fins découvertes : {n} sur 3',
     slots_title: 'Choisis une mémoire', slot_info: '{time} · Braises {embers}/6 · {pct} %', slot_empty: 'Mémoire vide — nouvelle partie', slot_n: 'Mémoire {n}', slot_load: 'Continuer', slot_new: 'Recommencer dans cette mémoire', slot_erase: 'Effacer', back: 'Retour',
     confirm_overwrite: 'Recommencer efface cette mémoire. Continuer ?', confirm_erase: 'Effacer cette mémoire pour toujours ?', confirm_quit: 'Revenir au menu principal ? Ta progression a été sauvegardée.', yes: 'Oui', no: 'Non', ok: 'Accepter', close: 'Fermer', copy: 'Copier', copied: 'Copié.',
     pause_title: 'Pause', pause_resume: 'Continuer', pause_map: 'Carte', pause_journal: 'Journal', pause_inventory: 'Inventaire', pause_settings: 'Options', pause_quit: 'Revenir au menu principal', pause_info: 'Temps {time} · Progression {pct} % · Morts {deaths}',

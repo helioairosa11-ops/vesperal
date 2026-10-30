@@ -1,0 +1,32 @@
+{
+  "name": "vesperal",
+  "productName": "Vesperal",
+  "version": "0.15.0",
+  "description": "Vesperal: A Última Chama — metroidvania 2D de fantasia sombria (versão de computador)",
+  "author": "Lourence Manuel",
+  "license": "CC-BY-NC-SA-4.0",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "copiar-jogo": "node scripts/copiar-jogo.js",
+    "start": "npm run copiar-jogo && electron .",
+    "steam:windows": "npm run copiar-jogo && electron-builder --win",
+    "steam:linux": "npm run copiar-jogo && electron-builder --linux",
+    "steam:mac": "npm run copiar-jogo && electron-builder --mac"
+  },
+  "devDependencies": {
+    "electron": "latest",
+    "electron-builder": "latest"
+  },
+  "build": {
+    "appId": "pt.lourencemanuel.vesperal",
+    "productName": "Vesperal",
+    "copyright": "© 2026 Lourence Manuel",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["main.js", "preload.js", "package.json", "build/icon.png", "game/**/*"],
+    "asar": true,
+    "win": { "target": [{ "target": "dir", "arch": ["x64"] }], "icon": "build/icon.png" },
+    "linux": { "target": [{ "target": "dir", "arch": ["x64"] }], "icon": "build/icon.png", "executableName": "vesperal", "category": "Game" },
+    "mac": { "target": [{ "target": "dir" }], "icon": "build/icon.png", "category": "public.app-category.role-playing-games" }
+  }
+}
