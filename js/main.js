@@ -138,20 +138,24 @@
   App.drawMenuBg = function (ctx, dt) {
     const R = VS.REGIONS.r1, t = App.menuT, SW = U.SCREEN_W, SH = U.SCREEN_H;
     G.time += dt;
-    const gy = SH - 34, bx = 476, by = gy - 14;
+    // a fogueira e a viajante ficam ancoradas à direita (nos ecrãs mais largos, o fundo estende-se para a esquerda)
+    const gy = SH - 34, ox = SW - 640, bx = 476 + ox, by = gy - 14;
     // planos distantes, chão e silhuetas: numa imagem de resolução reduzida (como no jogo) — uma só passagem
     // de ecrã inteiro no canvas principal em vez de dezenas de gradientes à resolução nativa
     const bc = G.bgLayer(), k = G.bgScale * (U.VIEW_W / SW);
     bc.setTransform(k, 0, 0, k, 0, 0);
     VS.BG.drawSky(bc, R, t, SW, SH);
-    VS.BG.draw(bc, R, { x: 120 + t * 5, y: 0 }, SH, k, SW, SH);
+    // os planos pintados têm 360 de altura: nos ecrãs mais altos (tablets) assentam no chão e o céu cresce por cima
+    VS.BG.draw(bc, R, { x: 120 + t * 5, y: 0, t }, SH, k, SW, SH, Math.max(0, SH - 360));
+    const mk = SW + 'x' + SH;
+    if (App._menuG && App._menuG.key !== mk) App._menuG = null;
     const M = App._menuG || (App._menuG = (() => {
-      const o = {};
+      const o = { key: mk };
       o.fg = bc.createLinearGradient(0, gy - 6, 0, SH); o.fg.addColorStop(0, '#15100f'); o.fg.addColorStop(1, '#050404');
       o.col = bc.createLinearGradient(0, 0, SW * 0.6, 0); o.col.addColorStop(0, 'rgba(5,4,6,0.78)'); o.col.addColorStop(0.7, 'rgba(5,4,6,0.35)'); o.col.addColorStop(1, 'rgba(5,4,6,0)');
       o.ground = new Path2D(); o.ground.moveTo(0, gy + 4); for (let x = 0; x <= SW; x += 16) o.ground.lineTo(x, gy + Math.sin(x * 0.07) * 1.6 + (x % 48 === 0 ? -2 : 0)); o.ground.lineTo(SW, SH); o.ground.lineTo(0, SH); o.ground.closePath();
-      o.graves = new Path2D(); for (const [x, w, h] of [[300, 10, 18], [560, 12, 22], [600, 8, 14], [210, 7, 12]]) { o.graves.moveTo(x - w / 2, gy + 2); o.graves.lineTo(x - w / 2, gy - h + w / 2); o.graves.quadraticCurveTo(x, gy - h - 2, x + w / 2, gy - h + w / 2); o.graves.lineTo(x + w / 2, gy + 2); o.graves.closePath(); }
-      o.graves.rect(578, gy - 30, 2.4, 30); o.graves.rect(570, gy - 24, 18, 2.4);
+      o.graves = new Path2D(); for (const [x, w, h] of [[300 + ox, 10, 18], [560 + ox, 12, 22], [600 + ox, 8, 14], [210 + ox, 7, 12]]) { o.graves.moveTo(x - w / 2, gy + 2); o.graves.lineTo(x - w / 2, gy - h + w / 2); o.graves.quadraticCurveTo(x, gy - h - 2, x + w / 2, gy - h + w / 2); o.graves.lineTo(x + w / 2, gy + 2); o.graves.closePath(); }
+      o.graves.rect(578 + ox, gy - 30, 2.4, 30); o.graves.rect(570 + ox, gy - 24, 18, 2.4);
       return o;
     })());
     bc.fillStyle = M.fg; bc.fill(M.ground);
@@ -168,7 +172,7 @@
     ctx.fillStyle = '#2a221e'; ctx.beginPath(); ctx.moveTo(bx - 16, by - 2); ctx.quadraticCurveTo(bx, by + 10, bx + 16, by - 2); ctx.lineTo(bx + 13, by + 2); ctx.quadraticCurveTo(bx, by + 8, bx - 13, by + 2); ctx.fill();
     ctx.strokeStyle = '#6a5040'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(bx - 16, by - 2); ctx.quadraticCurveTo(bx, by + 10, bx + 16, by - 2); ctx.stroke();
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
-    if (!App._flameG) { App._flameG = ctx.createLinearGradient(0, by, 0, by - 22); App._flameG.addColorStop(0, 'rgba(255,110,30,0.7)'); App._flameG.addColorStop(0.45, 'rgba(255,150,50,0.5)'); App._flameG.addColorStop(1, 'rgba(255,200,120,0)'); }
+    if (!App._flameG || App._flameY !== by) { App._flameY = by; App._flameG = ctx.createLinearGradient(0, by, 0, by - 22); App._flameG.addColorStop(0, 'rgba(255,110,30,0.7)'); App._flameG.addColorStop(0.45, 'rgba(255,150,50,0.5)'); App._flameG.addColorStop(1, 'rgba(255,200,120,0)'); }
     ctx.fillStyle = App._flameG;
     for (let i = 0; i < 9; i++) {
       const k2 = i / 8, fx = bx - 9 + k2 * 18, hh = (10 + 10 * Math.sin(k2 * Math.PI)) * (0.75 + 0.3 * Math.sin(t * 7 + i * 1.9)), sway = Math.sin(t * 3 + i) * 2.4, w = 2.6 + Math.sin(k2 * Math.PI) * 1.4;
@@ -181,8 +185,8 @@
     const sh = VS.Assets.sheet('hero');
     if (sh && VS.Assets.ok(sh.img)) {
       const f = VS.Assets.frame(sh, 'rest', (t * 4) % 1000);
-      ctx.save(); ctx.translate(440, gy + 1); ctx.scale(2.1, 2.1); VS.Assets.drawFrame(ctx, sh, f); ctx.restore();
-      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.16; ctx.drawImage(G.glowSprite('#ff8c3c'), 416, gy - 76, 92, 92); ctx.restore();
+      ctx.save(); ctx.translate(440 + ox, gy + 1); ctx.scale(2.1, 2.1); VS.Assets.drawFrame(ctx, sh, f); ctx.restore();
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.16; ctx.drawImage(G.glowSprite('#ff8c3c'), 416 + ox, gy - 76, 92, 92); ctx.restore();
     }
     // cinza a cair e brasas a subir (com teto: nunca mais que ~180 partículas no menu)
     const n = G.particles.length;

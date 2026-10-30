@@ -14,12 +14,14 @@ Metroidvania 2D de fantasia sombria para o navegador. O Desperto acorda numa cov
 - Todo o mapa percorre-se a saltar (com o salto duplo e a investida quando os ganhas); trepar paredes é um atalho opcional
 - Plataformas sempre presas a alguma coisa (mísulas, correntes, cordas ou prumos), com estilos diferentes em cada região
 - Fundos pintados em paralaxe, um mundo por região, no espírito barroco e penitente: a Mãe das Dores colossal com as sete espadas e a catedral contra o poente, com a procissão a passar na ponte; o Vigia de lanterna erguida na tempestade; a santa de pedra afundada nos Jardins; o braço com o círio aceso acima das nuvens; a Virgem da lua; o sol negro sobre o palácio. O fundo continua de sala para sala
+- Mundo vivo: nos fundos passa a procissão na ponte, voam bandos de aves, caem relâmpagos, tremem tochas e pirilampos; nas salas há corvos, pombas, ratos, morcegos e peixes que fogem quando o Desperto se aproxima, e a erva do primeiro plano dobra-se ao vento
 - Construções de cada região atrás da ação (casas, calvário, túmulos, torre de vigia, trabuquete, fornalha, grua, fonte, pérgula, sinos, engrenagens, retábulo, órgão, arcada, estátua do rei)
 - Armadilhas a combinar com a zona: sinos e incensários a balançar, ossos e espinhos que rompem do chão, seteiras, grade levadiça, prensas, lanças nas paredes
 - Esquiva, parry e guarda, armas com ritmos diferentes
 - Português, English, Español e Français
 - Música e sons sintetizados em tempo real (Web Audio), sem ficheiros de áudio
 - Teclado, comando e ecrã tátil; gravação automática no navegador
+- Ocupa o ecrã todo, sem barras pretas: telemóveis largos, monitores ultralargos e tablets 4:3 veem mais do mundo em vez de faixas vazias
 - Funciona sem internet: tudo vem dentro do jogo, incluindo as fontes
 - Versão de computador para a Steam (pasta `desktop/`): ecrã inteiro, "Sair do jogo" no menu, gravações na pasta da aplicação
 

@@ -265,6 +265,7 @@
       // ataque
       if (In.buffered('attack', 0.12)) {
         In.consume('attack');
+        this.turnToInput(ax);
         let name;
         if (this.riposteT > 0) name = 'riposte';
         else if (!this.onGround && down) name = 'down';
@@ -277,6 +278,7 @@
       }
       if (In.buffered('heavy', 0.1)) {
         In.consume('heavy');
+        this.turnToInput(ax);
         if (!this.onGround) this.startPlunge(game);
         else this.startAttack('heavy', game);
         return;
@@ -296,6 +298,7 @@
       else VS.Gfx.burst(this.cx, this.bottom, 5, { color: '#8a8078', speed: 50, angle: -Math.PI / 2, spread: 2.8, life: 0.3, size: 1.2 });
     }
 
+    turnToInput(ax) { if (ax !== 0 && this.wallLock <= 0 && !this.climbing) this.facing = ax > 0 ? 1 : -1; }
     startAttack(name, game) {
       const mv = this.moves();
       const d = mv[name] || ATK[name] || mv.l1;
@@ -365,6 +368,9 @@
       const st = this.st;
       if (a.type === 'attack' || a.type === 'heavy') {
         const d = a.d;
+        // virar: na antecipação e no fim da recuperação vira-se para onde se carrega (sem isto, a bater e a carregar
+        // para trás, continuava a bater para a frente, porque cada golpe novo começava ainda dentro do anterior)
+        if (a.phase === 'wind' || (a.phase === 'rec' && a.t > a.rec * 0.3)) this.turnToInput(ax);
         // carregar o golpe pesado (Golpe de Forja)
         if (a.type === 'heavy' && a.phase === 'wind' && st.abilities.forge && In.down('heavy')) {
           a.charge += dt;

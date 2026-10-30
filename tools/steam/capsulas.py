@@ -27,12 +27,12 @@ window.capsula = async function (W, H, o) {
   const zoom = o.zoom || 1, k = H / LH * zoom;
   const layers = []; VS.BG.STYLES[R.bg](R, layers);
   const rnd = U.rng(U.hash(R.key + 'bg'));
-  const strips = layers.map((L) => { const c = document.createElement('canvas'); c.width = Math.round(LW * k); c.height = Math.round(LH * k); const x = c.getContext('2d'); x.scale(c.width / LW, c.height / LH); L.draw(x, rnd); return { c, p: L.p }; });
+  const strips = layers.map((L) => { const c = document.createElement('canvas'); c.width = Math.round(LW * k); c.height = Math.round(LH * k); const x = c.getContext('2d'); x.scale(c.width / LW, c.height / LH); L.draw(x, rnd); return { c, p: L.p, anim: L.anim }; });
   const out = document.createElement('canvas'); out.width = W; out.height = H; const c = out.getContext('2d');
   if (!o.transparent) {
     const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, R.sky[0]); g.addColorStop(0.6, R.sky[1]); g.addColorStop(1, R.sky[2]); c.fillStyle = g; c.fillRect(0, 0, W, H);
     const top = H - LH * k + (o.dy || 0) * k, cam = o.cam || 0, x0 = (o.x0 || 0);
-    for (const { c: s, p } of strips) { let ox = -(((cam * p + x0) % LW) + LW) % LW * k; for (let x = ox - LW * k; x < W; x += LW * k) c.drawImage(s, x, top); }
+    for (const { c: s, p, anim } of strips) { let ox = -(((cam * p + x0) % LW) + LW) % LW * k; for (let x = ox - LW * k; x < W; x += LW * k) { c.drawImage(s, x, top); if (anim) { c.save(); c.translate(x, top); c.scale(k, k); anim(c, o.t || 14, { t: o.t || 14 }); c.restore(); } } }
     // chão escuro, braseiro e a protagonista a descansar junto ao fogo
     if (o.hero !== false) {
       const gy = H - (o.ground || 30) * k, hx = (o.heroX !== undefined ? o.heroX : 0.62) * W, s = k * (o.heroScale || 1);

@@ -528,6 +528,10 @@
   SFX.drip = (d, t) => { tone(d, t, 'sine', 1400 + Math.random() * 800, 600, 0.05, 0.12); };
   SFX.crackle = (d, t) => { nburst(d, t, 'highpass', 2500 + Math.random() * 3000, 1, 0.05 + Math.random() * 0.05, 0.015); };
   SFX.moth = (d, t) => { for (let i = 0; i < 6; i++) nburst(d, t + i * 0.03, 'bandpass', 250, 4, 0.08, 0.03); };
+  // bichos do mundo: bater de asas, grasnar de corvo, guincho de rato
+  SFX.flap = (d, t) => { for (let i = 0; i < 5; i++) nburst(d, t + i * 0.055 + Math.random() * 0.01, 'bandpass', 520 + Math.random() * 160, 2.5, 0.12, 0.04); };
+  SFX.caw = (d, t) => { for (let i = 0; i < 2; i++) { const tt = t + i * 0.24; tone(d, tt, 'sawtooth', 620, 430, 0.07, 0.16, 0.01); nburst(d, tt, 'bandpass', 1300, 3, 0.1, 0.15, 0.01); } };
+  SFX.squeak = (d, t) => { tone(d, t, 'sine', 2600, 3600, 0.05, 0.07, 0.005); tone(d, t + 0.09, 'sine', 2900, 3900, 0.04, 0.06, 0.005); };
   SFX.choir_hit = (d, t) => { ['D3', 'A3', 'D4', 'F4'].forEach((n) => INST.choir(d, t, A.noteFreq(n), 1.2, 0.9)); };
   SFX.light = (d, t) => { tone(d, t, 'sine', 600, 2400, 0.08, 0.5, 0.2); INST.glass(d, t, A.noteFreq('E6'), 0.6, 0.6); };
   // o Juízo do Rei: um coro grave que sobe durante a preparação (1,6 s) e o estrondo que o fecha

@@ -866,8 +866,10 @@ def t_touch(R, b):
     y0 = pg.evaluate('T.p().y'); pg.evaluate('T.minY = 1e9; T.hooks.push(() => { T.minY = Math.min(T.minY, T.p().y); if ((T.k = (T.k || 0) + 1) > 60) { T.k = 0; return true; } })')
     j = acts['jump']; touch('touchStart', [(j[0], j[1])]); frames(pg, 10); touch('touchEnd', []); frames(pg, 50)
     R.check('botão tátil de salto', y0 - pg.evaluate('T.minY') > 40)
-    pg.evaluate('T.seenA = []; T.hooks.push(() => { const a = T.p().action; const n = a && (a.name || a.type); if (n && !T.seenA.includes(n)) T.seenA.push(n); if ((T.k2 = (T.k2 || 0) + 1) > 90) return true; })')
+    pg.evaluate('T.seenA = []; T.hooks.push(() => { const a = T.p().action; const n = a && (a.name || a.type); if (n && !T.seenA.includes(n)) T.seenA.push(n); if ((T.k2 = (T.k2 || 0) + 1) > 240) return true; })')
+    pg.evaluate('T.g().ents.filter((e) => e.isEnemy).forEach((e) => e.remove = true)')  # nada a interromper os golpes
     a = acts['attack']; touch('touchStart', [(a[0], a[1])]); frames(pg, 3); touch('touchEnd', []); frames(pg, 30)
+    wait(pg, '!T.p().action && T.p().onGround', 2)  # a esquiva só depois de o golpe acabar (com a máquina carregada o toque pode chegar atrasado)
     d = acts['dodge']; touch('touchStart', [(d[0], d[1])]); frames(pg, 3); touch('touchEnd', []); frames(pg, 40)
     seen = pg.evaluate('T.seenA')
     R.check('botões táteis de ataque e esquiva', 'l1' in seen and 'dodge' in seen, seen)
@@ -896,9 +898,10 @@ def t_touch(R, b):
     # outras proporções
     for (w, h) in [(1024, 768), (2400 // 2, 1080 // 2), (740, 360)]:
         pg.set_viewport_size({'width': w, 'height': h}); frames(pg, 10)
-        cv = pg.evaluate('(() => { const c = document.getElementById("game").getBoundingClientRect(); return [c.width, c.height]; })()')
+        cv = pg.evaluate('(() => { const c = document.getElementById("game").getBoundingClientRect(); return [c.width, c.height, VS.U.VIEW_W, VS.U.VIEW_H]; })()')
         shot(pg, f'aspect_{w}x{h}')
-        R.check(f'proporção {w}x{h}: o jogo cabe no ecrã (16:9 com margens)', cv[0] <= w + 1 and cv[1] <= h + 1 and abs(cv[0] / cv[1] - 16 / 9) < 0.02, cv)
+        # o ecrã lógico toma a forma do ecrã (sem barras pretas); a vista do mundo nunca passa de uma sala (640×360)
+        R.check(f'proporção {w}x{h}: o jogo ocupa o ecrã todo, sem barras, e a vista cabe numa sala', abs(cv[0] - w) <= 2 and abs(cv[1] - h) <= 2 and cv[2] <= 640 and cv[3] <= 360, cv)
     R.check('tátil sem erros de JavaScript', not errs, errs[:5])
     ctx.close()
 
@@ -1389,6 +1392,37 @@ def t_custodio(R, b):
     R.check('Custódio sem erros de JavaScript', not errs, errs[:3])
     pg.close()
 
+def t_turn(R, b):
+    """a bater e a carregar para trás, o golpe seguinte sai para trás (teclado, comando/toque pelo mesmo eixo)"""
+    pg = b.new_page(viewport={'width': 1280, 'height': 720}); errs = []; page_errors(pg, errs)
+    boot(pg); new_game(pg); warp(pg, 'r1_street', 6, 12); frames(pg, 30)
+    pg.evaluate('VS.App.game.ents.filter((e) => e.isEnemy).forEach((e) => e.remove = true); VSDebug.god(true)'); frames(pg, 20)
+    wait(pg, 'T.p().onGround && !T.p().action', 3)
+    # teclado: combo para a direita; a meio, carrega-se para a esquerda e volta-se a bater
+    pg.evaluate('T.p().facing = 1; T.tap("KeyJ", 3)'); frames(pg, 8)
+    first = pg.evaluate('[T.p().action && T.p().action.name, T.p().facing]')
+    pg.evaluate('T.key("KeyA", true); T.tap("KeyJ", 3)'); frames(pg, 12)
+    second = pg.evaluate('[T.p().action && T.p().action.name, T.p().facing, Math.sign((T.p().action && T.p().action.lungeV) || 0)]')
+    pg.evaluate('T.key("KeyA", false)'); frames(pg, 40)
+    R.check('a meio do combo, carregar para trás e bater vira a protagonista (teclado)', first[1] == 1 and second[1] == -1 and second[0] is not None, {'1.º': first, '2.º': second})
+    # toque/comando: o mesmo pelo eixo do joystick
+    wait(pg, 'T.p().onGround && !T.p().action', 3)
+    pg.evaluate('T.p().facing = -1; T.tap("KeyJ", 3)'); frames(pg, 8)
+    pg.evaluate('VS.Input.touchAxis.x = 1; T.tap("KeyJ", 3)'); frames(pg, 12)
+    t = pg.evaluate('[T.p().action && T.p().action.name, T.p().facing]')
+    pg.evaluate('VS.Input.touchAxis.x = 0'); frames(pg, 40)
+    R.check('o mesmo com o joystick do ecrã tátil', t[1] == 1 and t[0] is not None, t)
+    # no golpe em si não se vira (o corte fica coerente); vira-se no fim da recuperação
+    wait(pg, 'T.p().onGround && !T.p().action', 3)
+    pg.evaluate('T.p().facing = 1; T.tap("KeyJ", 3)')
+    seen = pg.evaluate("""() => new Promise((res) => { const out = []; let n = 0; T.hooks.push(() => { const a = T.p().action; if (n === 6) T.key("KeyA", true); if (a) out.push(a.phase + ':' + T.p().facing); if (++n > 40) { T.key("KeyA", false); res(out); return true; } }); })""")
+    act = [x for x in seen if x.startswith('act')]
+    ok = bool(act) and all(x.endswith(':1') for x in act) and bool(seen) and seen[-1].endswith(':-1')
+    R.check('não se vira a meio do golpe, só antes e no fim da recuperação', ok, seen[:4] + ['…'] + seen[-3:])
+    R.check('virar a bater sem erros de JavaScript', not errs, errs[:3])
+    pg.close()
+
+
 def t_desktop(R, b):
     """versão de computador (Steam): o menu mostra "Sair do jogo" e as definições o ecrã inteiro, ligados à janela"""
     ctx = b.new_context(viewport={'width': 1280, 'height': 720})
@@ -1437,8 +1471,73 @@ def t_bgart(R, b):
     pg.close()
 
 
+def t_screen(R, b):
+    """o jogo ocupa o ecrã todo (telemóvel largo, tablet 4:3, monitor ultralargo) e o aviso de interação fica sobre o alvo"""
+    cases = [('telemóvel 19,5:9', dict(viewport={'width': 844, 'height': 390}, device_scale_factor=2, is_mobile=True, has_touch=True)),
+             ('tablet 4:3', dict(viewport={'width': 1024, 'height': 768}, is_mobile=True, has_touch=True)),
+             ('monitor ultralargo 21:9', dict(viewport={'width': 2560, 'height': 1080})),
+             ('monitor 16:9', dict(viewport={'width': 1280, 'height': 720}))]
+    for label, opts in cases:
+        ctx = b.new_context(**opts); pg = ctx.new_page(); errs = []; page_errors(pg, errs)
+        boot(pg); pg.wait_for_timeout(150)
+        info = pg.evaluate("""(() => { const r = VS.Gfx.canvas.getBoundingClientRect(); return { cw: Math.round(r.width), ch: Math.round(r.height), ww: innerWidth, wh: innerHeight,
+          sw: VS.U.SCREEN_W, sh: VS.U.SCREEN_H, vw: VS.U.VIEW_W, vh: VS.U.VIEW_H, dev: VS.Input.lastDevice }; })()""")
+        R.check(f'{label}: o jogo ocupa o ecrã todo, sem barras pretas', abs(info['cw'] - info['ww']) <= 2 and abs(info['ch'] - info['wh']) <= 2, info)
+        R.check(f'{label}: a vista do mundo cabe na sala mais pequena (640×360)', info['vw'] <= 640 and info['vh'] <= 360, info)
+        if opts.get('has_touch'):
+            R.check(f'{label}: dicas com os controlos táteis desde o início', info['dev'] == 'touch', info['dev'])
+        if label.startswith('telemóvel'):
+            # com o zoom mais afastado a vista já é uma sala inteira: volta ao 16:9 (com barras), sem mostrar o que fica fora da sala
+            pg.evaluate('VS.settings.zoom = 1; VS.App.applySettings()'); pg.wait_for_timeout(100)
+            z = pg.evaluate('[VS.U.SCREEN_W, VS.U.SCREEN_H, VS.U.VIEW_W, VS.U.VIEW_H]')
+            R.check(f'{label}: zoom afastado fica em 16:9 (a vista não sai da sala)', z == [640, 360, 640, 360], z)
+            pg.evaluate('VS.settings.zoom = 1.4; VS.App.applySettings()')
+        if label.startswith('monitor 16'):
+            new_game(pg); pg.evaluate('VSDebug.god(true)')
+            for room in ('r4_greenhouse', 'r7_hall'):
+                warp(pg, room); frames(pg, 20)
+                pg.evaluate("""() => { window.__pr = null; const o = VS.UI.drawPrompt; if (!o.__w) { VS.UI.drawPrompt = function (ctx, e, g) { const m = ctx.getTransform(), G = VS.Gfx, c = G.cam;
+                  window.__pr = { e: m.e, f: m.f, ex: Math.round((-c.x - c.sx) * G.scale), ey: Math.round((-c.y - c.sy) * G.scale), name: e.constructor.name, d: Math.abs(e.cx - g.player.cx) }; return o.apply(this, arguments); }; VS.UI.drawPrompt.__w = true; } }""")
+                pg.wait_for_timeout(300)
+                pr = pg.evaluate('window.__pr')
+                ok = bool(pr) and abs(pr['e'] - pr['ex']) <= 1 and abs(pr['f'] - pr['ey']) <= 1
+                R.check(f'aviso de interação desenhado no sítio do alvo ({room}), não deslocado pelo primeiro plano', ok, pr)
+        R.check(f'{label}: sem erros de JavaScript', not errs, errs[:3])
+        pg.close(); ctx.close()
+
+
+def t_life(R, b):
+    """mundo vivo: criaturas nas salas que fogem de quem se aproxima e animações dos fundos em todas as regiões"""
+    pg = b.new_page(viewport={'width': 1280, 'height': 720}); errs = []; page_errors(pg, errs)
+    boot(pg); new_game(pg); pg.evaluate('VSDebug.god(true)')
+    counts = {}
+    for room in ('r1_street', 'r1_bridge', 'r4_greenhouse', 'r6_nave', 'r1_crypt'):
+        warp(pg, room); frames(pg, 5)
+        counts[room] = pg.evaluate('VS.Ambient.list.map((a) => a.kind).join(",")')
+    R.check('há criaturas nas salas (corvos, ratos, morcegos, pombas, peixes)', sum(1 for v in counts.values() if v) >= 4, counts)
+    # aproximar a protagonista de uma criatura: ela foge
+    fled = None
+    for room in ('r1_street', 'r1_bridge', 'r6_nave', 'r1_crypt'):
+        warp(pg, room); frames(pg, 5)
+        n = pg.evaluate('VS.Ambient.list.length')
+        if not n:
+            continue
+        pg.evaluate("""() => { const a = VS.Ambient.list[0], p = T.p(); window.__a = a; window.__k0 = a.st; p.x = a.x - p.w / 2 - 30; p.y = a.y - p.h - 2; p.vx = 0; p.vy = 0; }""")
+        frames(pg, 6)
+        fled = pg.evaluate('[window.__a.kind, window.__k0, window.__a.st, !!window.__a.gone]')
+        break
+    R.check('uma criatura foge quando a protagonista chega perto', bool(fled) and fled[2] in ('fly', 'flee'), fled)
+    anims = pg.evaluate("""(() => { const out = {}; const cv = document.createElement('canvas'); cv.width = 400; cv.height = 240; const c = cv.getContext('2d');
+      for (const k of ['r1','r2','r3','r4','r5','r6','r7']) { const set = VS.BG.get(VS.REGIONS[k]); let n = 0, err = null;
+        for (const L of set.layers) if (L.anim) { n++; for (const t of [0, 1.7, 13.3]) { try { c.save(); L.anim(c, t, { x: 300, y: 0, t, flash: t > 1 ? 0.8 : 0 }); c.restore(); } catch (e) { err = String(e); } } }
+        out[k] = { n, err }; } return out; })()""")
+    R.check('fundos animados em todas as regiões (procissão, aves, relâmpagos, chamas, pirilampos)', all(v['n'] >= 1 and not v['err'] for v in anims.values()), anims)
+    R.check('mundo vivo sem erros de JavaScript', not errs, errs[:3])
+    pg.close()
+
+
 TESTS = {'menus': t_menus, 'combat': t_movement_combat, 'world': t_world, 'bosses': t_bosses, 'caedmon': t_caedmon, 'aldric': t_aldric, 'corvin': t_corvin,
-         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach, 'giants': t_giants, 'traps': t_traps, 'structs': t_structs, 'wanderer': t_wanderer, 'custodio': t_custodio, 'desktop': t_desktop, 'bgart': t_bgart}
+         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach, 'giants': t_giants, 'traps': t_traps, 'structs': t_structs, 'wanderer': t_wanderer, 'custodio': t_custodio, 'desktop': t_desktop, 'bgart': t_bgart, 'turn': t_turn, 'screen': t_screen, 'life': t_life}
 
 
 def main(filters):

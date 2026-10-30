@@ -33,7 +33,8 @@
       // o céu (quase parado) vai na mesma tela do plano longínquo: menos uma camada inteira a compor em cada imagem
       if (layers.length > 2 && layers[0].p <= 0.03) {
         const a = layers.shift(), b = layers[0];
-        layers[0] = { p: b.p * 0.8, draw(c, rnd) { a.draw.call(this, c, rnd); b.draw.call(this, c, rnd); } };
+        const anim = a.anim || b.anim ? function (c, t, cam) { if (a.anim) a.anim(c, t, cam); if (b.anim) b.anim(c, t, cam); } : null;
+        layers[0] = { p: b.p * 0.8, draw(c, rnd) { a.draw.call(this, c, rnd); b.draw.call(this, c, rnd); }, anim };
       }
       const last = layers[layers.length - 1];
       if (last) { const d = last.draw; last.draw = function (c, rnd) { d.call(this, c, rnd); freePool(); }; }
@@ -537,11 +538,76 @@
     }
   }
 
+
+  // ======================================================================= vida no fundo (desenhada a cada imagem)
+  // Cada plano pode ter anim(c, t, cam): desenha por cima da faixa, nas coordenadas dela (0..960 × 0..360), coisas que
+  // mexem — a procissão a andar, círios a tremeluzir, aves, relâmpagos, metal a escorrer, pirilampos, estrelas. Tem de
+  // ser barato: brilhos são imagens em cache (VS.Gfx.glowSprite), formas são caminhos feitos uma vez.
+  function aglow(c, x, y, r, col, a) {
+    if (a <= 0.01) return;
+    const G = VS.Gfx; c.globalAlpha = Math.min(1, a);
+    if (G && G.glowSprite) c.drawImage(G.glowSprite(col), x - r, y - r, r * 2, r * 2);
+    c.globalAlpha = 1;
+  }
+  // um pássaro (asas em "m") e um bando a atravessar o céu de tempos a tempos
+  function bird(c, x, y, s, w) { c.beginPath(); c.moveTo(x - 2 * s, y - w * s * 0.9); c.quadraticCurveTo(x - s, y - s * 0.35, x, y); c.quadraticCurveTo(x + s, y - s * 0.35, x + 2 * s, y - w * s * 0.9); c.stroke(); }
+  function flock(c, t, o) {
+    const cross = (LW + 120) / o.speed, k = (t + (o.phase || 0)) % o.period;
+    if (k > cross) return;
+    c.strokeStyle = o.col; c.lineWidth = 0.9; c.lineCap = 'round';
+    for (let i = 0; i < o.n; i++) {
+      const lead = o.dir > 0 ? -60 + k * o.speed : LW + 60 - k * o.speed;
+      const x = lead - o.dir * (i * 8 + (i % 2) * 5), y = o.y + (i % 3) * 5 + Math.sin(k * 0.7 + i * 1.3) * 3;
+      bird(c, x, y, o.size * (0.8 + (i % 3) * 0.15), Math.sin(t * 9 + i * 1.7));
+    }
+  }
+  // penitente de capirote e andor, à escala 1 (desenhados com translate/scale)
+  const NAZ = (() => { const p = new Path2D(); p.moveTo(-0.22, 0); p.lineTo(-0.14, -0.55); p.lineTo(-0.08, -0.62); p.lineTo(0, -1); p.lineTo(0.08, -0.62); p.lineTo(0.14, -0.55); p.lineTo(0.22, 0); p.closePath(); return p; })();
+  const PASO = (() => {
+    const p = new Path2D(), w = 1, h = 0.66;
+    p.rect(-w / 2, -h * 0.24, w, h * 0.24); for (let i = 0; i < 6; i++) p.rect(-w / 2 + 0.02 + i * (w - 0.06) / 5, -h * 0.96, 0.026, h * 0.74);
+    p.rect(-w / 2 - 0.035, -h, w + 0.07, h * 0.09);
+    for (let k = -w / 2 - 0.03; k < w / 2 + 0.03; k += 0.065) p.rect(k, -h * 0.92, 0.03, 0.065);
+    // a imagem sob o pálio: manto em sino e coroa
+    p.moveTo(-0.13, -h * 0.24); p.quadraticCurveTo(-0.1, -h * 0.55, -0.04, -h * 0.72); p.quadraticCurveTo(0, -h * 0.8, 0.04, -h * 0.72); p.quadraticCurveTo(0.1, -h * 0.55, 0.13, -h * 0.24); p.closePath();
+    return p;
+  })();
+  function procession(c, t, o) {
+    // a fila anda devagar pela ponte; aparece e desaparece aos poucos nas pontas; o andor vai a meio, com a candelária
+    const span = o.x1 - o.x0, n = o.n, gap = span / n, v = o.speed;
+    for (let i = 0; i < n; i++) {
+      if (i === o.paso - 1 || i === o.paso + 1) continue;
+      const u = ((i * gap + t * v) % span + span) % span, x = o.x0 + u, fade = Math.min(1, u / 18, (span - u) / 18);
+      if (fade <= 0.02) continue;
+      const bob = Math.sin(t * 3.1 + i * 1.3) * 0.35, y = o.y + (i === o.paso ? 0 : bob);
+      c.globalAlpha = fade;
+      if (i === o.paso) {
+        c.save(); c.translate(x, y); c.scale(34, 34); c.fillStyle = o.rim; c.translate(-0.012, -0.02); c.fill(PASO); c.translate(0.012, 0.02); c.fillStyle = o.col; c.fill(PASO); c.restore();
+        for (let k = 0; k < 9; k++) { const cx = x - 13.6 + k * 3.4, cy = y - 9.5 - (k % 2) * 1.6, f = 0.5 + 0.2 * Math.sin(t * 11 + k * 2.3); c.globalAlpha = fade; c.fillStyle = '#fff2c8'; c.fillRect(cx - 0.4, cy - 1, 0.8, 1.8); aglow(c, cx, cy - 0.6, 6, '#ffb060', f * fade); }
+        aglow(c, x, y - 14, 26, '#ffb060', (0.22 + 0.05 * Math.sin(t * 5)) * fade);
+        continue;
+      }
+      const h = 13 + (i % 3) * 0.6;
+      c.save(); c.translate(x, y); c.scale(h, h); c.fillStyle = o.rim; c.translate(-0.035, -0.06); c.fill(NAZ); c.translate(0.035, 0.06); c.fillStyle = o.col; c.fill(NAZ); c.restore();
+      const cy = y - h * 0.8, f = 0.45 + 0.18 * Math.sin(t * 12 + i * 2.1) + 0.08 * Math.sin(t * 23 + i);
+      c.globalAlpha = fade; c.fillStyle = '#fff2c8'; c.fillRect(x + 2.6, cy, 0.9, 2.2);
+      aglow(c, x + 3, cy, 7, '#ffb060', f * fade);
+    }
+    c.globalAlpha = 1;
+  }
+  // relâmpago: um raio em ziguezague, sempre o mesmo durante um clarão
+  function bolt(c, seed, x, y0, y1, a) {
+    const r = U.rng(seed); c.save(); c.globalAlpha = Math.min(1, a); c.strokeStyle = '#e8f0ff'; c.lineWidth = 1.6; c.lineJoin = 'round';
+    c.beginPath(); let px = x, py = y0; c.moveTo(px, py);
+    while (py < y1) { py += 8 + r() * 14; px += (r() - 0.5) * 26; c.lineTo(px, py); if (r() < 0.18) { const bx = px + (r() - 0.5) * 40; c.moveTo(px, py); c.lineTo(bx, py + 14 + r() * 16); c.moveTo(px, py); } }
+    c.stroke(); c.restore(); aglow(c, x, (y0 + y1) / 2, 120, '#c8d8ff', a * 0.35);
+  }
+
   // ======================================================================= CIDADE DE CINZA
   // poente de brasa atrás da catedral da cidade alta; a Mãe das Dores colossal a chorar; o casario caiado em socalcos;
   // a ponte por onde passa a procissão; calvário e oliveiras no primeiro plano
   S.city = style(function (R, layers) {
-    const sun = [575, 214], gold = '#ffc488', haze = '#9a5a40';
+    const sun = [575, 214], gold = '#ffc488', haze = '#9a5a40', live = {};
     layers.push({ p: 0.02, draw(c, rnd) {
       horizon(c, 120, 300, haze, 0.62); horizon(c, 230, 300, '#d07850', 0.35);
       glow(c, sun[0], sun[1], 330, '#ff6a2a', 0.32); glow(c, sun[0], sun[1], 120, '#ffb070', 0.55);
@@ -555,7 +621,7 @@
     // longe: a cidade alta com a catedral (fachada, duas torres, cúpula) a tapar o sol; torres soltas; a Mãe das Dores
     layers.push({ p: 0.05, draw(c, rnd) {
       paint(c, [ridge(282, 26, [2, 5, 9], 1.3)], { col: '#3a2a2e', bot: '#6a4436', y0: 250, y1: 340, rim: '#e08858', rimA: 0.7 });
-      const D = [], dl = dolorosa(D, 190, 292, 214), curls = [];
+      const D = [], dl = dolorosa(D, 190, 292, 214), curls = []; live.face = dl.face;
       for (let i = 0; i < 16; i++) curls.push([(rnd() - 0.5) * 0.4, 0.14 + rnd() * 0.4, 0.012 + rnd() * 0.01]);
       glow(c, dl.halo[0], dl.halo[1], 100, '#ffb070', 0.22);
       paint(c, D, { col: '#2a1e26', bot: '#4e3430', y0: 60, y1: 300, rim: gold, rx: -0.5, ry: 0.8, shade: lightIn(dl.halo[0], dl.halo[1], 60, '#8a5a40', 0.35) });
@@ -612,12 +678,7 @@
       for (let px = x0 - 10; px < x1 + 10; px += 5) B.push(rect(px, deck - 9, 1.6, 6.5));
       B.push(rect(x0 - 14, deck - 10.5, x1 - x0 + 28, 2));
       for (const px of [x0 - 10, x1 + 10]) { B.push(rect(px - 5, deck - 24, 10, base - deck + 24)); finial(B, px, deck - 24, 16); }
-      const Pr = [], lights = [];
-      for (let px = x0 + 6; px < x1 - 6; px += 8 + rnd() * 3) { if (Math.abs(px - 480) < 26) continue; nazareno(Pr, px, deck - 10.5, 13 + rnd() * 1.5); lights.push([px + 3, deck - 22]); }
-      paso(Pr, 480, deck - 10.5, 34, lights);
       paint(c, B, { col: '#2a2022', bot: '#1a1214', y0: 280, y1: 360, rim: '#e89868', shade: mottle(rnd, 30, 280, 360, ['#3a2a2a', '#1a1214'], 0.4) });
-      paint(c, Pr, { col: '#140e12', rim: '#ffb070', rimA: 0.9 });
-      rep(c, (q) => { for (const [x, y] of lights) { q.fillStyle = '#fff2c8'; q.fillRect(x - 0.5, y - 1, 1, 2.4); glow(q, x, y, 7, '#ffb060', 0.55); } glow(q, 480, deck - 24, 30, '#ffb060', 0.25); });
     } });
     // perto: calvário, oliveiras e silvas (só em baixo, para não tapar o jogo)
     layers.push({ p: 0.36, draw(c, rnd) {
@@ -630,13 +691,22 @@
       paint(c, G, { col: '#120c0e', bot: '#0a0708', y0: 300, y1: 360, rim: '#a85a40', rx: 0.25, ry: 0.7, rimA: 0.9 });
       rep(c, (q) => { for (const x of [392, 404, 418, 428]) { q.fillStyle = '#fff0c0'; q.fillRect(x, 333, 1.2, 3); glow(q, x + 0.6, 332, 8, '#ffb060', 0.55); } });
     } });
+    layers[1].anim = (c, t) => {
+      flock(c, t, { period: 52, speed: 24, y: 118, n: 7, dir: -1, col: 'rgba(28,18,22,0.9)', size: 2.1 });
+      flock(c, t, { period: 71, phase: 30, speed: 30, y: 168, n: 4, dir: 1, col: 'rgba(40,26,28,0.8)', size: 1.6 });
+      aglow(c, sun[0], sun[1], 120, '#ffb070', 0.1 + 0.05 * Math.sin(t * 0.5));
+      // de tempos a tempos, uma lágrima de cera brilha no rosto da Mãe das Dores
+      const k = (t % 7) / 7; if (live.face && k < 0.16) { const a = Math.sin(k / 0.16 * Math.PI); aglow(c, live.face[0] + 2.6, live.face[1] + 4 + k * 22, 7, '#fff0c0', a); }
+    };
+    layers[3].anim = (c, t) => procession(c, t, { x0: 196, x1: 764, y: 275.5, n: 30, paso: 15, speed: 3.2, col: '#140e12', rim: '#9a5838' });
+    layers[4].anim = (c, t) => { for (const [i, x] of [392, 404, 418, 428].entries()) aglow(c, x + 0.6, 332, 9, '#ffb060', 0.35 + 0.2 * Math.sin(t * 9 + i * 2.2) + 0.08 * Math.sin(t * 21 + i)); };
   });
 
   // ======================================================================= BASTIÃO DAS VIGÍLIAS
   // noite de tempestade, lua entre as nuvens; o Vigia colossal de lanterna erguida no penhasco; a fortaleza; muralhas,
   // forcas com gaiolas e archotes; estacas no primeiro plano
   S.ramparts = style(function (R, layers) {
-    const moon = [318, 92];
+    const moon = [318, 92], live = {};
     layers.push({ p: 0.02, draw(c, rnd) {
       horizon(c, 140, 320, '#3a5070', 0.55);
       glow(c, moon[0], moon[1], 200, '#8aa8e0', 0.2); glow(c, moon[0], moon[1], 50, '#e0ecff', 0.45);
@@ -653,7 +723,7 @@
       for (const [x, w, h, cone] of [[578, 22, 70, true], [650, 30, 96, false], [726, 26, 120, true], [800, 34, 84, false], [882, 22, 66, true]]) keep(F, x, 224, w, h, cone);
       paint(c, F, { col: '#222c3a', bot: '#384a60', y0: 100, y1: 240, rim: '#9ab4e0' });
       rep(c, (q) => { for (const [x, y] of [[650, 150], [726, 128], [800, 160], [660, 196], [760, 200]]) { q.fillStyle = 'rgba(255,190,110,0.85)'; q.fillRect(x - 1, y, 2, 4.5); glow(q, x, y + 2, 7, '#ffb060', 0.45); } });
-      const K = [], kn = knight(K, 170, 270, 210);
+      const K = [], kn = knight(K, 170, 270, 210); live.lamp = kn.lamp;
       paint(c, K, { col: '#141c28', bot: '#28364a', y0: 30, y1: 270, rim: '#b0c8f4', rx: 0.5, ry: 0.9, shade: lightIn(kn.lamp[0], kn.lamp[1], 70, '#6a5030', 0.5) });
       rep(c, (q) => { glow(q, kn.lamp[0], kn.lamp[1], 70, '#ffb860', 0.4); glow(q, kn.lamp[0], kn.lamp[1], 16, '#fff0c0', 0.9); });
       horizon(c, 200, 360, '#34485e', 0.55);
@@ -682,12 +752,18 @@
       for (const [x, y] of [[300, 336], [640, 330], [820, 338]]) { N.push(ell(x, y, 4, 2.6), circ(x + 3.6, y - 2, 1.8), poly([[x + 5, y - 2.4], [x + 8.5, y - 1.6], [x + 5, y - 1]]), poly([[x - 3, y], [x - 8, y - 1.5], [x - 3.6, y + 1.4]])); }
       paint(c, N, { col: '#07090d', rim: '#1e2a3c', rx: 0.15, ry: 0.45, rimA: 0.8 });
     } });
+    layers[1].anim = (c, t, cam) => {
+      if (live.lamp) aglow(c, live.lamp[0], live.lamp[1], 46, '#ffb860', 0.22 + 0.1 * Math.sin(t * 7.3) + 0.06 * Math.sin(t * 19));
+      if (cam && cam.flash > 0.15) { const seed = Math.floor(t / 1.5) + 7; bolt(c, seed, 60 + (seed * 137) % 840, -10, 170 + (seed * 53) % 60, cam.flash); }
+    };
+    layers[2].anim = (c, t) => { for (const [i, x] of [40, 250, 400, 560, 700, 910].entries()) aglow(c, x, 258, 20, '#ff9a40', 0.32 + 0.16 * Math.sin(t * 10 + i * 1.9) + 0.07 * Math.sin(t * 27 + i)); };
   });
 
   // ======================================================================= FORJAS AFUNDADAS (vê-se pelas grades)
   // um céu de fumo aceso por baixo; chaminés de tijolo a cuspir fogo; altos-fornos de boca acesa; um caldeirão
   // colossal suspenso a verter metal; arcaria de tijolo com braseiros pendurados
   S.forge = style(function (R, layers) {
+    const live = {};
     layers.push({ p: 0.03, draw(c, rnd) {
       horizon(c, 100, 360, '#c03a10', 0.6);
       glow(c, 480, 340, 460, '#ff5a1a', 0.35); glow(c, 200, 330, 220, '#ffa040', 0.25); glow(c, 790, 320, 240, '#ffa040', 0.22);
@@ -704,7 +780,7 @@
       const bw = []; for (let i = 0; i <= 18; i++) { const t = Math.PI * i / 18; bw.push(R2(-52 * Math.cos(t), 46 * Math.sin(t))); }
       Cr.push(poly(bw), poly([R2(-57, -7), R2(57, -7), R2(57, 2), R2(-57, 2)]), poly([R2(52, -7), R2(78, -16), R2(57, 3)]), poly([R2(-40, 40), R2(40, 40), R2(30, 50), R2(-30, 50)]));
       for (const px of [-48, 0, 48]) Cr.push(line([R2(px, -7), [cx + px * 0.4, -10]], 1.8));
-      const spout = R2(78, -16);
+      const spout = R2(78, -16); live.spout = spout; live.chs = chs;
       paint(c, Ch, { col: '#1e100c', bot: '#3a1a10', y0: 60, y1: 360, rim: '#ff8a40', rimA: 0.8 });
       paint(c, Fu, { col: '#1a0c08', bot: '#2e140c', y0: 150, y1: 362, rim: '#ffa050', shade: mottle(rnd, 30, 150, 362, ['#2a140c', '#0e0604'], 0.4) });
       paint(c, Cr, { col: '#140a08', rim: '#ffb060' });
@@ -730,13 +806,26 @@
         for (const x of hang) { q.fillStyle = 'rgba(255,160,60,0.95)'; q.fillRect(x - 13, 197, 26, 2.4); glow(q, x, 196, 26, '#ff8a30', 0.45); }
       });
     } });
+    layers[1].anim = (c, t) => {
+      if (!live.spout) return;
+      const [sx, sy] = live.spout;
+      // gotas de metal a descer pelo fio
+      c.fillStyle = 'rgba(255,240,170,0.9)';
+      for (let i = 0; i < 7; i++) { const k = ((t * 0.8 + i / 7) % 1), y = sy + k * (362 - sy), x = sx + 16 * Math.sin(Math.min(1, k * 3) * Math.PI / 2) - 2 * k; c.fillRect(x - 1.2, y, 2.4, 6); }
+      aglow(c, sx + 14, 345, 50, '#ff8030', 0.3 + 0.12 * Math.sin(t * 6));
+      for (const [i, [x, , h]] of live.chs.entries()) {
+        aglow(c, x, 362 - h - 8, 30, '#ffb050', 0.35 + 0.15 * Math.sin(t * 5 + i * 1.7) + 0.08 * Math.sin(t * 13 + i));
+        for (let k = 0; k < 4; k++) { const ph = ((t * 0.35 + k / 4 + i * 0.13) % 1); c.globalAlpha = (1 - ph) * 0.9; c.fillStyle = '#ffd080'; c.fillRect(x + Math.sin(ph * 9 + k * 2 + i) * 9, 362 - h - 12 - ph * 60, 1.4, 1.4); }
+        c.globalAlpha = 1;
+      }
+    };
   });
 
   // ======================================================================= JARDINS AFOGADOS
   // névoa verde-água ao luar; estufas de ferro e vidro; a cabeça colossal de uma santa afundada até ao queixo, de
   // olhos fechados, a chorar, com velas a flutuar à volta; arcadas inundadas, salgueiros-chorões, juncos
   S.garden = style(function (R, layers) {
-    const moon = [300, 86], water = 296;
+    const moon = [300, 86], water = 296, live = {};
     layers.push({ p: 0.02, draw(c, rnd) {
       horizon(c, 120, 320, '#3a7a6a', 0.45);
       glow(c, moon[0], moon[1], 220, '#b8ffe8', 0.16); glow(c, moon[0], moon[1], 48, '#e8fff4', 0.4);
@@ -776,7 +865,7 @@
       const wg = c.createLinearGradient(0, water, 0, 362); wg.addColorStop(0, '#1e4a44'); wg.addColorStop(1, '#0e2624'); c.fillStyle = wg; c.fillRect(0, water, LW, 362 - water);
       paint(c, Hd.concat(T), { col: '#3a6a60', alpha: 0.32, flipY: water, blur: 1.6 });
       c.fillStyle = 'rgba(200,255,235,0.3)'; for (let i = 0; i < 40; i++) { const y = water + 4 + rnd() * 60, w = 6 + rnd() * 26; c.fillRect(moon[0] - w / 2 + (rnd() - 0.5) * 50 * (y - water) / 60, y, w, 0.8); }
-      const cand = []; for (let i = 0; i < 14; i++) cand.push([470 + rnd() * 300, water + 3 + rnd() * 16]);
+      const cand = []; for (let i = 0; i < 14; i++) cand.push([470 + rnd() * 300, water + 3 + rnd() * 16]); live.cand = cand;
       rep(c, (q) => { for (const [x, y] of cand) { q.fillStyle = 'rgba(30,70,50,0.95)'; q.beginPath(); q.ellipse(x, y + 1.5, 5, 1.4, 0, 0, TAU); q.fill(); q.fillStyle = '#f0f0e0'; q.fillRect(x - 0.7, y - 3, 1.4, 3.5); glow(q, x, y - 4, 9, '#ffe0a0', 0.6); } });
       horizon(c, 236, 300, '#3a7a6a', 0.3);
     } });
@@ -800,16 +889,22 @@
       for (const x of [140, 520, 860]) brambles(N, x, 352, 40, rnd);
       paint(c, N, { col: '#08120e', rim: '#4a8a76', rx: 0.2, ry: 0.5, rimA: 0.8 });
       rep(c, (q) => { for (const [x, y] of [[150, 318], [530, 314], [866, 320], [500, 330]]) { q.fillStyle = '#7a1424'; q.beginPath(); q.arc(x, y, 2.4, 0, TAU); q.fill(); } });
-      const fl = []; for (let i = 0; i < 26; i++) fl.push([rnd() * LW, 150 + rnd() * 190, 5]);
-      rep(c, glows(fl, 5, '#d0ffb0', 0.55));
     } });
+    const flies = []; { const r = U.rng(4471); for (let i = 0; i < 26; i++) flies.push([r() * LW, 150 + r() * 180, r() * 6.28, 0.3 + r() * 0.5]); }
+    layers[1].anim = (c, t) => {
+      if (live.cand) for (const [i, [x, y]] of live.cand.entries()) aglow(c, x, y - 4 + Math.sin(t * 1.3 + i) * 0.6, 8, '#ffe0a0', 0.35 + 0.18 * Math.sin(t * 9 + i * 1.7));
+      c.fillStyle = 'rgba(220,255,240,0.5)';
+      for (let i = 0; i < 9; i++) { const k = Math.sin(t * 1.7 + i * 2.3); if (k < 0.2) continue; c.globalAlpha = (k - 0.2) * 0.8; c.fillRect(moon[0] - 20 + ((i * 37) % 44) + Math.sin(t * 0.7 + i) * 4, water + 6 + i * 5, 6 + (i % 3) * 4, 0.8); }
+      c.globalAlpha = 1;
+    };
+    layers[3].anim = (c, t) => { for (const [x0, y0, ph, sp] of flies) { const x = x0 + Math.sin(t * sp + ph) * 18, y = y0 + Math.sin(t * sp * 1.3 + ph * 2) * 10, a = 0.25 + 0.45 * Math.max(0, Math.sin(t * 2.2 + ph * 3)); aglow(c, x, y, 5, '#d0ffb0', a); } };
   });
 
   // ======================================================================= TORRE DOS SINOS (acima das nuvens)
   // o sol a pôr-se num mar de nuvens; torres sineiras a romper; o braço de pedra com o círio aceso; correntes com
   // flâmulas entre as torres; corvos
   S.tower = style(function (R, layers) {
-    const sun = [470, 268];
+    const sun = [470, 268], live = {};
     layers.push({ p: 0.02, draw(c, rnd) {
       horizon(c, 100, 300, '#c08868', 0.55); horizon(c, 220, 300, '#ffc890', 0.4);
       glow(c, sun[0], sun[1], 340, '#ffb080', 0.3); glow(c, sun[0], sun[1], 90, '#ffe0b0', 0.55);
@@ -821,7 +916,7 @@
     layers.push({ p: 0.05, draw(c, rnd) {
       const T = [], hs = [];
       for (const [x, w, h, r] of [[60, 22, 186, 'spire'], [210, 16, 132, 'bulb'], [325, 26, 216, 'dome'], [800, 20, 166, 'spire'], [905, 14, 118, 'bulb']]) hs.push(belfry(T, x, 320, w, h, { roof: r, bells: true }));
-      const H = [], fl = fistCandle(H, 610, 330, 236);
+      const H = [], fl = fistCandle(H, 610, 330, 236); live.flame = fl;
       paint(c, T, { col: '#3a2e48', bot: '#5a4868', y0: 100, y1: 320, rim: '#ffd8b0', shade: lightIn(sun[0], sun[1], 200, '#7a5a60', 0.4) });
       paint(c, H, { col: '#30263e', bot: '#544462', y0: 50, y1: 320, rim: '#ffe0b8', rx: 0.8, ry: 0.7, shade: both(lightIn(fl[0], fl[1], 110, '#b08060', 0.5), mottle(rnd, 20, 60, 320, ['#3a2e48', '#241c30'], 0.4)) });
       rep(c, (q) => {
@@ -849,13 +944,17 @@
     layers.push({ p: 0.3, draw(c, rnd) {
       cumulus(c, rnd, { n: 9, y: 368, dy: 6, w0: 110, w1: 200, from: 'top', floor: true, litW: 0.12, body: '#2e2440', lit: '#d8a090', shadeCol: '#181224', shadeA: 0.5, alpha: 0.85, blur: 1.6 });
     } });
+    layers[1].anim = (c, t) => {
+      flock(c, t, { period: 44, speed: 22, y: 150, n: 6, dir: 1, col: 'rgba(40,30,56,0.85)', size: 2 });
+      if (live.flame) { const [x, y] = live.flame, f = 0.85 + 0.12 * Math.sin(t * 11) + 0.06 * Math.sin(t * 27); aglow(c, x, y, 34 * f, '#ffc070', 0.4 * f); c.fillStyle = '#fff6d8'; c.beginPath(); c.moveTo(x + Math.sin(t * 7) * 1.2, y - 13 * f); c.quadraticCurveTo(x + 4.6, y - 2, x, y + 4); c.quadraticCurveTo(x - 4.6, y - 2, x + Math.sin(t * 7) * 1.2, y - 13 * f); c.fill(); }
+    };
   });
 
   // ======================================================================= CATEDRAL DO CREPÚSCULO (vê-se pelas janelas)
   // noite violeta e lua crescente; uma cidade de cúpulas e agulhas; a Virgem da lua ao longe; perto, o telhado da
   // catedral: balaustrada, pináculos, santos e gárgulas
   S.cathedral = style(function (R, layers) {
-    const moon = [250, 96];
+    const moon = [250, 96], live = {};
     layers.push({ p: 0.02, draw(c, rnd) {
       horizon(c, 140, 330, '#4a3070', 0.5);
       stars(c, rnd, 140, 260, '#f0e8ff');
@@ -871,7 +970,7 @@
       for (const [x, w, h, r] of [[40, 14, 150, 'spire'], [196, 13, 130, 'bulb'], [370, 18, 186, 'spire'], [572, 16, 170, 'spire'], [930, 15, 160, 'bulb']]) belfry(C, x, 302, w, h, { roof: r });
       paint(c, C, { col: '#241a38', bot: '#3e2c5a', y0: 110, y1: 300, rim: '#d8c8ff', shade: lightIn(moon[0], moon[1], 260, '#4a3a70', 0.4) });
       rep(c, (q) => { for (const d of ws) for (const [x, y, w, h] of d.wins) { q.fillStyle = 'rgba(255,214,150,0.75)'; q.beginPath(); archP(q, x, y + h, Math.max(2.2, w * 0.7), h * 0.9); q.fill(); glow(q, x, y + h / 2, 7, '#ffd090', 0.35); } });
-      const V = [], vi = inmaculada(V, 720, 286, 176);
+      const V = [], vi = inmaculada(V, 720, 286, 176); live.stars = vi.stars;
       glow(c, vi.halo[0], vi.halo[1], 70, '#ffe8b0', 0.25);
       paint(c, V, { col: '#2a2040', bot: '#3e2c5a', y0: 110, y1: 286, rim: '#ffe8c0', rx: -0.4, ry: 0.9 });
       rep(c, (q) => { glows(vi.stars, 4, '#fff0c0', 0.85)(q); glow(q, vi.moon[0], vi.moon[1], 30, '#e8d8ff', 0.25); });
@@ -894,6 +993,12 @@
       paint(c, G, { col: '#140e20', rim: '#b8a0f0' });
       rep(c, (q) => { for (let x = 30; x < LW; x += 100) { q.fillStyle = 'rgba(255,200,130,0.5)'; q.beginPath(); archP(q, x, 362, 10, 30); q.fill(); glow(q, x, 348, 16, '#ffc080', 0.3); } });
     } });
+    const tw = []; { const r = U.rng(9911); for (let i = 0; i < 30; i++) tw.push([r() * LW, r() * 220, r() * 6.28, 0.6 + r() * 1.4]); }
+    layers[1].anim = (c, t) => {
+      c.fillStyle = '#f4eeff'; for (const [x, y, ph, sp] of tw) { const a = Math.sin(t * sp + ph); if (a > 0.3) { c.globalAlpha = (a - 0.3) * 1.2; c.fillRect(x - 0.7, y - 0.7, 1.4, 1.4); } }
+      c.globalAlpha = 1;
+      if (live.stars) for (const [i, [x, y]] of live.stars.entries()) aglow(c, x, y, 5, '#fff0c0', 0.3 + 0.35 * Math.max(0, Math.sin(t * 1.6 + i * 0.9)));
+    };
   });
 
   // ======================================================================= PALÁCIO REAL (vê-se pelas janelas)
@@ -901,6 +1006,7 @@
   // ajoelhados de espada erguida
   S.palace = style(function (R, layers) {
     const sun = [480, 132];
+    const ash = []; { const r = U.rng(5521); for (let i = 0; i < 40; i++) ash.push([r() * LW, r() * 320, 20 + r() * 40, 40 + r() * 50]); }
     layers.push({ p: 0.02, draw(c, rnd) {
       horizon(c, 80, 330, '#a02818', 0.6);
       glow(c, sun[0], sun[1], 330, '#ff4020', 0.28); glow(c, sun[0], sun[1], 80, '#ffb070', 0.5);
@@ -939,5 +1045,11 @@
       rep(c, (q) => { for (let i = 1; i < 8; i += 2) { const x = (i + 0.5) * LW / 8; q.fillStyle = '#c89040'; q.beginPath(); q.arc(x, 232, 4, 0, TAU); q.fill(); } });
       paint(c, K, { col: '#2a1612', bot: '#1a0c0a', y0: 60, y1: 200, rim: '#ffc080' });
     } });
+    layers[1].anim = (c, t) => {
+      aglow(c, sun[0], sun[1], 90, '#ffb070', 0.18 + 0.08 * Math.sin(t * 0.9));
+      c.strokeStyle = 'rgba(255,180,140,0.22)'; c.lineWidth = 0.8; c.beginPath();
+      for (const [x0, y0, len, sp] of ash) { const x = ((x0 + t * sp) % (LW + 80)) - 40, y = y0 + ((t * sp * 0.18) % 40); c.moveTo(x, y); c.lineTo(x + len, y + len * 0.18); }
+      c.stroke();
+    };
   });
 })(window.VS);

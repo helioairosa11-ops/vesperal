@@ -81,6 +81,7 @@
       if (def.onEnter) def.onEnter(this);
       VS.events.emit('room', id);
       if (VS.Wanderer) VS.Wanderer.onEnter(this);
+      if (VS.Ambient) VS.Ambient.onEnter(this);
     }
     setRegionAudio() {
       const def = VS.ROOMS[this.room.id];
@@ -117,6 +118,7 @@
       p.update(dt, this);
       for (const e of this.ents) if (!e.remove) e.update(dt, this);
       if (VS.Wanderer) VS.Wanderer.update(this, dt);
+      if (VS.Ambient) VS.Ambient.update(this, dt);
       this.resolveHits();
       if (this.ents.some((e) => e.remove)) { this.ents = this.ents.filter((e) => !e.remove); this.entsSig = (this.entsSig || 0) + 1; }
       this.hitboxes.length = 0;
@@ -470,7 +472,7 @@
       VS.BG.drawSky(bc, R, this.time);
       if (this.lightning > 0) { bc.fillStyle = `rgba(200,220,255,${this.lightning * 0.35})`; bc.fillRect(0, 0, U.VIEW_W, U.VIEW_H); }
       const rdef = VS.ROOMS[room.id], bcam = this._bgCam || (this._bgCam = { x: 0, y: 0 });
-      bcam.x = cam.x + ((rdef && rdef.x) || 0) * U.CELL_W * U.TILE; bcam.y = cam.y;
+      bcam.x = cam.x + ((rdef && rdef.x) || 0) * U.CELL_W * U.TILE; bcam.y = cam.y; bcam.t = this.time; bcam.flash = this.lightning > 0 ? this.lightning : 0;
       VS.BG.draw(bc, R, bcam, room.ph, G.bgScale);
       bc.fillStyle = R.haze; bc.fillRect(0, 0, U.VIEW_W, U.VIEW_H);
       ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = true;
@@ -486,6 +488,7 @@
       for (const e of list) if ((e.z || 0) < 0 && G.inView(e.x, e.y, e.w, e.h, 120)) e.draw(ctx, this);
       G.drawParticles(ctx, 1);
       VS.Tiles.drawRoom(ctx, room, R, cam, this.time);
+      if (VS.Ambient) VS.Ambient.draw(ctx, this);
       G.drawParticles(ctx, 0);
       // os chefes desenham-se sempre: os avisos deles (auréolas, colunas, muros de fogo) podem estar longe do corpo
       for (const e of list) if ((e.z || 0) >= 0 && (e.z || 0) < 10 && (e.isBoss || e.drawAlways || G.inView(e.x, e.y, e.w, e.h, 160))) e.draw(ctx, this);
@@ -514,7 +517,8 @@
       VS.FX.draw(ctx);
       G.drawParticles(ctx, 2);
       VS.Deco.drawFront(ctx, room, R, cam);
-      // indicador de interação
+      // indicador de interação (no mundo, por cima do primeiro plano)
+      G.worldTransform(ctx);
       if (this.interactTarget && !this.cutscene) VS.UI.drawPrompt(ctx, this.interactTarget, this);
       G.screenTransform(ctx);
       G.vignette(0.55, R.tint);

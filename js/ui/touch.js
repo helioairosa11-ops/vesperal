@@ -64,6 +64,8 @@
     Touch.layout();
     VS.events.on('resize', Touch.layout);
     window.addEventListener('touchstart', () => { In.lastDevice = 'touch'; Touch.refresh(); }, { passive: true });
+    // telemóveis e tablets sem rato: as dicas e os avisos mostram logo os controlos táteis (e não as teclas)
+    try { if (matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches) In.lastDevice = 'touch'; } catch (er) { }
   };
   function bindBtn(d, a) {
     const down = (e) => { e.preventDefault(); d.setPointerCapture(e.pointerId); In.touch[a] = true; In.touchTap[a] = true; d.classList.add('down'); In.lastDevice = 'touch'; if (a === 'jump' || a === 'attack') VS.Audio.init(); if (navigator.vibrate && (a === 'attack' || a === 'parry')) try { navigator.vibrate(8); } catch (er) { } };

@@ -1,7 +1,9 @@
 // Vesperal — os três finais: sequências próprias, ecrã de vitória e créditos
 'use strict';
 (function (VS) {
-  const U = VS.U, G = VS.Gfx, A = VS.Audio, W = U.SCREEN_W, H = U.SCREEN_H;
+  const U = VS.U, G = VS.Gfx, A = VS.Audio;
+  // tamanho lógico do ecrã (muda com a forma do ecrã: ver U.fitScreen); lido a cada imagem
+  let W = U.SCREEN_W, H = U.SCREEN_H;
   const LINES = {
     end1: ['end1_l1', 'end1_l2', 'end1_l3', 'end1_l4', 'end1_l5', 'end1_l6'],
     end2: ['end2_l1', 'end2_l2', 'end2_l3', 'end2_l4', 'end2_l5', 'end2_l6'],
@@ -48,6 +50,7 @@
       UI.open(panel);
     }
     draw(ctx) {
+      W = U.SCREEN_W; H = U.SCREEN_H;
       G.hudTransform(ctx);
       const t = this.t, k = Math.min(1, t / 40);
       if (this.id === 'end1') this.drawEnd1(ctx, t, k);
@@ -68,10 +71,10 @@
     // ---------- Final 1: A Nova Chama ----------
     drawEnd1(ctx, t, k) {
       const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#120806'); g.addColorStop(1, U.mix('#3a1a0a', '#7a3a10', k)); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = '#0c0606'; for (let i = 0; i < 6; i++) ctx.fillRect(40 + i * 110, 0, 26, H);
+      ctx.fillStyle = '#0c0606'; for (let x = 40 + ((W - 640) / 2) % 110; x < W; x += 110) ctx.fillRect(x, 0, 26, H);
       ctx.fillStyle = '#080404'; ctx.fillRect(0, H - 50, W, 50);
       // mortos que finalmente descansam
-      for (let i = 0; i < 9; i++) { const x = 60 + i * 64 + Math.sin(i) * 10, rise = Math.max(0, t - 6 - i * 1.2) * 6; const a = Math.max(0, 0.5 - rise / 200); if (a <= 0) continue; ctx.globalAlpha = a; this.figure(ctx, x, H - 50 - rise, 0.8, '#7a90c0'); ctx.globalAlpha = 1; if (Math.random() < 0.05) G.emit({ x, y: H - 60 - rise, vy: -20, life: 2, size: 1, color: '#a0b8ff', add: true }); }
+      for (let i = 0; i < 9; i++) { const x = 60 + i * (W - 128) / 8 + Math.sin(i) * 10, rise = Math.max(0, t - 6 - i * 1.2) * 6; const a = Math.max(0, 0.5 - rise / 200); if (a <= 0) continue; ctx.globalAlpha = a; this.figure(ctx, x, H - 50 - rise, 0.8, '#7a90c0'); ctx.globalAlpha = 1; if (Math.random() < 0.05) G.emit({ x, y: H - 60 - rise, vy: -20, life: 2, size: 1, color: '#a0b8ff', add: true }); }
       // Ione recebe as brasas
       const ix = W / 2 + 30, iy = H - 50;
       const glowK = Math.min(1, Math.max(0, (t - 10) / 14));
@@ -87,7 +90,8 @@
     drawEnd2(ctx, t, k) {
       const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#0a0610'); g.addColorStop(1, '#2a0a14'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
       // janelas com crepúsculo eterno
-      for (let i = 0; i < 4; i++) { const x = 70 + i * 150; const wg = ctx.createLinearGradient(0, 40, 0, 220); wg.addColorStop(0, '#3a2050'); wg.addColorStop(1, '#8a4060'); ctx.fillStyle = wg; ctx.beginPath(); ctx.moveTo(x, 220); ctx.lineTo(x, 80); ctx.quadraticCurveTo(x + 30, 40, x + 60, 80); ctx.lineTo(x + 60, 220); ctx.fill(); }
+      const nw = Math.max(4, Math.floor((W - 40) / 150)), w0 = (W - (nw - 1) * 150 - 60) / 2;
+      for (let i = 0; i < nw; i++) { const x = w0 + i * 150; const wg = ctx.createLinearGradient(0, 40, 0, 220); wg.addColorStop(0, '#3a2050'); wg.addColorStop(1, '#8a4060'); ctx.fillStyle = wg; ctx.beginPath(); ctx.moveTo(x, 220); ctx.lineTo(x, 80); ctx.quadraticCurveTo(x + 30, 40, x + 60, 80); ctx.lineTo(x + 60, 220); ctx.fill(); }
       ctx.fillStyle = '#060306'; ctx.fillRect(0, H - 60, W, 60);
       // trono
       const tx = W / 2, ty = H - 60;
@@ -120,7 +124,7 @@
       ctx.fillStyle = '#05040a'; ctx.fillRect(0, H - 40, W, 40);
       // aves
       ctx.strokeStyle = 'rgba(20,10,20,0.7)'; ctx.lineWidth = 1;
-      for (let i = 0; i < 6; i++) { const bx = (t * 18 + i * 90) % (W + 40) - 20, by = 80 + Math.sin(t + i) * 10 + i * 8; const f = Math.sin(t * 8 + i) * 3; ctx.beginPath(); ctx.moveTo(bx - 5, by - f); ctx.lineTo(bx, by); ctx.lineTo(bx + 5, by - f); ctx.stroke(); }
+      for (let i = 0; i < 6; i++) { const bx = (t * 18 + i * W / 7) % (W + 40) - 20, by = 80 + Math.sin(t + i) * 10 + i * 8; const f = Math.sin(t * 8 + i) * 3; ctx.beginPath(); ctx.moveTo(bx - 5, by - f); ctx.lineTo(bx, by); ctx.lineTo(bx + 5, by - f); ctx.stroke(); }
       // Ione sente o calor; o Desperto torna-se luz
       this.figure(ctx, W / 2 + 40, H - 40, 1.2, '#140c10');
       const fade = Math.max(0, 1 - Math.max(0, t - 26) / 10);

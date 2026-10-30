@@ -249,7 +249,8 @@
       const can = document.createElement('canvas'); can.width = Math.round(LW * bs); can.height = Math.round(LH * bs);
       const c = can.getContext('2d'); c.scale(can.width / LW, can.height / LH);
       L.draw(c, rnd);
-      // ponta-a-ponta: duplicar a borda para emendar
+      // plano com o céu pintado (a primeira linha é opaca): quando desce, por cima prolonga-se essa linha
+      try { const row = c.getImageData(0, 0, can.width, 1).data; let op = true; for (let i = 3; i < row.length; i += 32) if (row[i] < 250) { op = false; break; } L.topRow = op; } catch (e) { L.topRow = false; }
       L.canvas = can;
     });
     return { layers };
@@ -271,21 +272,47 @@
     if (!g) { g = skyG[k] = ctx.createLinearGradient(0, 0, 0, vh); g.addColorStop(0, R.sky[0]); g.addColorStop(0.6, R.sky[1]); g.addColorStop(1, R.sky[2]); }
     ctx.fillStyle = g; ctx.fillRect(0, 0, vw, vh);
   };
-  BG.draw = function (ctx, R, cam, roomH, scale, vw, vh) {
+  // base: deslocamento vertical fixo de todos os planos (o menu assenta-os no chão nos ecrãs mais altos)
+  BG.draw = function (ctx, R, cam, roomH, scale, vw, vh, base) {
     vw = vw || U.VIEW_W; vh = vh || U.VIEW_H;
     const set = BG.get(R);
     for (const L of set.layers) {
       const ox = -((cam.x * L.p) % LW);
       // vertical: alinhar a base do padrão com a base da sala, com paralaxe reduzida
       const maxY = Math.max(0, roomH - vh);
-      const oy = maxY > 0 ? (maxY - cam.y) * L.p * 0.5 : 0;
-      for (let x = ox - LW; x < vw + LW; x += LW) {
-        if (x + LW < 0 || x > vw) continue;
-        ctx.drawImage(L.canvas, Math.floor(x), Math.floor(oy), LW + 0.5, LH);
+      const oy = (maxY > 0 ? (maxY - cam.y) * L.p * 0.5 : 0) + (base || 0);
+      // nas salas altas o plano do céu desce: a faixa por cima dele é a sua primeira linha esticada (sem emenda à vista)
+      if (oy > 0 && L.topRow) for (let x = ox - LW; x < vw + LW; x += LW) { if (x + LW < 0 || x > vw) continue; ctx.drawImage(L.canvas, 0, 0, L.canvas.width, 1, x, 0, LW + 0.5, oy + 0.5); }
+      // a faixa repete-se como um padrão, deslocada com frações de píxel: os planos deslizam tão suaves como o
+      // resto do mundo (antes iam aos saltos de uma unidade inteira, 2 a 3 píxeis no ecrã) e não há emendas
+      const pat = patternOf(ctx, L);
+      if (pat) {
+        M.a = LW / L.canvas.width; M.d = LH / L.canvas.height; M.e = ox; M.f = oy;
+        pat.setTransform(M); ctx.fillStyle = pat; ctx.fillRect(0, Math.max(0, oy), vw, Math.min(vh, oy + LH) - Math.max(0, oy));
+      } else {
+        for (let x = ox - LW; x < vw + LW; x += LW) {
+          if (x + LW < 0 || x > vw) continue;
+          ctx.drawImage(L.canvas, x, oy, LW + 0.5, LH);
+        }
+      }
+      if (L.anim) {
+        for (let x = ox - LW; x < vw + LW; x += LW) {
+          if (x + LW < 0 || x > vw) continue;
+          ctx.save(); ctx.translate(x, oy); L.anim(ctx, cam.t || 0, cam); ctx.restore();
+        }
       }
       if (oy > 0) { ctx.fillStyle = R.stoneDark; ctx.fillRect(0, oy + LH - 1, vw, vh); }
     }
   };
+  // padrão de cada faixa (um por contexto de desenho), com a matriz reaproveitada a cada imagem
+  const M = typeof DOMMatrix === 'function' ? new DOMMatrix() : null;
+  function patternOf(ctx, L) {
+    if (!M) return null;
+    if (L.pat && L.patCtx === ctx) return L.pat;
+    let p = null; try { p = ctx.createPattern(L.canvas, 'repeat-x'); } catch (e) { p = null; }
+    if (!p || typeof p.setTransform !== 'function') return null;
+    L.pat = p; L.patCtx = ctx; return p;
+  }
   BG.clear = () => { for (const k in cache) delete cache[k]; recent.length = 0; };
 
   // as regiões podem ser redesenhadas noutro ficheiro (bg_art.js) — expõe o essencial

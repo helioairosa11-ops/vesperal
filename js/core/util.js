@@ -11,7 +11,19 @@ window.VS = window.VS || {};
   U.VIEW_W = 640;         // área do mundo à vista (menor = câmara mais perto)
   U.VIEW_H = 360;
   U.ZOOM = 1;
-  U.setZoom = function (z) { U.ZOOM = z || 1; U.VIEW_W = Math.round(U.SCREEN_W / U.ZOOM); U.VIEW_H = Math.round(U.SCREEN_H / U.ZOOM); };
+  U.setZoom = function (z) { U.ZOOM = z || 1; U.fitScreen(U.ASPECT); };
+  // o ecrã lógico toma a forma do ecrã real, para não haver barras pretas: 360 de altura e a largura que o ecrã pedir
+  // (telemóveis largos, monitores ultralargos: até 2,4:1), ou 640 de largura e mais altura nos ecrãs mais quadrados
+  // (tablets 4:3). A vista do mundo nunca passa de uma célula do mapa — a sala mais pequena —, para a câmara não
+  // mostrar o que fica fora da sala; com o zoom mais afastado o ecrã fica em 16:9, como antes.
+  U.ASPECT = 16 / 9;
+  U.fitScreen = function (ar) {
+    ar = ar > 0 && isFinite(ar) ? ar : 16 / 9; U.ASPECT = ar;
+    const maxW = Math.floor(U.CELL_W * U.TILE * U.ZOOM), maxH = Math.floor(U.CELL_H * U.TILE * U.ZOOM);
+    if (ar >= 16 / 9) { U.SCREEN_H = 360; U.SCREEN_W = Math.max(640, Math.min(Math.round(360 * Math.min(ar, 2.4)), maxW)); }
+    else { U.SCREEN_W = 640; U.SCREEN_H = Math.max(360, Math.min(Math.round(640 / Math.max(ar, 4 / 3)), maxH)); }
+    U.VIEW_W = Math.round(U.SCREEN_W / U.ZOOM); U.VIEW_H = Math.round(U.SCREEN_H / U.ZOOM);
+  };
   U.DT = 1 / 60;
 
   U.clamp = (v, a, b) => (v < a ? a : v > b ? b : v);

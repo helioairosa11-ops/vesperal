@@ -21,11 +21,14 @@
   G.resize = function () {
     const wrap = G.canvas.parentElement;
     const W = wrap.clientWidth, H = wrap.clientHeight;
+    if (W > 0 && H > 0) U.fitScreen(W / H);
     const ar = U.SCREEN_W / U.SCREEN_H;
     let cw = W, ch = W / ar;
     if (ch > H) { ch = H; cw = H * ar; }
     cw = Math.floor(cw); ch = Math.floor(ch);
-    const mobile = matchMedia('(pointer: coarse)').matches;
+    // a forma lógica é arredondada: o píxel ou dois que sobram não ficam como uma risca preta na borda
+    if (W - cw <= 2) cw = W; if (H - ch <= 2) ch = H;
+    const mobile = matchMedia('(pointer: coarse)').matches; G.mobile = mobile;
     G.dpr = Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 2);
     G.canvas.style.width = cw + 'px'; G.canvas.style.height = ch + 'px';
     G.canvas.style.left = Math.floor((W - cw) / 2) + 'px'; G.canvas.style.top = Math.floor((H - ch) / 2) + 'px';
@@ -70,7 +73,8 @@
 
   // camada de fundo a resolução reduzida (céu, paralaxe e névoa)
   G.bgLayer = function () {
-    const k = G.quality === 'high' ? 0.75 : G.quality === 'low' ? 0.45 : G.autoLevel >= 2 ? 0.45 : 0.6;
+    // no computador o fundo vai a 75 % (os fundos pintados pedem nitidez); no telemóvel a 60 %; baixa sozinha se o jogo pesar
+    const k = G.quality === 'high' ? 0.75 : G.quality === 'low' ? 0.45 : G.autoLevel >= 2 ? 0.45 : G.mobile ? 0.6 : 0.75;
     const w = Math.max(64, Math.round(G.canvas.width * k)), h = Math.max(36, Math.round(G.canvas.height * k));
     if (!G.bgCanvas) { G.bgCanvas = document.createElement('canvas'); G.bgCtx = G.bgCanvas.getContext('2d', { alpha: false }); }
     if (G.bgCanvas.width !== w || G.bgCanvas.height !== h) { G.bgCanvas.width = w; G.bgCanvas.height = h; }
@@ -104,7 +108,7 @@
     ctx.setTransform(s, 0, 0, s, Math.round((-G.cam.x * p - G.cam.sx) * s), Math.round((-G.cam.y * p - G.cam.sy) * s));
   };
   G.screenTransform = function (ctx) { ctx.setTransform(G.scale, 0, 0, G.scale, 0, 0); };
-  // HUD, menus e finais: sempre em 640×360 lógicos, seja qual for o zoom da câmara
+  // HUD, menus e finais: em unidades lógicas do ecrã (360 de altura, ou 640 de largura), seja qual for o zoom da câmara
   G.hudTransform = function (ctx) { ctx.setTransform(G.hudScale || G.scale, 0, 0, G.hudScale || G.scale, 0, 0); };
   G.inView = function (x, y, w, h, m) {
     m = m || 40;

@@ -279,18 +279,29 @@
   D.drawFront = function (ctx, room, R, cam) {
     const d = D.get(room), par = 1.25;
     const s = G.scale;
+    // a transformação de paralaxe fica só aqui dentro (o que se desenha depois — o aviso de interação — volta ao mundo)
+    ctx.save();
+    try { drawFrontItems(ctx, room, R, cam, d, par, s); } finally { ctx.restore(); }
+  };
+  function drawFrontItems(ctx, room, R, cam, d, par, s) {
     ctx.setTransform(s, 0, 0, s, Math.round((-cam.x * par - cam.sx) * s), Math.round((-cam.y - cam.sy) * s));
     ctx.fillStyle = '#030204';
+    const time = G.time || 0;
     for (const f of d.front) {
       const x = f.x * 1.25;
       if (x < cam.x * par - 80 || x > cam.x * par + U.VIEW_W + 80) continue;
       const k = R.key;
+      // vento: rajadas lentas que percorrem o primeiro plano (cada tufo com a sua fase)
+      const wind = Math.sin(time * 1.5 + x * 0.019) * 0.6 + Math.sin(time * 2.6 + x * 0.047) * 0.25 + Math.sin(time * 0.37 + f.s * 9) * 0.3;
       if (f.top) {
         // presas ao topo da sala (não ao ecrã): nas salas altas não ficam a pairar a meio do caminho
         const y = -4;
         if (cam.y > 130) continue;
-        if (k === 'r4') { ctx.beginPath(); ctx.moveTo(x - 30, y); ctx.quadraticCurveTo(x, y + 50 + f.s * 40, x + 30, y); ctx.fill(); }
-        else if (k === 'r3' || k === 'r6' || k === 'crypt') { for (let yy = y; yy < y + 40 + f.s * 60; yy += 6) { ctx.beginPath(); ctx.ellipse(x, yy, 2.5, 3.6, 0, 0, U.TAU); ctx.fill(); } }
+        if (k === 'r4') { ctx.beginPath(); ctx.moveTo(x - 30, y); ctx.quadraticCurveTo(x + wind * 9, y + 50 + f.s * 40, x + 30, y); ctx.fill(); }
+        else if (k === 'r3' || k === 'r6' || k === 'crypt') { // corrente pendurada, a balançar devagar
+          const sw = Math.sin(time * 0.9 + x * 0.013) * 0.05;
+          for (let yy = y; yy < y + 40 + f.s * 60; yy += 6) { ctx.beginPath(); ctx.ellipse(x + (yy - y) * sw, yy, 2.5, 3.6, sw, 0, U.TAU); ctx.fill(); }
+        }
       } else {
         // assentes no fundo da sala (não no fundo do ecrã)
         const y = room.ph + 6;
@@ -299,11 +310,12 @@
         if (k === 'r4' || k === 'r1') { // tufo de erva e cardos: folhas de alturas e inclinações diferentes, e hastes com sementes
           const n = 7 + Math.floor(f.s * 5);
           for (let i = 0; i < n; i++) {
-            const bx = x + (h(i) - 0.5) * 46, hh = 16 + h(i + 0.31) * (26 + f.s * 34), lean = (h(i + 0.67) - 0.5) * 26, w = 2.6 + h(i + 0.93) * 3.4;
+            const bx = x + (h(i) - 0.5) * 46, hh = 16 + h(i + 0.31) * (26 + f.s * 34), w = 2.6 + h(i + 0.93) * 3.4;
+            const lean = (h(i + 0.67) - 0.5) * 26 + wind * hh * (0.12 + h(i + 0.11) * 0.1);
             ctx.beginPath(); ctx.moveTo(bx - w / 2, y); ctx.quadraticCurveTo(bx + lean * 0.2 - w * 0.3, y - hh * 0.62, bx + lean, y - hh); ctx.quadraticCurveTo(bx + lean * 0.35 + w * 0.4, y - hh * 0.5, bx + w / 2, y); ctx.fill();
           }
           ctx.strokeStyle = '#030204'; ctx.lineWidth = 1.1;
-          for (let i = 0; i < 2; i++) { const sx = x + (h(i + 5.1) - 0.5) * 30, sh = 40 + h(i + 5.5) * 36, sl = (h(i + 5.9) - 0.5) * 18; ctx.beginPath(); ctx.moveTo(sx, y); ctx.quadraticCurveTo(sx + sl * 0.2, y - sh * 0.6, sx + sl, y - sh); ctx.stroke(); ctx.beginPath(); ctx.ellipse(sx + sl, y - sh - 2.5, 2, 3.4, sl * 0.03, 0, U.TAU); ctx.fill(); }
+          for (let i = 0; i < 2; i++) { const sx = x + (h(i + 5.1) - 0.5) * 30, sh = 40 + h(i + 5.5) * 36, sl = (h(i + 5.9) - 0.5) * 18 + wind * sh * 0.16; ctx.beginPath(); ctx.moveTo(sx, y); ctx.quadraticCurveTo(sx + sl * 0.2, y - sh * 0.6, sx + sl, y - sh); ctx.stroke(); ctx.beginPath(); ctx.ellipse(sx + sl, y - sh - 2.5, 2, 3.4, sl * 0.03, 0, U.TAU); ctx.fill(); }
         }
         else if (k === 'r6' || k === 'r7' || k === 'sanct') {
           // colunas de primeiro plano: finas, translúcidas e ausentes nas arenas, para nunca esconder a ação
@@ -320,7 +332,7 @@
         }
       }
     }
-  };
+  }
 
   // ---------- adereços pintados (atlas do ateliê) ----------
   // chama viva: gota com núcleo claro, a tremeluzir; o brilho e a luz vêm do sistema de luzes

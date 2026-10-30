@@ -366,10 +366,12 @@
     const dev = VS.Input.lastDevice;
     const txt = (dev === 'touch' ? '' : '[' + (dev === 'pad' ? '↑' : k + '/' + VS.Input.label('up')) + '] ') + label;
     ctx.font = UI.font(8); const w = ctx.measureText(txt).width + 10;
-    const x = e.cx - w / 2, y = e.y - 18 + Math.sin(game.time * 3) * 1.2;
+    // por cima do alvo, mas sempre dentro do ecrã
+    const cam = VS.Gfx.cam, x = U.clamp(e.cx - w / 2, cam.x + 3, cam.x + U.VIEW_W - w - 3);
+    const y = Math.max(cam.y + 3, e.y - 18 + Math.sin(game.time * 3) * 1.2);
     ctx.fillStyle = 'rgba(10,8,12,0.75)'; ctx.fillRect(x, y, w, 12);
     ctx.strokeStyle = 'rgba(220,190,140,0.5)'; ctx.lineWidth = 0.6; ctx.strokeRect(x, y, w, 12);
-    ctx.fillStyle = '#efe4d2'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(txt, e.cx, y + 6.5); ctx.textAlign = 'left';
+    ctx.fillStyle = '#efe4d2'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(txt, x + w / 2, y + 6.5); ctx.textAlign = 'left';
   };
 
   VS.UI = UI;
