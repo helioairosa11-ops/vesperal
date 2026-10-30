@@ -11,7 +11,7 @@
     b.cracked(0, 10, 1, 14);
     b.solid(25, 13, 27, 14);
     b.e('inscription', 6, 14, { id: 'i01' });
-    b.e('urn', 22, 14); b.e('urn', 28, 12);
+    b.e('urn', 22, 14); b.e('urn', 26, 12);
     b.e('trigger', 24, 9, { h: 6, hint: 'hint_attack' });
     b.e('trigger', 9, 9, { h: 6, hint: 'hint_cracked_wall' });
   });
@@ -44,7 +44,7 @@
     // lá depois de saber a verdade; se lhe mentiram parte à procura da mestra (estado 60)
     b.e('npc', 26, 14, { id: 'hrolf', cond: (s) => (s.bosses.caedmon || s.quests.hrolf >= 50) && s.quests.hrolf !== 60 });
     b.e('npc', 3, 14, { id: 'teodoro', cond: (s) => s.quests.teodoro === 3 });
-    b.e('inscription', 9, 13, { id: 'i03' });
+    b.e('inscription', 10, 13, { id: 'i03' });
     b.e('trigger', 10, 9, { h: 6, once: 'met_ione_trigger', run: (g) => VS.Story.meetIone(g) });
     b.prop('statue', 4, 14); b.prop('statue', 27, 14);
   });
@@ -54,7 +54,7 @@
     b.fill(); b.carve(2, 3, 61, 14); b.ragged(2, 61, 3, 2);
     b.carve(8, 15, 11, 17); b.plat(8, 11, 16);
     b.exitL(10, 14);
-    b.e('door', 3, 10, { id: 'd_palace', h: 5, open: 'embers:5' });
+    b.e('door', 3, 10, { id: 'd_palace', h: 5, open: 'embers:5', style: 'palace' });
     b.solid(2, 3, 3, 9); // por cima do portão do palácio não se passa (nem com o salto duplo)
     b.carve(62, 3, 63, 7); b.plat(52, 57, 12); b.solid(57, 8, 63, 8); b.carve(57, 3, 61, 7);
     b.solid(24, 12, 27, 14); b.plat(28, 34, 10);
@@ -88,7 +88,7 @@
     b.e('npc', 9, 14, { id: 'hrolf', cond: (s) => !s.bosses.caedmon && s.quests.hrolf < 50 });
     b.enemy('husk', 16, 14); b.enemy('husk', 30, 14); b.enemy('crawler', 44, 14); b.enemy('wisp', 57, 8);
     b.e('urn', 24, 14); b.e('urn', 46, 14); b.e('urn', 60, 14);
-    b.prop('anvil', 6, 14); b.prop('crucible', 3, 12);
+    b.prop('anvil', 6, 14); b.prop('crucible', 4, 12);
   });
 
   // Cemitério dos Sinos Mudos

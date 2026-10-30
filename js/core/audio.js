@@ -426,9 +426,20 @@
   SFX.block = (d, t) => { tone(d, t, 'square', 520, 380, 0.12, 0.12); nburst(d, t, 'bandpass', 2200, 4, 0.3, 0.08); tone(d, t, 'sine', 140, 90, 0.3, 0.12); };
   SFX.shield = (d, t) => { tone(d, t, 'triangle', 300, 260, 0.25, 0.18); nburst(d, t, 'bandpass', 1500, 6, 0.35, 0.12); };
   SFX.parry = (d, t) => {
-    [1240, 1860, 2790].forEach((f, i) => { const o = tone(d, t, 'sine', f, f * 0.995, 0.22 / (i + 1), 0.9); });
-    const g = gainNode(0); percEnv(g, t, 0.25, 0.7); const car = osc('sine', 980, t, t + 0.8); const mod = osc('sine', 980 * 3.7, t, t + 0.8); const mg = gainNode(1800); mod.connect(mg); mg.connect(car.frequency); car.connect(g); g.connect(d);
-    nburst(d, t, 'highpass', 5000, 0.7, 0.4, 0.06);
+    // aço contra aço: estalo brilhante, a lâmina a raspar ("shing"), o metal a vibrar em parciais inarmónicos,
+    // um "tiiing" que fica a soar e um baque grave — com uma cauda própria na reverberação
+    nburst(d, t, 'bandpass', 4200, 1.2, 0.6, 0.03, 0.001);
+    nburst(d, t, 'highpass', 7600, 0.7, 0.35, 0.045, 0.001);
+    const sh = nburst(d, t + 0.004, 'bandpass', 9500, 9, 0.28, 0.17, 0.003); sh.frequency.exponentialRampToValueAtTime(3000, t + 0.17);
+    const f0 = 830;
+    [[1, 0.32, 1.0], [2.76, 0.22, 0.7], [5.4, 0.13, 0.42], [8.93, 0.07, 0.24]].forEach(([r, a, dec]) => {
+      const g = gainNode(0); percEnv(g, t, a, dec, 0.0015);
+      const o = osc('sine', f0 * r, t, t + dec + 0.1); o.frequency.exponentialRampToValueAtTime(f0 * r * 0.996, t + dec);
+      o.connect(g); g.connect(d);
+    });
+    [2490, 2497].forEach((f) => tone(d, t + 0.002, 'sine', f, f, 0.075, 1.5, 0.002));
+    tone(d, t, 'sine', 170, 55, 0.55, 0.14, 0.0015);
+    if (A.reverb) { const g = gainNode(0); percEnv(g, t, 0.16 * (A.vol ? A.vol.sfx : 1), 1.1, 0.002); const o = osc('triangle', f0 * 2.76, t, t + 1.2); o.connect(g); g.connect(A.reverb); }
   };
   SFX.parry_tell = (d, t) => { const o = tone(d, t, 'sine', 2100, 3400, 0.09, 0.28, 0.02); tone(d, t + 0.03, 'sine', 4200, 5200, 0.04, 0.2, 0.02); nburst(d, t, 'highpass', 7000, 1, 0.05, 0.25, 0.08); };
   SFX.danger_tell = (d, t) => { [110, 116.5, 164.8].forEach((f) => { const g = gainNode(0); percEnv(g, t, 0.11, 0.5, 0.03); const o = osc('sawtooth', f, t, t + 0.6); const lp = filt('lowpass', 900); o.connect(lp); lp.connect(g); g.connect(d); }); };

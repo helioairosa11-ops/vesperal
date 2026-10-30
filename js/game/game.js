@@ -484,7 +484,7 @@
       VS.Tiles.drawRoom(ctx, room, R, cam, this.time);
       G.drawParticles(ctx, 0);
       // os chefes desenham-se sempre: os avisos deles (auréolas, colunas, muros de fogo) podem estar longe do corpo
-      for (const e of list) if ((e.z || 0) >= 0 && (e.z || 0) < 10 && (e.isBoss || G.inView(e.x, e.y, e.w, e.h, 160))) e.draw(ctx, this);
+      for (const e of list) if ((e.z || 0) >= 0 && (e.z || 0) < 10 && (e.isBoss || e.drawAlways || G.inView(e.x, e.y, e.w, e.h, 160))) e.draw(ctx, this);
       this.player.draw(ctx, this);
       for (const e of list) if ((e.z || 0) >= 10 && G.inView(e.x, e.y, e.w, e.h, 160)) e.draw(ctx, this);
       VS.Tiles.drawLiquids(ctx, room, R, cam, this.time);

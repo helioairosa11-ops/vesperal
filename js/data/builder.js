@@ -33,7 +33,7 @@
       for (let x = x0; x <= x1; x++) {
         if (run <= 0) { d = U.clamp(d + (this.rnd() < 0.5 ? -1 : 1), 0, depth); run = 2 + Math.floor(this.rnd() * 4); }
         run--;
-        for (let k = 0; k < d; k++) if (this.get(x, yTop + k) === ' ') this.put(x, yTop + k, '#');
+        for (let k = 0; k < d; k++) if (this.get(x, yTop + k) === ' ') { this.put(x, yTop + k, '#'); (this.raggedSet || (this.raggedSet = new Set())).add(x + ',' + (yTop + k)); }
       }
       return this;
     }
@@ -50,6 +50,8 @@
     const w = (opts.w || 1) * U.CELL_W, h = (opts.h || 1) * U.CELL_H;
     const b = new B(w, h, U.hash(id));
     fn(b);
+    // o teto irregular nunca desce para cima de uma plataforma: deixa sempre dois tiles livres para se estar de pé
+    if (b.raggedSet) for (let y = 0; y < b.H; y++) for (let x = 0; x < b.W; x++) if (b.g[y][x] === '=') for (const k of [1, 2, 3]) if (b.raggedSet.has(x + ',' + (y - k))) b.g[y - k][x] = ' ';
     const def = Object.assign({}, opts, { map: b.toMap(), ents: b.ents, props: b.props });
     delete def.w; delete def.h;
     VS.ROOMS[id] = def;

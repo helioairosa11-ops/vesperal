@@ -13,36 +13,40 @@
 
   // ---------------- Menu principal: "Vesperal" ----------------
   M.menu = {
-    // A: o tema ao piano sobre a harpa; B: a flauta leva uma melodia mais esperançosa (Sib → Fá → Dó → Rém),
-    // o piano passa a contracanto, o coro e os tímpanos crescem; um sino fecha cada secção
-    bpm: 66, fadeIn: 3,
+    // "Vigília" (Dó menor): sinos graves e órgão abrem; o violoncelo canta o tema; as cordas levantam-no uma oitava
+    // acima com o coro; no fim o tema volta numa caixa de música (vidro) sobre a harpa — e o sino fecha o ciclo
+    bpm: 60, fadeIn: 3,
     parts: [
-      { inst: 'piano', vol: 0.9, notes:
-        'A4:1.5 D5:0.5 F5:1 E5:1 D5:2 F5:1 D5:1 C5:1.5 A4:0.5 F4:1 A4:1 G4:3 r:1 ' +
-        'A4:1.5 D5:0.5 F5:1 A5:1 G5:2 F5:1 D5:1 F5:1.5 E5:0.5 D5:1 E5:1 C#5:3 r:1 ' +
-        'D5:1 A4:1 F5:1.5 E5:0.5 D5:2 Bb4:2 C5:1 A4:1 C5:1 F5:1 E5:3 r:1 ' +
-        'F5:1 E5:1 D5:1 A4:1 Bb4:2 D5:1 G5:1 F5:1.5 E5:0.5 D5:1 C#5:1 D5:4 ' +
-        'Bb3:1 D4:1 F4:1 D4:1 A3:1 C4:1 F4:1 C4:1 G3:1 C4:1 E4:1 C4:1 A3:1 D4:1 F4:1 D4:1 ' +
-        'Bb3:1 D4:1 G4:1 D4:1 Bb3:1 D4:1 F4:1 D4:1 A3:1 C#4:1 E4:1 C#4:1 E4:1 C#4:1 A3:1 E3:1 ' +
-        'Bb3:1 D4:1 F4:1 D4:1 A3:1 C4:1 F4:1 C4:1 G3:1 C4:1 E4:1 C4:1 A3:1 C4:1 E4:1 C4:1 ' +
-        'Bb3:1 D4:1 G4:1 D4:1 A3:1 C#4:1 E4:1 C#4:1 A3:1 D4:1 F4:1 D4:1 D4:2 A3:2' },
-      { inst: 'flute', vol: 0.62, notes: 'r:64 ' +
-        'D5:2 F5:1 Bb5:1 A5:3 F5:1 G5:2 E5:1 C5:1 D5:3 A4:1 Bb4:1 D5:1 G5:2 F5:2 D5:1 Bb4:1 C#5:2 E5:2 A4:4 ' +
-        'D5:1 F5:1 Bb5:2 A5:2 C6:2 G5:1 E5:1 G5:1 C6:1 A5:3 E5:1 Bb5:2 G5:1 D5:1 C#5:1 E5:1 A5:2 F5:2 E5:1 C#5:1 D5:4' },
-      { inst: 'harp', vol: 0.55, notes: arp(['D3 A3 D4 F4', 'Bb2 F3 Bb3 D4', 'F2 C3 F3 A3', 'C3 G3 C4 E4', 'D3 A3 D4 F4', 'G2 D3 G3 Bb3', 'Bb2 F3 Bb3 D4', 'A2 E3 A3 C#4',
-        'D3 A3 D4 F4', 'Bb2 F3 Bb3 D4', 'F2 C3 F3 A3', 'E2 C3 E3 G3', 'D3 A3 D4 F4', 'G2 D3 G3 Bb3', 'A2 E3 A3 C#4', 'D3 A3 D4 F4'], [0, 1, 2, 3, 2, 1, 2, 1], 0.5) + ' ' +
-        arp(['Bb2 F3 Bb3 D4', 'F2 C3 F3 A3', 'C3 G3 C4 E4', 'D3 A3 D4 F4', 'G2 D3 G3 Bb3', 'Bb2 F3 Bb3 D4', 'A2 E3 A3 C#4', 'A2 E3 A3 C#4',
-        'Bb2 F3 Bb3 D4', 'F2 C3 F3 A3', 'C3 G3 C4 E4', 'A2 E3 A3 C4', 'G2 D3 G3 Bb3', 'A2 E3 A3 C#4', 'D3 A3 D4 F4', 'D3 A3 D4 F4'], [0, 2, 1, 3, 2, 1, 3, 2], 0.5) },
-      { inst: 'strings', vol: 0.6, notes: chords(['D3+F3+A3', 'Bb2+D3+F3', 'F3+A3+C4', 'C3+E3+G3', 'D3+F3+A3', 'G2+Bb2+D3', 'Bb2+D3+F3', 'A2+C#3+E3',
-        'D3+F3+A3', 'Bb2+D3+F3', 'F3+A3+C4', 'E3+G3+C4', 'D3+F3+A3', 'G2+Bb2+D3', 'A2+C#3+E3', 'D3+F3+A3',
-        'Bb2+D3+F3', 'F2+A2+C3', 'C3+E3+G3', 'D3+F3+A3', 'G2+Bb2+D3', 'Bb2+D3+F3', 'A2+C#3+E3', 'A2+C#3+E3',
-        'Bb2+D3+F3', 'F3+A3+C4', 'C3+E3+G3', 'A2+C3+E3', 'G2+Bb2+D3', 'A2+C#3+E3', 'D3+F3+A3', 'D3+F3+A3'], 4) },
-      { inst: 'cello', vol: 0.8, notes: 'D2:4 Bb1:4 F2:4 C2:4 D2:4 G1:4 Bb1:4 A1:4 D2:4 Bb1:4 F2:4 E2:4 D2:4 G1:4 A1:4 D2:4 ' +
-        'Bb1:4 F2:4 C2:4 D2:4 G1:4 Bb1:4 A1:4 A1:4 Bb1:4 F2:4 C2:4 A1:4 G1:4 A1:4 D2:4 D2:4' },
-      { inst: 'choir', vol: 0.45, notes: 'r:32 A3:8 F3:8 A3:4 G3:4 E3:8 ' +
-        'D4+F4:8 C4+E4:8 Bb3+D4:8 A3+C#4:8 D4+F4:8 C4+E4:8 Bb3+D4:4 A3+C#4:4 A3+D4:8' },
-      { inst: 'timp', vol: 0.4, notes: 'r:64 Bb1:1 r:15 G1:1 r:15 Bb1:1 r:15 A1:1 r:11 A1:1 A1:1 D2:2' },
-      { inst: 'bell', vol: 0.22, notes: 'r:60 D6:4 r:60 A5:4' },
+      // tema (A, A') no violoncelo; depois baixo
+      { inst: 'cello', vol: 0.95, notes:
+        'G3:2 C4:1 Eb4:1 D4:1.5 C4:0.5 Eb4:2 F4:2 Ab4:1 G4:1 F4:1 Eb4:1 D4:2 ' +
+        'G3:2 C4:1 Eb4:1 G4:1.5 F4:0.5 Eb4:2 D4:1 F4:1 Bb4:2 B3:4 ' +
+        'C4:1 Eb4:1 G4:1.5 F4:0.5 Eb4:2 C4:2 Ab4:1 G4:1 F4:1 Ab4:1 G4:3 Eb4:1 ' +
+        'C5:2 Bb4:1 Ab4:1 G4:1.5 F4:0.5 Ab4:2 G4:1 F4:1 Eb4:1 D4:1 D4:2 B3:2 ' +
+        'Ab2:4 Eb2:4 Bb2:4 C2:4 Ab2:4 Eb2:4 F2:4 G2:4 C2:4 Ab2:4 F2:4 G2:4 Ab2:4 F2:4 G2:4 C2:4' },
+      // B: as cordas tomam o tema, a subir
+      { inst: 'strings', vol: 0.78, notes: 'r:64 ' +
+        'Eb5:2 C5:1 Eb5:1 G5:3 F5:1 F5:1.5 Eb5:0.5 D5:1 F5:1 Eb5:4 C5:1 Eb5:1 Ab5:2 G5:1.5 F5:0.5 Eb5:2 F5:1 Ab5:1 C6:2 B5:2 D6:2 r:32' },
+      // tapete de cordas por baixo de tudo
+      { inst: 'strings', vol: 0.34, notes: chords(['C3+Eb3+G3', 'Ab2+C3+Eb3', 'F2+Ab2+C3', 'G2+B2+D3', 'C3+Eb3+G3', 'Ab2+C3+Eb3', 'Bb2+D3+F3', 'G2+B2+D3',
+        'C3+Eb3+G3', 'Ab2+C3+Eb3', 'F2+Ab2+C3', 'Eb3+G3+C4', 'Ab2+C3+Eb3', 'F2+Ab2+C3', 'G2+B2+D3', 'G2+B2+D3',
+        'Ab2+C3+Eb3', 'Eb3+G3+Bb3', 'Bb2+D3+F3', 'C3+Eb3+G3', 'Ab2+C3+Eb3', 'Eb3+G3+Bb3', 'F2+Ab2+C3', 'G2+B2+D3',
+        'C3+Eb3+G3', 'Ab2+C3+Eb3', 'F2+Ab2+C3', 'G2+B2+D3', 'Ab2+C3+Eb3', 'F2+Ab2+C3', 'G2+B2+D3', 'C3+Eb3+G3'], 4) },
+      // órgão: acordes longos, mais presente na abertura
+      { inst: 'organ', vol: 0.5, notes: chords(['C3+G3+C4+Eb4', 'Ab2+Eb3+Ab3+C4', 'F2+C3+F3+Ab3', 'G2+D3+G3+B3', 'C3+G3+C4+Eb4', 'Ab2+Eb3+Ab3+C4', 'Bb2+F3+Bb3+D4', 'G2+D3+G3+B3'], 4) + ' r:96' },
+      // abertura: um pedal grave que se apaga
+      { inst: 'drone', vol: 0.8, notes: 'C2+G2:32 r:96' },
+      // coro grave na segunda metade
+      { inst: 'choirlow', vol: 0.55, notes: 'r:64 Ab2+Eb3:8 Bb2+F3:8 Ab2+Eb3:8 F2+C3:4 G2+D3:4 C3+G3:8 F2+C3:8 G2+D3:8 C3+G3:8' },
+      // harpa em A' e no regresso
+      { inst: 'harp', vol: 0.5, notes: 'r:32 ' + arp(['C3 G3 C4 Eb4', 'Ab2 Eb3 Ab3 C4', 'F2 C3 F3 Ab3', 'Eb3 G3 C4 Eb4', 'Ab2 Eb3 Ab3 C4', 'F2 C3 F3 Ab3', 'G2 D3 G3 B3', 'G2 D3 G3 B3'], [0, 1, 2, 3, 2, 1, 2, 1], 0.5) + ' r:32 ' +
+        arp(['C3 G3 C4 Eb4', 'Ab2 Eb3 Ab3 C4', 'F2 C3 F3 Ab3', 'G2 D3 G3 B3', 'Ab2 Eb3 Ab3 C4', 'F2 C3 F3 Ab3', 'G2 D3 G3 B3', 'C3 G3 C4 Eb4'], [0, 2, 1, 3, 2, 1, 3, 2], 0.5) },
+      // o tema regressa numa caixa de música
+      { inst: 'glass', vol: 0.75, notes: 'r:96 G5:2 C6:1 Eb6:1 D6:1.5 C6:0.5 Eb6:2 F6:2 Ab6:1 G6:1 F6:1 Eb6:1 D6:2 C6:2 Eb6:2 Ab5:2 F5:2 G5:2 B5:2 C6:4' },
+      // sinos graves a marcar cada secção
+      { inst: 'bigbell', vol: 0.5, notes: 'C3:8 r:24 C3:8 r:24 Ab2:8 r:24 C3:8 r:24' },
+      // tímpanos: crescendo para a entrada das cordas e para o fim
+      { inst: 'timp', vol: 0.45, notes: 'r:60 G1:0.5 G1:0.5 G1:0.5 G1:0.5 C2:2 r:30 G1:1 G1:1 C2:2 r:26 G1:0.5 G1:0.5 G1:1 C2:2' },
     ],
   };
 

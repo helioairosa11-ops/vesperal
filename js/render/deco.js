@@ -23,7 +23,8 @@
     const rnd = U.rng(U.hash(room.id + 'deco'));
     const props = [];
     const free = (x, y) => { const c = room.tile(x, y); return c === ' ' || c === '.' || (c >= 'a' && c <= 'z') || c === 'P' || c === 'R'; };
-    const solid = (x, y) => { const c = room.tile(x, y); return c === '#' || c === 'C' || c === 'F'; };
+    // só paredes que nunca se partem seguram adereços (numa parede rachada o adereço ficava a flutuar depois de a partir)
+    const solid = (x, y) => { const c = room.tile(x, y); return c === '#' || c === 'F'; };
     const taken = {};
     const near = (x, y) => { for (let dx = -2; dx <= 2; dx++) if (taken[(x + dx) + ',' + y]) return true; return false; };
     for (let ty = 1; ty < room.h - 1; ty++) for (let tx = 1; tx < room.w - 1; tx++) {
@@ -199,12 +200,25 @@
       if (x < cam.x * par - 80 || x > cam.x * par + U.VIEW_W + 80) continue;
       const k = R.key;
       if (f.top) {
-        const y = cam.y - 4;
+        // presas ao topo da sala (não ao ecrã): nas salas altas não ficam a pairar a meio do caminho
+        const y = -4;
+        if (cam.y > 130) continue;
         if (k === 'r4') { ctx.beginPath(); ctx.moveTo(x - 30, y); ctx.quadraticCurveTo(x, y + 50 + f.s * 40, x + 30, y); ctx.fill(); }
         else if (k === 'r3' || k === 'r6' || k === 'crypt') { for (let yy = y; yy < y + 40 + f.s * 60; yy += 6) { ctx.beginPath(); ctx.ellipse(x, yy, 2.5, 3.6, 0, 0, U.TAU); ctx.fill(); } }
       } else {
-        const y = Math.min(room.ph, cam.y + U.VIEW_H) + 6;
-        if (k === 'r4' || k === 'r1') { for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.moveTo(x + i * 5, y); ctx.quadraticCurveTo(x + i * 5 + 6, y - 30 - f.s * 30, x + i * 5 + 12 + f.s * 6, y - 40 - f.s * 30); ctx.lineTo(x + i * 5 + 4, y); ctx.fill(); } }
+        // assentes no fundo da sala (não no fundo do ecrã)
+        const y = room.ph + 6;
+        if (cam.y + U.VIEW_H < room.ph - 110) continue;
+        const h = (q) => { const v = Math.sin(q * 127.1 + f.s * 311.7 + f.x * 0.013) * 43758.5453; return v - Math.floor(v); };
+        if (k === 'r4' || k === 'r1') { // tufo de erva e cardos: folhas de alturas e inclinações diferentes, e hastes com sementes
+          const n = 7 + Math.floor(f.s * 5);
+          for (let i = 0; i < n; i++) {
+            const bx = x + (h(i) - 0.5) * 46, hh = 16 + h(i + 0.31) * (26 + f.s * 34), lean = (h(i + 0.67) - 0.5) * 26, w = 2.6 + h(i + 0.93) * 3.4;
+            ctx.beginPath(); ctx.moveTo(bx - w / 2, y); ctx.quadraticCurveTo(bx + lean * 0.2 - w * 0.3, y - hh * 0.62, bx + lean, y - hh); ctx.quadraticCurveTo(bx + lean * 0.35 + w * 0.4, y - hh * 0.5, bx + w / 2, y); ctx.fill();
+          }
+          ctx.strokeStyle = '#030204'; ctx.lineWidth = 1.1;
+          for (let i = 0; i < 2; i++) { const sx = x + (h(i + 5.1) - 0.5) * 30, sh = 40 + h(i + 5.5) * 36, sl = (h(i + 5.9) - 0.5) * 18; ctx.beginPath(); ctx.moveTo(sx, y); ctx.quadraticCurveTo(sx + sl * 0.2, y - sh * 0.6, sx + sl, y - sh); ctx.stroke(); ctx.beginPath(); ctx.ellipse(sx + sl, y - sh - 2.5, 2, 3.4, sl * 0.03, 0, U.TAU); ctx.fill(); }
+        }
         else if (k === 'r6' || k === 'r7' || k === 'sanct') {
           // colunas de primeiro plano: finas, translúcidas e ausentes nas arenas, para nunca esconder a ação
           if (f.arena) continue;
@@ -213,7 +227,11 @@
           ctx.globalAlpha = 0.35; ctx.fillRect(x - 3, cam.y - 10, 3, U.VIEW_H + 20); ctx.fillRect(x + w, cam.y - 10, 3, U.VIEW_H + 20);
           ctx.globalAlpha = 1;
         }
-        else if (k === 'r2' || k === 'r5') { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 10, y - 50 - f.s * 30); ctx.lineTo(x + 16, y); ctx.fill(); }
+        else if (k === 'r2' || k === 'r5') { // estacas partidas atadas por uma travessa
+          const xs = [0, 11, 21].map((o, i) => [x + o + (h(i + 2.2) - 0.5) * 4, 34 + h(i + 2.7) * (30 + f.s * 26), (h(i + 3.1) - 0.5) * 8]);
+          for (const [sx, sh, sl] of xs) { ctx.beginPath(); ctx.moveTo(sx - 3, y); ctx.lineTo(sx - 2 + sl, y - sh + 6); ctx.lineTo(sx + sl, y - sh); ctx.lineTo(sx + 2 + sl, y - sh + 7); ctx.lineTo(sx + 3, y); ctx.fill(); }
+          ctx.fillRect(x - 4, y - 24 - f.s * 6, 30, 3.4);
+        }
       }
     }
   };

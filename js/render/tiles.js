@@ -236,7 +236,8 @@
       if (right) sideEdge(c, R, x + T, y, tx + 1, 1, up, down);
       if (down) bottomEdge(c, R, x, y + T, ty, rnd);
     }
-    // 5) plataformas e picos (estáticos)
+    // 5) plataformas (primeiro os apoios, por baixo) e picos (estáticos)
+    drawSupports(c, room, R);
     for (let ty = 0; ty < H; ty++) for (let tx = 0; tx < W; tx++) {
       const ch = room.tile(tx, ty);
       if (ch === '=') drawPlatform(c, room, R, tx, ty);
@@ -364,45 +365,202 @@
     }
   };
 
-  // plataformas finas: cada plataforma (segmento contínuo de '=') escolhe um de três estilos da sua região,
-  // desenhados por segmento (pontas, meio, apoios) — nada de uma só tábua repetida pelo mundo inteiro
+  // plataformas finas: cada plataforma (segmento contínuo de '=') escolhe um estilo da sua região e fica sempre presa
+  // a alguma coisa — mísula na parede, correntes ou cordas ao teto, prumos até ao chão — nunca solta no ar
   const PLAT_STYLES = {
     r1: ['planks', 'balcony', 'sign'], crypt: ['slab', 'coffin', 'planks'], r2: ['timber', 'corbel', 'scaffold'],
     r3: ['grate', 'girder', 'chaingrate'], r4: ['log', 'lily', 'fungus'], r5: ['bellbeam', 'gallery', 'ropeplank'],
     r6: ['ledge', 'trefoil', 'loft'], r7: ['marble', 'carpet', 'gilt'], sanct: ['ledge', 'trefoil', 'ledge'],
   };
+  // estilos que só fazem sentido num sítio: nenúfares só à tona de água, lajes sobre mísulas só encostadas a uma parede
+  const NEEDS = { lily: 'water', corbel: 'wall' };
+  // material dos apoios de cada estilo
+  const MAT = { planks: 'wood', balcony: 'stone', sign: 'rope', slab: 'stone', coffin: 'wood', timber: 'wood', corbel: 'stone', scaffold: 'wood',
+    grate: 'iron', girder: 'iron', chaingrate: 'chain', log: 'vine', lily: 'none', fungus: 'vine', bellbeam: 'wood', gallery: 'wood', ropeplank: 'rope',
+    ledge: 'stone', trefoil: 'stone', loft: 'wood', marble: 'gold', carpet: 'wood', gilt: 'gold' };
   function platSeg(room, tx, ty) {
     let x0 = tx, x1 = tx;
     while (room.tile(x0 - 1, ty) === '=') x0--;
     while (room.tile(x1 + 1, ty) === '=') x1++;
     return [x0, x1];
   }
+  function platStyle(room, R, x0, x1, ty) {
+    const memo = room._platStyle || (room._platStyle = {}), key = x0 + ':' + ty;
+    if (memo[key]) return memo[key];
+    const all = PLAT_STYLES[R.key] || PLAT_STYLES.r1;
+    const wall = isSolidStatic(room, x0 - 1, ty) || isSolidStatic(room, x1 + 1, ty);
+    let water = false;
+    for (let x = x0; x <= x1; x++) if (room.tile(x, ty + 1) === '~') { water = true; break; }
+    let list = all.filter((s) => !NEEDS[s] || (NEEDS[s] === 'wall' ? wall : water));
+    if (water && all.includes('lily')) list = ['lily'];
+    if (!list.length) list = all;
+    return (memo[key] = list[(U.hash(room.id + ':' + x0 + ':' + ty) >>> 0) % list.length]);
+  }
+  // espaço livre por cima (até ao teto ou à plataforma de cima) e por baixo (até ao chão, picos ou líquido)
+  function upDist(room, tx, ty) {
+    for (let k = 1; k <= 16; k++) {
+      if (isSolidStatic(room, tx, ty - k)) return { n: k - 1, y: (ty - k + 1) * T };
+      if (room.tile(tx, ty - k) === '=') return { n: k - 1, y: (ty - k) * T + 5 };
+    }
+    return null;
+  }
+  function downDist(room, tx, ty) {
+    for (let k = 1; k <= 5; k++) {
+      const ch = room.tile(tx, ty + k);
+      if (isSolidStatic(room, tx, ty + k) || ch === '=' || ch === '^') return { n: k - 1, y: (ty + k) * T };
+      if (ch === '~' || ch === 'L') return { n: k - 1, y: (ty + k + 1) * T };
+    }
+    return null;
+  }
+  // mísula / escora na ponta encostada à parede (dir: 1 = a parede está à esquerda)
+  function bracket(c, R, m, wx, y, dir) {
+    const u = y + 4.5;
+    if (m === 'wood' || m === 'rope') { // mão-francesa: calço na parede e escora na diagonal
+      c.fillStyle = '#2a1c12'; c.fillRect(dir > 0 ? wx : wx - 2.6, u - 0.5, 2.6, 14);
+      c.strokeStyle = '#3a2a1c'; c.lineWidth = 2.2; c.beginPath(); c.moveTo(wx + dir * 1.6, u + 11.5); c.lineTo(wx + dir * 11.5, u + 0.6); c.stroke();
+      c.strokeStyle = '#6e5234'; c.lineWidth = 0.5; c.beginPath(); c.moveTo(wx + dir * 1.6, u + 10.4); c.lineTo(wx + dir * 10.8, u + 0.2); c.stroke();
+      c.fillStyle = '#9a8a6a'; c.fillRect(wx + dir * 1.3 - 0.5, u + 2, 1, 1); c.fillRect(wx + dir * 1.3 - 0.5, u + 9, 1, 1);
+    } else if (m === 'stone') { // mísula de pedra em degraus
+      c.fillStyle = R.stoneDark; c.beginPath(); c.moveTo(wx, u); c.lineTo(wx + dir * 12, u); c.lineTo(wx + dir * 12, u + 2.6); c.lineTo(wx + dir * 7.5, u + 4.6); c.lineTo(wx + dir * 4.5, u + 10.5); c.lineTo(wx, u + 13); c.closePath(); c.fill();
+      c.strokeStyle = U.rgba(R.stoneLight, 0.35); c.lineWidth = 0.6; c.beginPath(); c.moveTo(wx + dir * 12, u + 2.6); c.lineTo(wx + dir * 7.5, u + 4.6); c.lineTo(wx + dir * 4.5, u + 10.5); c.stroke();
+    } else if (m === 'iron' || m === 'chain') { // esquadro de ferro rebitado
+      c.strokeStyle = '#26222a'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(wx + dir * 0.9, u + 13); c.lineTo(wx + dir * 0.9, u + 0.4); c.lineTo(wx + dir * 12, u + 0.4); c.moveTo(wx + dir * 0.9, u + 11); c.lineTo(wx + dir * 10.5, u + 1); c.stroke();
+      c.fillStyle = '#6a6470'; c.beginPath(); c.arc(wx + dir * 0.9, u + 3.5, 0.65, 0, U.TAU); c.arc(wx + dir * 0.9, u + 10, 0.65, 0, U.TAU); c.fill();
+    } else if (m === 'vine') { // raízes que saem da parede e agarram a ponta
+      c.strokeStyle = '#3a3020'; c.lineWidth = 1.3;
+      for (let k = 0; k < 3; k++) { c.beginPath(); c.moveTo(wx, u + 4 + k * 4); c.quadraticCurveTo(wx + dir * (4 + k * 2), u + 2 + k * 3, wx + dir * (6 + k * 3), u); c.stroke(); }
+      c.fillStyle = '#4e7a3e'; c.beginPath(); c.ellipse(wx + dir * 4, u + 6, 2.2, 1, dir * 0.6, 0, U.TAU); c.fill();
+    } else if (m === 'gold') { // mísula com voluta dourada
+      c.fillStyle = '#6a5228'; c.beginPath(); c.moveTo(wx, u); c.lineTo(wx + dir * 11, u); c.quadraticCurveTo(wx + dir * 9, u + 8, wx + dir * 3.5, u + 10); c.lineTo(wx, u + 14); c.closePath(); c.fill();
+      c.strokeStyle = '#d0a850'; c.lineWidth = 0.7; c.beginPath(); c.arc(wx + dir * 4.6, u + 8.4, 2.2, 0, U.TAU); c.stroke();
+      c.beginPath(); c.moveTo(wx + dir * 11, u + 0.4); c.quadraticCurveTo(wx + dir * 9, u + 6, wx + dir * 6.6, u + 7.6); c.stroke();
+    }
+  }
+  // prumo da plataforma até ao chão
+  function post(c, R, m, x, y0, y1) {
+    const h = y1 - y0;
+    if (h <= 1) return;
+    if (m === 'wood' || m === 'rope') {
+      c.fillStyle = '#33241a'; c.fillRect(x - 1.7, y0, 3.4, h);
+      c.fillStyle = '#6a4e32'; c.fillRect(x - 1.7, y0, 0.8, h);
+      c.fillStyle = 'rgba(0,0,0,0.35)'; for (let yy = y0 + 7; yy < y1 - 3; yy += 11) c.fillRect(x - 1.7, yy, 3.4, 0.5);
+      c.fillStyle = '#241810'; c.fillRect(x - 2.6, y1 - 2.2, 5.2, 2.2);
+      if (h > 16) { c.strokeStyle = '#2e2016'; c.lineWidth = 1.3; c.beginPath(); c.moveTo(x - 7.5, y0 + 0.5); c.lineTo(x, y0 + 8.5); c.lineTo(x + 7.5, y0 + 0.5); c.stroke(); }
+    } else if (m === 'stone') {
+      c.fillStyle = R.stoneDark; c.fillRect(x - 3, y0, 6, h);
+      c.fillStyle = U.rgba(R.stoneLight, 0.2); c.fillRect(x - 3, y0, 1.4, h);
+      c.fillStyle = 'rgba(0,0,0,0.3)'; for (let yy = y0 + 8; yy < y1 - 4; yy += 8) c.fillRect(x - 3, yy, 6, 0.6);
+      c.fillStyle = R.stone; c.fillRect(x - 4.6, y0, 9.2, 2.2); c.fillRect(x - 4.6, y1 - 2.6, 9.2, 2.6);
+    } else if (m === 'iron' || m === 'chain') {
+      c.fillStyle = '#26222a'; c.fillRect(x - 1.4, y0, 2.8, h);
+      c.fillStyle = '#5a5460'; c.fillRect(x - 1.4, y0, 0.6, h);
+      c.fillStyle = '#26222a'; c.fillRect(x - 3.2, y1 - 1.8, 6.4, 1.8);
+      c.fillStyle = '#7a7480'; for (let yy = y0 + 5; yy < y1 - 3; yy += 7) { c.beginPath(); c.arc(x, yy, 0.55, 0, U.TAU); c.fill(); }
+    } else if (m === 'vine') { // caule retorcido com folhas
+      c.strokeStyle = '#3a3020'; c.lineWidth = 2.6; c.beginPath(); c.moveTo(x, y1);
+      for (let yy = y1; yy >= y0; yy -= 3) c.lineTo(x + Math.sin(yy * 0.35) * 1.2, yy);
+      c.stroke();
+      for (let yy = y0 + 6, i = 0; yy < y1 - 3; yy += 8, i++) { c.fillStyle = i % 2 ? '#4e7a3e' : '#3e6a34'; const s = i % 2 ? 1 : -1; c.beginPath(); c.ellipse(x + s * 2.6, yy, 2.2, 1, s * 0.5, 0, U.TAU); c.fill(); }
+    } else if (m === 'gold') {
+      c.fillStyle = '#5a5262'; c.fillRect(x - 3, y0, 6, h); c.fillStyle = '#c8c0cc'; c.fillRect(x - 3, y0, 1.2, h);
+      c.fillStyle = '#b08a40'; c.fillRect(x - 4.6, y0, 9.2, 2); c.fillRect(x - 4.6, y1 - 2.4, 9.2, 2.4); c.fillRect(x - 3, y0 + h * 0.5, 6, 1);
+    }
+  }
+  // tirante da plataforma até ao teto (fade: sobe e perde-se no escuro, quando o teto fica longe demais)
+  function hang(c, R, m, x, y0, y1, fade) {
+    if (y1 - y0 < 2) return;
+    const col = (hex) => { if (!fade) return hex; const g = c.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, U.rgba(hex, 0)); g.addColorStop(1, U.rgba(hex, 1)); return g; };
+    if (m === 'wood' || m === 'rope') { // corda grossa, torcida, com nó na tábua
+      c.strokeStyle = col('#4a3c2c'); c.lineWidth = 1.6; c.beginPath(); c.moveTo(x, y0); c.lineTo(x, y1); c.stroke();
+      c.strokeStyle = col('#9a8462'); c.lineWidth = 0.45; c.beginPath(); for (let yy = y0 + 1; yy < y1 - 2; yy += 3) { c.moveTo(x - 0.75, yy); c.lineTo(x + 0.75, yy + 1.6); } c.stroke();
+      c.fillStyle = '#4a3c2c'; c.beginPath(); c.ellipse(x, y1 + 0.4, 1.9, 1.4, 0, 0, U.TAU); c.fill();
+      if (!fade) { c.fillStyle = '#2a2024'; c.fillRect(x - 2, y0, 4, 1.4); }
+    } else if (m === 'stone' || m === 'chain' || m === 'gold') { // corrente de elos alternados
+      const dk = m === 'gold' ? '#8a6a30' : '#3a3440', hi = m === 'gold' ? '#e0c070' : '#6e6874';
+      const n = Math.max(1, Math.floor((y1 - y0) / 4));
+      for (let j = 0; j < n; j++) {
+        const yy = y1 - 2.2 - j * 4;
+        c.globalAlpha = fade ? Math.max(0, 1 - j / n) : 1;
+        c.strokeStyle = dk; c.lineWidth = 1; c.beginPath(); c.ellipse(x, yy, j % 2 ? 0.55 : 1.5, 2.4, 0, 0, U.TAU); c.stroke();
+        if (j % 2 === 0) { c.strokeStyle = hi; c.lineWidth = 0.45; c.beginPath(); c.ellipse(x, yy, 1.5, 2.4, 0, Math.PI * 0.95, Math.PI * 1.55); c.stroke(); }
+      }
+      c.globalAlpha = 1;
+      if (!fade) { c.fillStyle = dk; c.fillRect(x - 2.2, y0, 4.4, 1.6); }
+    } else if (m === 'iron') { // tirante de ferro com esticador
+      c.strokeStyle = col('#2a262c'); c.lineWidth = 1.3; c.beginPath(); c.moveTo(x, y0); c.lineTo(x, y1); c.stroke();
+      const ym = y1 - Math.min(14, (y1 - y0) * 0.4);
+      c.fillStyle = '#3a3640'; c.fillRect(x - 1.5, ym - 3, 3, 6); c.fillStyle = '#7a7480'; c.fillRect(x - 1.5, ym - 3, 0.6, 6);
+      if (!fade) { c.fillStyle = '#2a262c'; c.fillRect(x - 2.2, y0, 4.4, 1.6); }
+    } else if (m === 'vine') { // trepadeira a pender, com folhas
+      const wob = (yy) => x + Math.sin(yy * 0.22 + x) * 1.6;
+      c.strokeStyle = col('#2e4a2a'); c.lineWidth = 1.2; c.beginPath(); c.moveTo(wob(y0), y0);
+      for (let yy = y0; yy <= y1; yy += 3) c.lineTo(wob(yy), yy);
+      c.stroke();
+      for (let yy = y0 + 5, i = 0; yy < y1 - 2; yy += 7, i++) {
+        c.globalAlpha = fade ? (yy - y0) / (y1 - y0) : 1;
+        const s = i % 2 ? 1 : -1; c.fillStyle = i % 2 ? '#4e7a3e' : '#3e6a34';
+        c.beginPath(); c.ellipse(wob(yy) + s * 2.2, yy, 2.2, 1, s * 0.6, 0, U.TAU); c.fill();
+      }
+      c.globalAlpha = 1;
+    }
+  }
+  // apoios de todas as plataformas da sala (desenhados por baixo das tábuas)
+  function drawSupports(c, room, R) {
+    for (let ty = 0; ty < room.h; ty++) {
+      let tx = 0;
+      while (tx < room.w) {
+        if (room.tile(tx, ty) !== '=') { tx++; continue; }
+        const x0 = tx;
+        while (tx < room.w && room.tile(tx, ty) === '=') tx++;
+        supportSeg(c, room, R, x0, tx - 1, ty);
+      }
+    }
+  }
+  function supportSeg(c, room, R, x0, x1, ty) {
+    const m = MAT[platStyle(room, R, x0, x1, ty)] || 'stone';
+    if (m === 'none') return;
+    const y = ty * T, n = x1 - x0 + 1;
+    const wl = isSolidStatic(room, x0 - 1, ty), wr = isSolidStatic(room, x1 + 1, ty);
+    if (wl) bracket(c, R, m, x0 * T, y, 1);
+    if (wr) bracket(c, R, m, (x1 + 1) * T, y, -1);
+    // as pontas soltas precisam de apoio; uma plataforma curta presa a uma parede já está segura pela mísula
+    const free = [];
+    if (!wl) free.push({ tx: x0, x: x0 * T + 3 });
+    if (!wr) free.push({ tx: x1, x: (x1 + 1) * T - 3 });
+    if (!free.length || ((wl || wr) && n <= 4)) return;
+    const downs = free.map((f) => downDist(room, f.tx, ty)), ups = free.map((f) => upDist(room, f.tx, ty));
+    // o segmento inteiro decide: prumos se o chão está perto de todas as pontas soltas, senão pendurado
+    const mode = downs.every((d) => d) ? 'post' : ups.every((u) => u && u.n <= 12) ? 'hang' : null;
+    free.forEach((f, i) => {
+      const md = mode || (downs[i] ? 'post' : ups[i] && ups[i].n <= 12 ? 'hang' : 'fade');
+      if (md === 'post') post(c, R, m, f.x, y + 4, downs[i].y);
+      else if (md === 'hang') hang(c, R, m, f.x, ups[i].y, y + 1, false);
+      else hang(c, R, m, f.x, y + 1 - 6 * T, y + 1, true);
+    });
+    // prumos intermédios nas plataformas compridas assentes no chão
+    if (mode === 'post' && n >= 8 && !wl && !wr) for (let k = x0 + 4; k <= x1 - 3; k += 4) { const d = downDist(room, k, ty); if (d) post(c, R, m, k * T + T / 2, y + 4, d.y); }
+  }
   function drawPlatform(c, room, R, tx, ty) {
-    const x = tx * T, y = ty * T, k = R.key;
+    const x = tx * T, y = ty * T;
     const [x0, x1] = platSeg(room, tx, ty), lEnd = tx === x0, rEnd = tx === x1, i = tx - x0, n = x1 - x0 + 1;
-    const list = PLAT_STYLES[k] || PLAT_STYLES.r1;
-    const h = (U.hash(room.id + ':' + x0 + ':' + ty) >>> 0);
-    const st = list[h % list.length];
+    const st = platStyle(room, R, x0, x1, ty);
     const line = (x1_, y1_, x2_, y2_, w, col) => { c.strokeStyle = col; c.lineWidth = w; c.beginPath(); c.moveTo(x1_, y1_); c.lineTo(x2_, y2_); c.stroke(); };
     switch (st) {
-      case 'planks': { // tábuas de madeira com mãos-francesas nas pontas
+      case 'planks': { // tábuas de madeira pregadas
         c.fillStyle = '#3e2c1e'; c.fillRect(x, y, T, 4.5); c.fillStyle = '#7a5a3a'; c.fillRect(x, y, T, 1.1);
         line(x + ((tx * 7) % 13) + 3, y + 1, x + ((tx * 7) % 13) + 3, y + 4.5, 0.6, '#1e140c');
         c.fillStyle = '#2a1e14'; c.fillRect(x + 2, y + 1.5, 1, 1); c.fillRect(x + T - 3, y + 1.5, 1, 1);
-        if (lEnd || rEnd) line(lEnd ? x + 3 : x + T - 3, y + 4, (lEnd ? x + 3 : x + T - 3) + (lEnd ? 5 : -5), y + 11, 1.5, '#2a1e14');
         break;
       }
-      case 'balcony': { // laje de pedra com grade de ferro
+      case 'balcony': { // laje de pedra com moldura
         c.fillStyle = R.stone; c.fillRect(x, y, T, 5); c.fillStyle = R.topAccent; c.fillRect(x, y, T, 1); c.fillStyle = 'rgba(0,0,0,0.35)'; c.fillRect(x, y + 4, T, 1.2);
-        line(x, y - 9, x + T, y - 9, 0.9, '#1c1a20');
-        for (const px of [x + 3, x + 13]) line(px, y, px, y - 9, 0.7, '#1c1a20');
-        if (lEnd || rEnd) { c.fillStyle = R.stone; c.beginPath(); const ex = lEnd ? x : x + T; c.moveTo(ex, y + 5); c.lineTo(ex + (lEnd ? 8 : -8), y + 5); c.lineTo(ex + (lEnd ? 2 : -2), y + 12); c.closePath(); c.fill(); }
+        c.fillStyle = R.stoneDark; c.fillRect(x, y + 5, T, 1.4);
+        if (lEnd || rEnd) { c.fillStyle = R.stoneDark; c.fillRect(lEnd ? x : x + T - 2, y - 0.5, 2, 6.5); }
         break;
       }
-      case 'sign': { // tábua de tabuleta suspensa por cordas
+      case 'sign': { // tábua de tabuleta (pendurada pelas cordas dos apoios)
         c.fillStyle = '#4a3422'; c.fillRect(x, y, T, 4); c.fillStyle = '#8a6a44'; c.fillRect(x, y, T, 1);
         if (i % 2 === 0) { c.fillStyle = '#2a1c12'; c.fillRect(x + 6, y + 1.4, 8, 1.2); }
-        if (lEnd || rEnd) line(lEnd ? x + 2 : x + T - 2, y, lEnd ? x + 4 : x + T - 4, y - 60, 0.8, '#5a4a3a');
         break;
       }
       case 'slab': { // laje de ossário com crânios nos nichos
@@ -422,20 +580,19 @@
         line(x, y + 3.2, x + T, y + 3.4, 0.4, 'rgba(0,0,0,0.4)');
         break;
       }
-      case 'corbel': { // laje de pedra sobre mísulas
+      case 'corbel': { // laje de pedra com cornija de modilhões (só junto a paredes)
         c.fillStyle = R.stone; c.fillRect(x, y, T, 4.5); c.fillStyle = R.topAccent; c.fillRect(x, y, T, 1);
-        if (i % 2 === 0) { c.fillStyle = R.stoneDark; c.beginPath(); c.moveTo(x + 4, y + 4.5); c.lineTo(x + 14, y + 4.5); c.lineTo(x + 9, y + 12); c.closePath(); c.fill(); }
+        if (i % 2 === 0) { c.fillStyle = R.stoneDark; c.beginPath(); c.moveTo(x + 4, y + 4.5); c.lineTo(x + 14, y + 4.5); c.lineTo(x + 9, y + 9); c.closePath(); c.fill(); }
         break;
       }
-      case 'scaffold': { // andaime de tábuas com escoras em diagonal
+      case 'scaffold': { // andaime de tábuas
         c.fillStyle = '#4a3624'; c.fillRect(x, y, T, 3.5); c.fillStyle = '#86663e'; c.fillRect(x, y, T, 1);
-        line(x + 2, y + 3.5, x + T - 2, y + 16, 1, '#3a2a1a'); line(x + T - 2, y + 3.5, x + 2, y + 16, 1, '#3a2a1a');
+        c.fillStyle = '#2a1e14'; c.fillRect(x + T - 1, y, 1, 3.5);
         break;
       }
       case 'grate': { // grelha de ferro (Forjas)
         c.fillStyle = '#3a2c26'; c.fillRect(x, y, T, 4); c.fillStyle = '#8a6a50'; c.fillRect(x, y, T, 1);
         c.strokeStyle = '#1a1210'; c.lineWidth = 0.8; for (let j = 2; j < T; j += 4) { c.beginPath(); c.moveTo(x + j, y + 1); c.lineTo(x + j, y + 4); c.stroke(); }
-        if (lEnd || rEnd) line(lEnd ? x + 3 : x + T - 3, y, lEnd ? x + 3 : x + T - 3, y - 40, 1, '#1a1210');
         break;
       }
       case 'girder': { // viga de ferro rebitada
@@ -444,10 +601,9 @@
         c.fillStyle = '#9a98a4'; for (const rx of [x + 3, x + 10, x + 17]) { c.beginPath(); c.arc(rx, y + 2.6, 0.7, 0, U.TAU); c.fill(); }
         break;
       }
-      case 'chaingrate': { // grelha pendurada de correntes, brasa por baixo
+      case 'chaingrate': { // grelha suspensa, brasa por baixo
         c.fillStyle = '#2e2420'; c.fillRect(x, y, T, 3.5); c.fillStyle = '#a07050'; c.fillRect(x, y, T, 0.8);
         c.fillStyle = 'rgba(255,110,40,0.25)'; c.fillRect(x + 1, y + 3.5, T - 2, 1);
-        if (lEnd || rEnd) for (let j = 0; j < 8; j++) { c.strokeStyle = '#4a4048'; c.lineWidth = 0.7; c.beginPath(); c.ellipse(lEnd ? x + 3 : x + T - 3, y - 3 - j * 5, 1.2, 2.4, 0, 0, U.TAU); c.stroke(); }
         break;
       }
       case 'log': { // tronco tombado com musgo
@@ -456,10 +612,10 @@
         if (rEnd) { c.fillStyle = '#4e7a46'; c.beginPath(); c.ellipse(x + T + 2, y + 1, 4, 2, 0.5, 0, U.TAU); c.fill(); }
         break;
       }
-      case 'lily': { // folhas de nenúfar gigantes, uma por tile, ligeiramente desencontradas
-        const o = ((tx * 13) % 5) - 2;
-        c.fillStyle = '#2e5a32'; c.beginPath(); c.ellipse(x + T / 2 + o, y + 1.8, T * 0.6, 2.6, 0, 0, U.TAU); c.fill();
-        c.fillStyle = '#5e9a54'; c.beginPath(); c.ellipse(x + T / 2 + o, y + 1.2, T * 0.56, 1.8, 0, 0, U.TAU); c.fill();
+      case 'lily': { // folhas de nenúfar gigantes à tona, uma por tile, ligeiramente desencontradas
+        const o = ((tx * 13) % 3) - 1;
+        c.fillStyle = '#2e5a32'; c.beginPath(); c.ellipse(x + T / 2 + o, y + 1.8, T * 0.72, 2.6, 0, 0, U.TAU); c.fill();
+        c.fillStyle = '#5e9a54'; c.beginPath(); c.ellipse(x + T / 2 + o, y + 1.2, T * 0.68, 1.8, 0, 0, U.TAU); c.fill();
         c.strokeStyle = '#2e5a32'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(x + T / 2 + o, y + 1.2); c.lineTo(x + T / 2 + o + 6, y + 0.4); c.stroke();
         if (i === Math.floor(n / 2)) { c.fillStyle = '#e8d8f0'; c.beginPath(); c.ellipse(x + 6, y - 0.6, 2, 1.4, 0, 0, U.TAU); c.fill(); }
         break;
@@ -474,25 +630,21 @@
       case 'bellbeam': { // viga de carvalho do sinal dos sinos, parafusos de bronze
         c.fillStyle = '#4a3420'; c.fillRect(x, y, T, 5); c.fillStyle = '#86603a'; c.fillRect(x, y, T, 1.2);
         c.fillStyle = '#b08a48'; c.beginPath(); c.arc(x + T / 2, y + 2.8, 1.1, 0, U.TAU); c.fill();
-        if (lEnd || rEnd) { c.fillStyle = '#3a2818'; c.fillRect(lEnd ? x : x + T - 4, y + 5, 4, 8); }
         break;
       }
-      case 'gallery': { // galeria de madeira com balaústres
+      case 'gallery': { // galeria de madeira com sanefa recortada
         c.fillStyle = '#3e2a1a'; c.fillRect(x, y, T, 4); c.fillStyle = '#7e5a38'; c.fillRect(x, y, T, 1);
-        line(x, y - 10, x + T, y - 10, 1.2, '#5a3e26');
-        for (const bx of [x + 4, x + 10, x + 16]) { c.fillStyle = '#4e3420'; c.fillRect(bx - 0.8, y - 10, 1.6, 10); }
+        c.fillStyle = '#4e3420'; c.fillRect(x, y + 4, T, 2.4);
+        c.fillStyle = 'rgba(0,0,0,0.45)'; for (const bx of [x + 5, x + 15]) { c.beginPath(); c.arc(bx, y + 6.4, 2.2, Math.PI, 0); c.fill(); }
         break;
       }
       case 'ropeplank': { // tábua pendurada de cordas grossas
         c.fillStyle = '#5a4026'; c.fillRect(x, y, T, 3.5); c.fillStyle = '#9a7448'; c.fillRect(x, y, T, 0.9);
-        if (lEnd || rEnd) { const rx = lEnd ? x + 2 : x + T - 2; line(rx, y, rx + (lEnd ? 1 : -1), y - 70, 1.3, '#7a6a50'); line(rx, y, rx + (lEnd ? 1 : -1), y - 70, 0.5, '#a8987a'); }
         break;
       }
       case 'ledge': { // saliência de pedra (catedral / santuário)
         c.fillStyle = R.stone; c.fillRect(x, y, T, 5); c.fillStyle = R.topAccent; c.fillRect(x, y, T, 1);
         c.fillStyle = U.rgba('#000', 0.3); c.fillRect(x, y + 4, T, 1);
-        if (lEnd) { c.fillStyle = R.stone; c.beginPath(); c.moveTo(x, y + 5); c.lineTo(x + 7, y + 5); c.lineTo(x + 2, y + 10); c.closePath(); c.fill(); }
-        if (rEnd) { c.fillStyle = R.stone; c.beginPath(); c.moveTo(x + T, y + 5); c.lineTo(x + T - 7, y + 5); c.lineTo(x + T - 2, y + 10); c.closePath(); c.fill(); }
         break;
       }
       case 'trefoil': { // saliência com arquinhos góticos (trevos) por baixo e friso dourado
@@ -501,9 +653,9 @@
         c.fillStyle = 'rgba(0,0,0,0.5)'; c.beginPath(); c.arc(x + T / 2, y + 4.5, 2.2, 0, Math.PI); c.fill();
         break;
       }
-      case 'loft': { // coro de madeira com corrimão
+      case 'loft': { // coro de madeira
         c.fillStyle = '#3a2618'; c.fillRect(x, y, T, 4.5); c.fillStyle = '#7a5434'; c.fillRect(x, y, T, 1);
-        line(x, y - 8, x + T, y - 8, 1.4, '#6a4428'); if (i % 2 === 0) line(x + T / 2, y, x + T / 2, y - 8, 1.2, '#4e3220');
+        c.fillStyle = '#5a3a22'; c.fillRect(x, y + 4.5, T, 1.5); if (i % 2 === 0) { c.fillStyle = '#8a6a44'; c.beginPath(); c.arc(x + T / 2, y + 2.6, 1, 0, U.TAU); c.fill(); }
         break;
       }
       case 'marble': { // mármore claro com orla de ouro (palácio)
@@ -515,9 +667,10 @@
         c.fillStyle = '#3a2416'; c.fillRect(x, y, T, 5); c.fillStyle = '#8a1a24'; c.fillRect(x, y - 0.5, T, 2); c.fillStyle = '#d0a040'; c.fillRect(x, y + 1.3, T, 0.5);
         break;
       }
-      case 'gilt': { // prateleira de pedra com mísula dourada
+      case 'gilt': { // prateleira de pedra com friso dourado
         c.fillStyle = R.stone; c.fillRect(x, y, T, 4); c.fillStyle = R.topAccent; c.fillRect(x, y, T, 1);
-        if (i % 3 === 1 || n < 3) { c.fillStyle = '#b08a40'; c.beginPath(); c.moveTo(x + 6, y + 4); c.quadraticCurveTo(x + 6, y + 11, x + 12, y + 12); c.lineTo(x + 14, y + 4); c.closePath(); c.fill(); }
+        c.fillStyle = '#b08a40'; c.fillRect(x, y + 4, T, 1.1);
+        if (i % 3 === 1) { c.fillStyle = '#d0a850'; c.beginPath(); c.arc(x + T / 2, y + 2.4, 0.9, 0, U.TAU); c.fill(); }
         break;
       }
       default: { c.fillStyle = R.stone; c.fillRect(x, y, T, 5); c.fillStyle = R.topAccent; c.fillRect(x, y, T, 1); }

@@ -18,7 +18,7 @@
     b.carve(12, 0, 19, 2);
     // ziguezague de plataformas
     const rows = [48, 45, 42, 39, 36, 33, 30, 27, 24, 21, 18, 15, 12, 9, 6, 3];
-    rows.forEach((r, i) => { if (r === 15) { b.plat(12, 18, r); return; } const left = i % 2 === 0; b.plat(left ? 9 : 17, left ? 15 : 24, r); });
+    rows.forEach((r, i) => { if (r === 15) { b.plat(12, 18, r); return; } if (r === 3) return; /* o topo é a plataforma larga por baixo da saída */ const left = i % 2 === 0; b.plat(left ? 9 : 17, left ? 15 : 24, r); });
     b.plat(12, 19, 3);
     b.enemy('gargoyle', 26, 40); b.enemy('gargoyle', 4, 22); b.enemy('raven', 20, 30); b.enemy('raven', 12, 26); b.enemy('acolyte', 5, 32); b.enemy('raven', 18, 8);
     b.e('trap', 20, 2, { k: 'blade', len: 9, period: 3 });

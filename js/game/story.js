@@ -135,8 +135,13 @@
     emitLight() { G.light(this.cx, this.y + 40, 70 + this.cur * 30, '#ffa040', 0.6 + this.cur * 0.07, 2); }
     draw(ctx) {
       const x = this.cx, base = this.y + 70, t = this.t, k = this.cur;
+      // braseiro suspenso: três correntes juntam-se numa argola e uma só sobe até ao teto
+      const top = this.y - 24, ring = base - 34, link = (x0, y0, x1, y1) => { const n = Math.max(2, Math.round(Math.hypot(x1 - x0, y1 - y0) / 3.2)); ctx.strokeStyle = '#3a3032'; ctx.lineWidth = 0.9; for (let i = 0; i < n; i++) { const u = (i + 0.5) / n; ctx.beginPath(); ctx.ellipse(x0 + (x1 - x0) * u, y0 + (y1 - y0) * u, i % 2 ? 0.7 : 1.3, 1.7, Math.atan2(y1 - y0, x1 - x0) + Math.PI / 2, 0, U.TAU); ctx.stroke(); } };
+      for (const dx of [-20, 0, 20]) link(x + dx, base - 2, x, ring);
+      link(x, ring, x, top);
+      ctx.strokeStyle = '#6a5640'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(x, ring, 2.4, 0, U.TAU); ctx.stroke();
       ctx.fillStyle = '#1a1412'; ctx.beginPath(); ctx.moveTo(x - 22, base); ctx.lineTo(x + 22, base); ctx.lineTo(x + 14, base + 10); ctx.lineTo(x - 14, base + 10); ctx.fill();
-      ctx.fillRect(x - 3, base + 10, 6, 20);
+      ctx.beginPath(); ctx.moveTo(x - 5, base + 10); ctx.lineTo(x + 5, base + 10); ctx.lineTo(x, base + 19); ctx.closePath(); ctx.fill();
       ctx.fillStyle = '#4a3a2a'; ctx.fillRect(x - 22, base - 2, 44, 3);
       const h = 10 + k * 7;
       for (let i = 0; i < 7; i++) {

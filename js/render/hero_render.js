@@ -103,39 +103,6 @@
     }
     ctx.restore();
   }
-  H.scarf = function (ctx, p) {
-    const pts = p.cloak, n = pts.length, t = p.t || 0;
-    // contorno suave (curvas pelos pontos médios) de uma fita que afina; ponta desfiada
-    const ribbon = (C, w0, w1) => {
-      const L = [], R2 = [];
-      for (let i = 0; i < C.length; i++) {
-        const a = C[Math.max(0, i - 1)], b = C[Math.min(C.length - 1, i + 1)];
-        const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1, nx = -dy / l, ny = dx / l;
-        const w = (w0 + (w1 - w0) * (i / (C.length - 1))) * 0.5;
-        L.push([C[i][0] + nx * w, C[i][1] + ny * w]); R2.push([C[i][0] - nx * w, C[i][1] - ny * w]);
-      }
-      const path = new Path2D(); path.moveTo(L[0][0], L[0][1]);
-      for (let i = 1; i < L.length - 1; i++) path.quadraticCurveTo(L[i][0], L[i][1], (L[i][0] + L[i + 1][0]) / 2, (L[i][1] + L[i + 1][1]) / 2);
-      const e = L.length - 1, tip = C[e], prev = C[e - 1], ux = tip[0] - prev[0], uy = tip[1] - prev[1], ul = Math.hypot(ux, uy) || 1;
-      path.lineTo(L[e][0], L[e][1]); path.lineTo(tip[0] + ux / ul * 2.2 + (L[e][0] - tip[0]) * 0.4, tip[1] + uy / ul * 2.2 + (L[e][1] - tip[1]) * 0.4);
-      path.lineTo(tip[0] + ux / ul * 0.8, tip[1] + uy / ul * 0.8); path.lineTo(tip[0] + ux / ul * 1.8 + (R2[e][0] - tip[0]) * 0.4, tip[1] + uy / ul * 1.8 + (R2[e][1] - tip[1]) * 0.4);
-      path.lineTo(R2[e][0], R2[e][1]);
-      for (let i = R2.length - 2; i > 0; i--) path.quadraticCurveTo(R2[i][0], R2[i][1], (R2[i][0] + R2[i - 1][0]) / 2, (R2[i][1] + R2[i - 1][1]) / 2);
-      path.lineTo(R2[0][0], R2[0][1]); path.closePath();
-      return { path, L, R: R2 };
-    };
-    const C = pts.map((q, i) => [q.x, q.y + Math.sin(t * 7 + i * 1.1) * 0.25 * (i / n)]);
-    // a ponta de trás: a mesma corrente, mais curta e ligeiramente desviada
-    const C2 = C.slice(0, n - 1).map(([x, y], i) => [x - p.dir * 0.8 * (i / n), y + 0.9 * (i / n)]);
-    for (const [cc, base, edge, w0, w1] of [[C2, '#2e0c14', '#4a1620', 2.6, 1.4], [C, '#5c1826', '#93364a', 3.2, 1.7]]) {
-      const r = ribbon(cc, w0, w1);
-      ctx.fillStyle = base; ctx.fill(r.path);
-      ctx.save(); ctx.clip(r.path);
-      ctx.strokeStyle = edge; ctx.lineWidth = 0.9; ctx.beginPath(); r.L.forEach((q, i) => (i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]))); ctx.stroke();
-      ctx.restore();
-      ctx.strokeStyle = 'rgba(8,4,6,0.7)'; ctx.lineWidth = 0.55; ctx.stroke(r.path);
-    }
-  };
   H.draw = function (ctx, p, game) {
     const cur = p.anim && p.anim.cur;
     if (!cur || !VS.Assets.ok(cur.sh.img)) return false;
@@ -147,8 +114,6 @@
       ctx.save(); ctx.globalAlpha = g.a * 0.45; ctx.translate(g.x, g.y); ctx.scale(g.dir, 1);
       VS.Assets.drawTinted(ctx, g.sh, g.f, '#3a5aa0'); ctx.restore();
     }
-    // cachecol cor de vinho preso ao pescoço: segue a corrente de pontos de p.cloak (verlet) e ondula com o movimento
-    if (!(a && (a.type === 'dead' || a.type === 'wake')) && p.cloak && p.cloak.length > 2) H.scarf(ctx, p);
     ctx.save();
     if (p.iframes > 0 && p.iframes < 0.9 && !(a && a.type === 'dead') && Math.floor(p.t * 20) % 2 === 0) ctx.globalAlpha = 0.5;
     ctx.translate(p.cx, p.bottom);

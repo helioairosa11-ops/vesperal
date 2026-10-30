@@ -165,6 +165,13 @@
       this.anim = U.approach(this.anim, this.isOpen ? 1 : 0, dt * 2.5);
     }
     draw(ctx, game) { VS.SpritesObj.door(ctx, this, game.room.R); }
+    // o portão do palácio: braseiros, engastes de brasa e a coroa iluminam a praça
+    emitLight() {
+      if (this.style !== 'palace') return;
+      const fl = this.y + this.h, e = Math.min(5, VS.state.embers || 0);
+      for (const bx of [this.x - 48, this.x + 48]) G.light(bx, fl - 18, 80, '#ff8030', 0.9, 2);
+      G.light(this.x, fl - 120, 60 + e * 14, e >= 5 ? '#ffc060' : '#ff9040', 0.4 + e * 0.12, 2);
+    }
   }
   // ---------- Alavanca ----------
   class Lever extends VS.Entity {
@@ -208,7 +215,7 @@
   // ---------- Plataforma móvel ----------
   class MovingPlatform extends VS.Entity {
     constructor(d) {
-      super(d.x * T, d.y * T, (d.w || 3) * T, 8); this.isPlatform = true; this.z = 1;
+      super(d.x * T, d.y * T, (d.w || 3) * T, 8); this.isPlatform = true; this.z = 1; this.drawAlways = true; // o carril e as correntes passam do ecrã
       this.ax = this.x; this.ay = this.y; this.bx = (d.tx !== undefined ? d.tx : d.x) * T; this.by = (d.ty !== undefined ? d.ty : d.y) * T;
       this.period = d.period || 4; this.phase = d.phase || 0; this.dx = 0; this.dy = 0;
     }
@@ -218,7 +225,7 @@
       const nx = U.lerp(this.ax, this.bx, k), ny = U.lerp(this.ay, this.by, k);
       this.dx = nx - this.x; this.dy = ny - this.y; this.x = nx; this.y = ny;
     }
-    draw(ctx, game) { VS.SpritesObj.platform(ctx, this, game.room.R); }
+    draw(ctx, game) { VS.SpritesObj.platform(ctx, this, game.room.R, game.room); }
   }
   // ---------- Armadilhas ----------
   class Trap extends VS.Entity {

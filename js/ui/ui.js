@@ -181,7 +181,6 @@
     In.clearAll();
   };
   // retrato de quem fala: pintado (pessoas) ou recortado da folha do chefe à volta dos olhos
-  const PORTRAIT = { npc_ione: 'ione', npc_hrolf: 'hrolf', npc_maren: 'maren', npc_teodoro: 'teodoro' };
   const bossPortraits = {};
   function bossPortrait(id) {
     if (bossPortraits[id]) return bossPortraits[id];
@@ -204,8 +203,8 @@
   function setPortrait(el, s) {
     const box = el.querySelector('.dlg-portrait'); box.innerHTML = '';
     let node = null;
-    if (s && PORTRAIT[s]) { node = new Image(); node.src = 'assets/portraits/' + PORTRAIT[s] + '.png'; node.alt = ''; }
-    else if (s && /^boss_/.test(s)) { const cv = bossPortrait(s.slice(5)); if (cv) { node = document.createElement('canvas'); node.width = node.height = 180; node.getContext('2d').drawImage(cv, 0, 0); } }
+    // as pessoas (NPC) falam sem retrato; só os chefes mostram o rosto ao falar
+    if (s && /^boss_/.test(s)) { const cv = bossPortrait(s.slice(5)); if (cv) { node = document.createElement('canvas'); node.width = node.height = 180; node.getContext('2d').drawImage(cv, 0, 0); } }
     if (node) box.appendChild(node);
     el.classList.toggle('has-portrait', !!node);
   }
