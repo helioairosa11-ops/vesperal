@@ -24,7 +24,7 @@ Metroidvania 2D de fantasia sombria para o navegador. O Desperto acorda numa cov
 
 O jogo é uma página estática: não precisa de instalação nem de servidor próprio.
 
-- **Online (GitHub Pages):** no repositório, abre *Settings → Pages*, escolhe a branch `main` e a pasta `/ (root)`, e guarda. Passado um minuto o jogo fica em `https://<utilizador>.github.io/vesperal/`.
+- **Online:** https://helioairosa11-ops.github.io/vesperal/ (GitHub Pages, publicado a partir da branch `gh-pages`).
 - **No computador:** descarrega o repositório e serve a pasta com um servidor local, por exemplo `python3 -m http.server 8000`, e abre `http://localhost:8000`.
 
 ### Controlos (teclado, por omissão)
@@ -63,4 +63,4 @@ Um jogo de **Lourence Manuel**.
 
 ## Licença
 
-Ainda não há licença definida.
+[CC BY-NC-SA 4.0](LICENSE) — podes jogar, partilhar e adaptar o jogo, desde que dês o crédito ao autor, não o uses para fins comerciais e partilhes as adaptações com a mesma licença. As fontes (Cinzel e EB Garamond, do Google Fonts) têm a sua própria licença (SIL Open Font License 1.1).
