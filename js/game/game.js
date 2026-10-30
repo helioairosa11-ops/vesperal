@@ -80,6 +80,7 @@
       if (this.areaShown !== regionName) { this.areaShown = regionName; VS.UI.areaTitle(VS.t(regionName)); }
       if (def.onEnter) def.onEnter(this);
       VS.events.emit('room', id);
+      if (VS.Wanderer) VS.Wanderer.onEnter(this);
     }
     setRegionAudio() {
       const def = VS.ROOMS[this.room.id];
@@ -115,6 +116,7 @@
       const p = this.player;
       p.update(dt, this);
       for (const e of this.ents) if (!e.remove) e.update(dt, this);
+      if (VS.Wanderer) VS.Wanderer.update(this, dt);
       this.resolveHits();
       if (this.ents.some((e) => e.remove)) { this.ents = this.ents.filter((e) => !e.remove); this.entsSig = (this.entsSig || 0) + 1; }
       this.hitboxes.length = 0;

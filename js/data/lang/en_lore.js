@@ -129,5 +129,6 @@
     bossj_gemeos: 'The Twin Guards, Blade and Maul. They swore never to fight apart.',
     bossj_aldric: 'Aldric, king of Vesperal. He accepted the bishop\'s plan because he could not bear to watch her burn.',
     bossj_seraphine: 'The Echo of Seraphine: what remained of the queen inside the Lume. She did not ask you to win; she asked you to let go.',
+    bossj_carpideira: 'She wept for the city\'s dead as a trade, so much per funeral. When the whole city died there was no one left to pay her — and she wept for them all, for nothing, until her voice broke. She still drifts from room to room, looking for someone to mourn.',
   });
 })(window.VS);

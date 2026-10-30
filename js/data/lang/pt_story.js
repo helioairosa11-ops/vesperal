@@ -7,6 +7,7 @@
     hint_parry_bolts: 'Os virotes dos besteiros brilham antes de partir. Um parry no instante certo devolve-os.', hint_wall: 'As paredes da chaminé estão perto uma da outra. Alguém com garras subiria por ali.', hint_veil: 'Um véu espectral fecha a passagem. Vibra como uma corda de alaúde.',
     // ---------- nomes ----------
     boss_coveiro: 'O Coveiro', boss_matilheira: 'A Velha Matilheira', boss_caedmon: 'Sir Caedmon, o Escudo da Rainha', boss_automato: 'O Autómato do Fole', boss_hilde: 'Mestra Hilde, a Ferreira', boss_mariposa: 'A Mãe-Mariposa', boss_elowen: 'Ama Elowen', boss_sineiro: 'O Sineiro', boss_corvin: 'Corvin, o Menestrel', boss_vael: 'Inquisidora Vael', boss_ozias: 'Bispo Ozias', boss_gemeos: 'Os Gémeos da Guarda', boss_aldric: 'Rei Aldric', boss_seraphine: 'O Eco de Seraphine',
+    boss_carpideira: 'A Carpideira',
     npc_ione: 'Ione', npc_hrolf: 'Hrolf', npc_maren: 'Maren', npc_teodoro: 'Teodoro',
     // ---------- introdução ----------
     intro_1: 'O Lume escolhia um receptáculo em cada geração. Na última, escolheu a rainha Seraphine — e a chama começou a queimá-la por dentro.',
@@ -139,6 +140,7 @@
     seraphine_mid1: 'Isso. Não a seguras — devolve-la. É assim que se ama o que não é nosso.',
     seraphine_mid2: 'Mais um pouco. O céu já se lembra da cor.',
     seraphine_post: 'Obrigada. Agora — olhem para cima. Os dois. Olhem para cima.',
+    carpideira_post: 'Já ninguém… precisa… que eu chore.',
     // ---------- cálice e escolha final ----------
     chalice_found: '(Entre as cinzas do bispo, o cálice de Ozias. Tem uma falha fina por dentro, em forma de chama. Que fazes com ele?)',
     chalice_keep: 'Guardar o cálice.', chalice_shatter: 'Despedaçar o cálice.',

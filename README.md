@@ -1,12 +1,13 @@
 # Vesperal: A Última Chama
 
-> **Versão em desenvolvimento.** O jogo ainda não está terminado: faltam os fundos novos das regiões, dois chefes novos e o teste completo de uma partida do início ao fim.
+> **Versão em desenvolvimento.** O jogo ainda não está terminado: faltam os fundos novos das regiões, um chefe novo e o teste completo de uma partida do início ao fim.
 
 Metroidvania 2D de fantasia sombria para o navegador. O Desperto acorda numa cova de cinza, sem nome nem memória, com uma pequena chama no peito, e atravessa uma cidade morta até ao trono de Aldric.
 
 - 7 regiões ligadas num só mapa, com altares de brasas, paredes falsas e passagens secretas
-- 14 chefes, cada um com a sua música, golpes que não se repetem de chefe para chefe, um ponto fraco que se vê na luta e uma dica
+- 15 chefes, cada um com a sua música, golpes que não se repetem de chefe para chefe, um ponto fraco que se vê na luta e uma dica
 - O rei final tem um golpe que mata de uma vez, bem avisado e possível de evitar
+- A Carpideira, chefe errante: aparece em salas ao acaso (ouve-se o choro antes de a ver) e grita de sofrimento — o grito sai em ondas que só a esquiva atravessa; pode-se fugir dela, e volta com a vida que tinha
 - Inimigos gigantes, um por região — maiores, mais lentos a armar o golpe e muito mais duros; os inimigos com garras também são maiores
 - Missões dos NPC e 3 finais
 - Todo o mapa percorre-se a saltar (com o salto duplo e a investida quando os ganhas); trepar paredes é um atalho opcional

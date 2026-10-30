@@ -451,6 +451,38 @@
   SFX.step_metal = (d, t) => { tone(d, t, 'square', 900 + Math.random() * 300, 700, 0.03, 0.08); nburst(d, t, 'bandpass', 3000, 6, 0.1, 0.06); };
   SFX.step_water = (d, t) => { const f = nburst(d, t, 'bandpass', 800, 1.5, 0.25, 0.14); f.frequency.exponentialRampToValueAtTime(2400, t + 0.12); tone(d, t + 0.02, 'sine', 600, 1100, 0.05, 0.06); };
   SFX.step_soft = (d, t) => { nburst(d, t, 'lowpass', 900, 0.7, 0.18, 0.07); };
+  // ---------- a Carpideira: grito de sofrimento (síntese de voz por formantes), soluços e o choro ao longe ----------
+  function voice(d, t, f0, curve, dur, peak, formants, breath) {
+    const out = gainNode(0); env(out, t, dur, 0.08, 0.85, 0.35, peak); out.connect(d);
+    const end = t + dur + 0.5;
+    for (const det of [-6, 7]) {
+      const o = osc('sawtooth', f0, t, end); o.detune.value = det;
+      curve.forEach(([dt, f]) => o.frequency.exponentialRampToValueAtTime(f, t + dt));
+      vibrato(o.frequency, t, end, 5.6, f0 * 0.035, 0.25);
+      for (const [ff, q, g0] of formants) { const bp = filt('bandpass', ff, q), g = gainNode(g0); o.connect(bp); bp.connect(g); g.connect(out); }
+    }
+    if (breath) { const n = noiseSrc(t, dur + 0.3), hp = filt('bandpass', 2400, 0.8), g = gainNode(0); env(g, t, dur, 0.05, 0.6, 0.3, breath); n.connect(hp); hp.connect(g); g.connect(out); }
+    if (A.reverb) { const g = gainNode(peak * 0.9); out.connect(g); g.connect(A.reverb); }
+    return out;
+  }
+  const AH = [[760, 6, 1.0], [1220, 8, 0.55], [2650, 10, 0.3]];
+  SFX.wail = (d, t) => {
+    voice(d, t, 420, [[0.25, 760], [0.7, 900], [1.15, 640], [1.6, 360]], 1.5, 0.32, AH, 0.12);
+    voice(d, t + 0.04, 280, [[0.3, 500], [0.8, 610], [1.3, 420], [1.7, 240]], 1.55, 0.18, [[620, 6, 1], [1040, 8, 0.5], [2400, 10, 0.25]], 0);
+    tone(d, t, 'sine', 90, 50, 0.25, 1.2, 0.05);
+  };
+  SFX.sob = (d, t) => {
+    for (let i = 0; i < 3; i++) {
+      const tt = t + i * 0.22 + Math.random() * 0.04;
+      nburst(d, tt, 'bandpass', 1300, 1.2, 0.12, 0.12, 0.02);
+      voice(d, tt + 0.02, 360 - i * 30, [[0.12, 300 - i * 25]], 0.16, 0.1, AH, 0.03);
+    }
+  };
+  // ao longe: abafado, mais baixo, quase só reverberação — ouve-se antes de a ver
+  SFX.wail_far = (d, t) => {
+    const lp = filt('lowpass', 850, 0.7), g = gainNode(0.7); lp.connect(g); g.connect(d);
+    voice(lp, t, 380, [[0.4, 620], [1.1, 700], [1.7, 420], [2.3, 300]], 2.2, 0.22, AH, 0.05);
+  };
   // passada de um bicho enorme: baque surdo e pó
   SFX.step_heavy = (d, t) => { tone(d, t, 'sine', 72, 36, 0.34, 0.18); nburst(d, t, 'lowpass', 420, 0.8, 0.24, 0.14); };
   SFX.enemy_hurt = (d, t) => { tone(d, t, 'sawtooth', 260, 140, 0.1, 0.12); nburst(d, t, 'lowpass', 2000, 1, 0.25, 0.08); };

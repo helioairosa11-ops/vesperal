@@ -19,6 +19,7 @@
     gemeos: { items: [['ash_heart', 1], ['palace_seal', 1]], ash: 1200 },
     aldric: { items: [['ember_6', 1], ['w_montante', 1]] },
     seraphine: {},
+    carpideira: { items: [['ash_heart', 1], ['candle_fragment', 1]], ash: 1600 },
   };
 
   // ---------- introdução (curta: a história revela-se aos poucos) ----------
@@ -52,7 +53,7 @@
   const POST = {
     coveiro: null, matilheira: null, automato: null, mariposa: null, sineiro: null, vael: ['vael_post'], gemeos: ['gemeos_post'],
     caedmon: ['caedmon_post1', 'caedmon_post2'], hilde: ['hilde_post1', 'hilde_post2'], elowen: ['elowen_post1', 'elowen_post2'],
-    corvin: ['corvin_post1', 'corvin_post2'], ozias: ['ozias_post1', 'ozias_post2'], aldric: ['aldric_post1', 'aldric_post2', 'aldric_post3'], seraphine: ['seraphine_post'],
+    corvin: ['corvin_post1', 'corvin_post2'], ozias: ['ozias_post1', 'ozias_post2'], aldric: ['aldric_post1', 'aldric_post2', 'aldric_post3'], seraphine: ['seraphine_post'], carpideira: ['carpideira_post'],
   };
   S.postLines = function (id) {
     const l = POST[id]; if (!l) return null;

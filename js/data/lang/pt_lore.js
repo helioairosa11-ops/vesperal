@@ -129,5 +129,6 @@
     bossj_gemeos: 'Os Gémeos da Guarda, Lâmina e Malho. Juraram nunca lutar separados.',
     bossj_aldric: 'Aldric, rei de Vesperal. Aceitou o plano do bispo porque não suportava vê-la arder.',
     bossj_seraphine: 'O Eco de Seraphine: o que da rainha ficou dentro do Lume. Não te pediu que vencesses; pediu-te que soltasses.',
+    bossj_carpideira: 'Chorava os mortos da cidade por ofício, a tanto por funeral. Quando a cidade inteira morreu, já não houve quem lhe pagasse — e ela chorou-os a todos, de graça, até a voz se lhe partir. Ainda anda de sala em sala à procura de quem chorar.',
   });
 })(window.VS);

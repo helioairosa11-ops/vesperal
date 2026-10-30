@@ -196,6 +196,19 @@
   S.projectile = function (ctx, pr) {
     const x = pr.cx, y = pr.cy;
     const k = pr.kind;
+    if (k === 'wax') { // pingo de cera a cair: gota cor de marfim com brilho
+      S.glow(ctx, x, y, 9, '#ffd8a0', 0.35);
+      ctx.fillStyle = '#efe2c6'; ctx.beginPath(); ctx.moveTo(x, y - 7); ctx.quadraticCurveTo(x + 4.4, y + 1, x, y + 5); ctx.quadraticCurveTo(x - 4.4, y + 1, x, y - 7); ctx.fill();
+      ctx.fillStyle = '#fffaf0'; ctx.beginPath(); ctx.ellipse(x - 1.2, y + 0.6, 1, 2, 0, 0, U.TAU); ctx.fill();
+      return;
+    }
+    if (k === 'waxpool') { // poça de cera derretida, ainda quente
+      const k2 = Math.min(1, pr.life / 0.6);
+      ctx.globalAlpha = k2; S.glow(ctx, x, y, 16, '#ff9a50', 0.25);
+      ctx.fillStyle = '#d8c8a8'; ctx.beginPath(); ctx.ellipse(x, pr.y + pr.h - 1.5, pr.w / 2, 2.6, 0, 0, U.TAU); ctx.fill();
+      ctx.fillStyle = '#f4ead4'; ctx.beginPath(); ctx.ellipse(x - 2, pr.y + pr.h - 2.2, pr.w / 4, 1, 0, 0, U.TAU); ctx.fill();
+      ctx.globalAlpha = 1; return;
+    }
     if (k === 'spark') {
       S.glow(ctx, x, y, 16, '#ff9030', 0.9);
       ctx.fillStyle = '#fff0c0'; ctx.beginPath(); ctx.ellipse(x, y, 5, 3, 0, 0, U.TAU); ctx.fill();

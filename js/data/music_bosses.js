@@ -133,6 +133,24 @@
       { inst: 'choir', vol: 0.35, minInt: 1, notes: pad(P, 4, 4) },
     ] };
   }
+  // ---------------- A Carpideira — "Pranto" (ré menor, 3/4 lento: coro, lamento, sino de finados e um coração) ----------------
+  {
+    const P = ['Dm', 'Dm', 'Eb', 'Dm', 'Gm', 'Gm', 'A', 'A', 'Dm', 'Bb', 'Gm', 'Eb', 'Dm', 'Eb', 'A', 'Dm'];
+    M.b_carpideira = { bpm: 78, fadeIn: 1.2, parts: [
+      { inst: 'choir', vol: 0.5, notes: pad(P, 3, 3) },
+      { inst: 'flute', vol: 0.62, notes: bars(
+        'A4:2 Bb4:1', 'A4:3', 'G4:1 Bb4:1 Eb5:1', 'D5:3',
+        'D5:2 C5:1', 'Bb4:2 A4:1', 'A4:1.5 G4:0.5 E4:1', 'A4:3',
+        'F5:2 E5:1', 'D5:1.5 F5:0.5 Bb4:1', 'G4:1 Bb4:1 D5:1', 'Eb5:2 D5:1',
+        'D5:1 F5:1 A5:1', 'G5:1.5 F5:0.5 Eb5:1', 'C#5:2 E5:1', 'D5:3') },
+      { inst: 'cello', vol: 0.5, notes: arp(P, 2, [0, 2, 3], 1) },
+      { inst: 'bigbell', vol: 0.4, notes: R('D3:3 r:3', 8) },
+      { inst: 'heart', vol: 0.5, notes: R('D2:0.5 D2:0.5 r:2', 16) },
+      { inst: 'strings', vol: 0.35, minInt: 1, notes: pad(P, 4, 3) },
+      { inst: 'timp', vol: 0.5, minInt: 1, notes: R('D2:1 r:1 A1:1', 16) },
+      { inst: 'choirlow', vol: 0.4, minInt: 1, notes: pad(P, 2, 3) },
+    ] };
+  }
   // ---------------- Ama Elowen — "Embala, Embala" (fá# menor, valsa de caixa de música) ----------------
   {
     const P = ['F#m', 'F#m', 'D', 'C#', 'F#m', 'Bm', 'C#', 'C#', 'D', 'A', 'Bm', 'F#m', 'D', 'Bm', 'C#', 'F#m'];

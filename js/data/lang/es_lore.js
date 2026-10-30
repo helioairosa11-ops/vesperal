@@ -129,5 +129,6 @@
     bossj_gemeos: 'Los Gemelos de la Guardia, Hoja y Mazo. Juraron no luchar nunca por separado.',
     bossj_aldric: 'Aldric, rey de Vesperal. Aceptó el plan del obispo porque no soportaba verla arder.',
     bossj_seraphine: 'El Eco de Seraphine: lo que de la reina quedó dentro del Lume. No te pidió que vencieras; te pidió que soltaras.',
+    bossj_carpideira: 'Lloraba a los muertos de la ciudad por oficio, a tanto por funeral. Cuando murió la ciudad entera ya no quedó nadie que le pagara, y los lloró a todos gratis hasta que se le rompió la voz. Aún vaga de sala en sala buscando a quién llorar.',
   });
 })(window.VS);

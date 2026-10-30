@@ -27,6 +27,8 @@
     ins_i40_t: "Regla del taller, grabada en el dintel",
     ins_i40: "Tres golpes y el hierro pide agua. Quien sujeta el mazo al rojo lo suelta, aunque sea la maestra. Cuenta los golpes; espera el blanco.",
     tip_mariposa_rest: "Tras soltar el polvo, la Madre Polilla se posa agotada, con las alas cerradas. ¡Hiérela en el suelo!",
+    tip_carpideira_scream: 'El grito no se para ni se salta: atraviesa las ondas con la esquiva.', tip_carpideira_tired: 'Tras el grito doble cae de rodillas, agotada. ¡Ahora!',
+    msg_wail_far: 'A lo lejos, alguien llora.', msg_wail_near: 'El llanto está aquí.',
     ins_i41_t: "Nota de un jardinero, clavada en una espina",
     ins_i41: "No subas a su encuentro. Sacude el polvo de las alas y el polvo le pesa; luego baja al suelo, cierra las alas como un tejado y duerme un poco. Es en ese sueño corto cuando se poda.",
     tip_elowen_song: "Elowen cierra los ojos y mece el hatillo cantando: ¡interrumpe la canción!",

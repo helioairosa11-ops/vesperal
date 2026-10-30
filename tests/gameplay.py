@@ -1280,8 +1280,65 @@ def t_structs(R, b):
     pg.close()
 
 
+def t_wanderer(R, b):
+    """A Carpideira (chefe errante): ouve-se o choro antes de aparecer; o grito sai em anéis que só a esquiva atravessa;
+    exausta depois do grito duplo leva mais dano; foge-se dela e volta com a vida que tinha; vencida, não volta"""
+    pg = b.new_page(viewport={'width': 1280, 'height': 720}); errs = []; page_errors(pg, errs)
+    boot(pg); new_game(pg); pg.evaluate('VSDebug.allAbilities(); VSDebug.god(true)')
+    # bloqueada no começo do jogo; desbloqueia depois de quatro guardiões
+    locked = pg.evaluate('!VS.Wanderer.unlocked(VS.state)')
+    pg.evaluate("['coveiro', 'matilheira', 'caedmon', 'automato'].forEach((k) => VS.state.bosses[k] = true)")
+    R.check('a Carpideira só anda pelo mundo depois de quatro guardiões', locked and pg.evaluate('VS.Wanderer.unlocked(VS.state)'))
+    # aparece ao fim de umas salas, numa sala larga sem altar (e antes ouve-se o choro)
+    pg.evaluate("VS.state.flags.carp_due = 2; VS.state.flags.carp_steps = 0; T.sfx = []; const o = VS.Audio.sfx; VS.Audio.sfx = (n, x) => { T.sfx.push(n); return o.call(VS.Audio, n, x); }")
+    warp(pg, 'r1_bridge'); frames(pg, 150)
+    heard = pg.evaluate("T.sfx.includes('wail_far')")
+    warp(pg, 'r1_street')
+    up = wait(pg, "T.bossEnts().some((e) => e.bossId === 'carpideira')", 8)
+    R.check('ouve-se o choro ao longe e depois ela aparece numa sala larga', heard and up, {'heard': heard, 'up': up})
+    wait(pg, '!T.bossEnts()[0].intro', 8)
+    info = pg.evaluate("(() => { const e = T.bossEnts()[0], p = T.p(); return { d: Math.abs(e.cx - p.cx), sheet: VS.EnemyRender.has(e), bar: !!T.g().boss }; })()")
+    shot(pg, 'carpideira_appears')
+    R.check('aparece longe da protagonista, com folha própria e barra de chefe', info['d'] > 150 and info['sheet'] and info['bar'], info)
+    # o grito: anéis que crescem a partir da boca; quem fica parado é apanhado, quem se esquiva no momento certo passa
+    pg.evaluate("(() => { const e = T.bossEnts()[0]; T.C = e; e.K = Object.assign({}, e.K, { think() {} }); e.atk = null; e.cool = 99; const p = T.p(); p.x = e.cx - 120 - p.w / 2; p.y = e.bottom - p.h; p.vx = 0; T.hits = []; T.wrapHits(); e.attack('scream'); })()")
+    rings = wait(pg, "T.g().ents.some((x) => x instanceof VS.WailRing)", 3)
+    shot(pg, 'carpideira_scream')
+    hitStill = wait(pg, 'T.hits.length > 0', 3)
+    R.check('o grito sai em anéis que apanham quem fica parado', rings and hitStill, {'rings': rings, 'hits': pg.evaluate('T.hits.length')})
+    # esquiva no momento em que o anel chega: passa ilesa
+    pg.evaluate("(() => { const e = T.C, p = T.p(); T.g().ents.filter((x) => x instanceof VS.WailRing).forEach((x) => x.remove = true); e.atk = null; p.x = e.cx - 150 - p.w / 2; p.y = e.bottom - p.h; p.vx = 0; p.hitIds && p.hitIds.clear(); T.hits = []; T.dodged = false; e.attack('scream');\n"
+                "  T.hooks.push(() => { const r = T.g().ents.find((x) => x instanceof VS.WailRing); if (r && !T.dodged && Math.hypot(p.cx - r.ox, p.cy - r.oy) - r.r < 34) { T.dodged = true; T.tap('KeyL', 3); } if (T.dodged && !T.g().ents.some((x) => x instanceof VS.WailRing)) return true; }); })()")
+    wait(pg, 'T.dodged && !T.g().ents.some((x) => x instanceof VS.WailRing)', 5)
+    hits_dodge = [h for h in pg.evaluate('T.hits') if h == 'hit']
+    R.check('a esquiva atravessa o anel do grito sem levar dano', not hits_dodge, pg.evaluate('T.hits'))
+    # fase 2: grito duplo e depois fica exausta (leva mais dano)
+    tired = pg.evaluate("""() => new Promise((res) => { const e = T.C; e.hp = Math.round(e.maxHp * 0.4); e.phase = 1; e.atk = null; e.tired = 0; e.attack('scream');
+      let n = 0, rings = 0, seen = new Set(); T.hooks.push(() => { T.g().ents.forEach((x) => { if (x instanceof VS.WailRing && !seen.has(x)) { seen.add(x); rings++; } }); if (++n > 200 || (e.tired > 0 && !e.atk)) { res({ rings, tired: e.tired > 0, mult: e.K.damageMult(e) }); return true; } }); })""")
+    R.check('na fase 2 grita duas vezes e fica exausta (leva ×1.8)', tired['rings'] >= 2 and tired['tired'] and tired['mult'] > 1.5, tired)
+    # foge-se: ao sair da sala ela desaparece e guarda a vida
+    hp_before = pg.evaluate('T.C.hp')
+    warp(pg, 'r1_bridge')
+    gone = pg.evaluate("!T.bossEnts().some((e) => e.bossId === 'carpideira') && VS.state.flags.carp_hp")
+    R.check('fugir deixa-a para trás, com a vida que tinha', gone == hp_before, {'hp': hp_before, 'saved': gone})
+    # volta (forçada) com a mesma vida; vencida, dá a recompensa e não volta
+    pg.evaluate('VSDebug.wanderer()')
+    wait(pg, "T.bossEnts().some((e) => e.bossId === 'carpideira') && !T.bossEnts()[0].intro", 8)
+    hp_back = pg.evaluate('T.bossEnts()[0].hp')
+    pg.evaluate('T.autoDlg = true; T.bossEnts()[0].hp = 1; T.bossEnts()[0].tired = 0')
+    pg.evaluate('(() => { const e = T.bossEnts()[0]; e.die(T.g()); })()')
+    won = wait(pg, "VS.state.bosses.carpideira === true", 8)
+    frames(pg, 240)
+    pg.evaluate("VS.state.flags.carp_due = 1; VS.state.flags.carp_steps = 0")
+    warp(pg, 'r1_plaza'); frames(pg, 200)
+    again = pg.evaluate("T.bossEnts().some((e) => e.bossId === 'carpideira')")
+    R.check('volta com a mesma vida; vencida, fica no diário e não volta a aparecer', hp_back == hp_before and won and not again, {'hp_back': hp_back, 'won': won, 'again': again})
+    R.check('nomes e falas da Carpideira nas línguas', pg.evaluate("['boss_carpideira', 'bossj_carpideira', 'tip_carpideira_scream', 'carpideira_post', 'msg_wail_far'].every((k) => VS.t(k) && VS.t(k) !== k)"))
+    R.check('Carpideira sem erros de JavaScript', not errs, errs[:3])
+    pg.close()
+
 TESTS = {'menus': t_menus, 'combat': t_movement_combat, 'world': t_world, 'bosses': t_bosses, 'caedmon': t_caedmon, 'aldric': t_aldric, 'corvin': t_corvin,
-         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach, 'giants': t_giants, 'traps': t_traps, 'structs': t_structs}
+         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach, 'giants': t_giants, 'traps': t_traps, 'structs': t_structs, 'wanderer': t_wanderer}
 
 
 def main(filters):

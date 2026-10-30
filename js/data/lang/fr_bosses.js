@@ -27,6 +27,8 @@
     ins_i40_t: "Règle de l'atelier, gravée sur le linteau",
     ins_i40: "Trois coups et le fer réclame l'eau. Qui tient un marteau chauffé à blanc le lâche, fût-ce la maîtresse. Compte les coups ; attends le blanc.",
     tip_mariposa_rest: "Après avoir lâché sa poussière, la Mère Phalène se pose épuisée, ailes repliées. Frappe-la au sol !",
+    tip_carpideira_scream: 'Le cri ne se pare ni ne se saute : traverse les ondes en esquivant.', tip_carpideira_tired: 'Après le double cri, elle tombe à genoux, épuisée. Maintenant !',
+    msg_wail_far: 'Au loin, quelqu\'un pleure.', msg_wail_near: 'Les pleurs sont ici.',
     ins_i41_t: "Note d'un jardinier, épinglée à une épine",
     ins_i41: "Ne monte pas à sa rencontre. Elle secoue la poussière de ses ailes et la poussière lui pèse ; puis elle descend, replie ses ailes comme un toit et dort un peu. C'est dans ce court sommeil qu'on taille.",
     tip_elowen_song: "Elowen ferme les yeux et berce le baluchon en chantant — interromps la chanson !",

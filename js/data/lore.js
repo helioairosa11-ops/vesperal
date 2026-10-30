@@ -23,7 +23,7 @@
     { key: 'chr_end2', cond: (s) => (VS.Save.loadProfile().endings || []).includes('end2') },
     { key: 'chr_end3', cond: (s) => (VS.Save.loadProfile().endings || []).includes('end3') },
   ];
-  L.bosses = ['coveiro', 'matilheira', 'caedmon', 'automato', 'hilde', 'mariposa', 'elowen', 'sineiro', 'corvin', 'vael', 'ozias', 'gemeos', 'aldric', 'seraphine'];
+  L.bosses = ['coveiro', 'matilheira', 'caedmon', 'automato', 'hilde', 'mariposa', 'elowen', 'sineiro', 'corvin', 'vael', 'ozias', 'gemeos', 'aldric', 'seraphine', 'carpideira'];
 
   // critérios para a percentagem de conclusão
   const C = [];

@@ -207,6 +207,8 @@
       god(on) { App.game.god = on !== false; },
       flag(k, v) { App.game.state.flags[k] = v === undefined ? true : v; },
       killBoss() { const b = App.game.boss; if (b) { b.hp = 1; } },
+      // a Carpideira aparece já nesta sala (para testes)
+      wanderer() { const g = App.game, s = VS.Wanderer.findSpot(g); return s ? VS.Wanderer.spawn(g, s.tx, s.ty) : null; },
       state: () => App.game && App.game.state,
       ents: () => App.game.ents.map((e) => ({ kind: e.kind || e.constructor.name, x: Math.round(e.x), y: Math.round(e.y), hp: e.hp })),
     };
