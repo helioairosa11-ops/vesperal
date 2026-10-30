@@ -32,7 +32,7 @@
     b.exitL(28, 32); b.exitR(28, 32); b.exitL(10, 14);
     b.plat(20, 26, 30); b.plat(10, 16, 27); b.plat(20, 26, 24); b.plat(10, 16, 21); b.plat(14, 20, 18);
     b.solid(2, 15, 13, 16);
-    b.plat(24, 28, 9); b.item('salt', 26, 8, { n: 2 });
+    b.plat(16, 19, 12); b.plat(22, 27, 9); b.item('salt', 25, 8, { n: 2 });
     b.e('altar', 6, 14, { id: 'a_r2_tower', name: 'altar_r2_tower' });
     b.enemy('crossbow', 23, 23); b.enemy('sentinel', 13, 26);
     b.e('urn', 4, 32); b.e('urn', 27, 32);
@@ -41,7 +41,7 @@
   // Arsenal (opcional)
   R('r2_armory', { region: 'r2', x: 12, y: 1, interior: true, dark: 0.62 }, (b) => {
     b.fill(); b.carve(2, 4, 29, 14); b.exitL(10, 14);
-    b.plat(14, 18, 10); b.item('ash_steel', 16, 9);
+    b.plat(9, 12, 12); b.plat(14, 18, 10); b.item('ash_steel', 16, 9);
     b.item('r_raven_eye', 25, 14);
     b.enemy('sentinel', 12, 14); b.enemy('sentinel', 22, 14);
     b.e('inscription', 6, 14, { id: 'i10' });
@@ -83,15 +83,14 @@
     b.e('inscription', 52, 14, { id: 'i37' });
   });
 
-  // Cisterna — a chaminé exige a Garra do Sentinela; o poço desce às Forjas
+  // Cisterna — a chaminé sobe-se a saltar pelos degraus; o poço desce às Forjas
   R('r2_cistern', { region: 'r2', x: 10, y: 2, w: 2, interior: true, dark: 0.6 }, (b) => {
     b.fill(); b.carve(2, 3, 61, 14); b.ragged(2, 30, 3, 1);
     b.exitL(10, 14);
     b.water(2, 13, 30, 14);
-    b.solid(34, 4, 34, 12); b.solid(38, 6, 40, 14);
+    b.solid(34, 4, 34, 12); b.solid(38, 9, 40, 14); b.plat(35, 37, 12); b.plat(41, 43, 12);
     b.carve(44, 15, 47, 17);
     b.e('inscription', 26, 14, { id: 'i12' });
-    b.e('trigger', 30, 8, { h: 7, hint: 'hint_wall' });
     b.enemy('husk', 14, 12); b.enemy('husk', 22, 12);
     b.e('urn', 52, 14);
   });

@@ -75,8 +75,10 @@
       } else if (a.phase === 'rec') {
         if (s.lunge !== undefined) this.vx = U.approach(this.vx, 0, 1200 * dt);
         if (a.t >= s.rec) { this.atk = null; this.cool = s.cool !== undefined ? s.cool : U.rand(0.6, 1.4); if (s.onEnd) s.onEnd(this, this.game); }
-      } else if (a.phase === 'wind' && s.windMove !== undefined) this.vx = this.facing * s.windMove;
-      else if (a.phase === 'wind') this.vx = U.approach(this.vx, 0, 900 * dt);
+      } else if (a.phase === 'wind') {
+        this.vx = s.windMove !== undefined ? this.facing * s.windMove : U.approach(this.vx, 0, 900 * dt);
+        if (s.windTick) s.windTick(this, this.game, dt);
+      }
     }
     tellState() { const a = this.atk; if (!a || a.phase !== 'wind') return null; return a.s.tell ? { kind: a.s.tell, k: a.t / a.s.wind, left: a.s.wind - a.t } : null; }
     // ---------- ciclo ----------

@@ -241,6 +241,80 @@
       ctx.fillStyle = U.rgba(pr.color || '#c0b0a0', 0.75);
       ctx.beginPath(); ctx.moveTo(pr.x, pr.y + pr.h); ctx.quadraticCurveTo(pr.cx, pr.y - 4, pr.x + pr.w, pr.y + pr.h); ctx.fill();
       S.glow(ctx, x, pr.y + pr.h, pr.w, pr.color || '#c0b0a0', 0.35);
+    } else if (k === 'judgement') {
+      // o Juízo do Rei: um crescente de chama carmesim que corre rente ao chão (núcleo branco na frente, rasto em brasa)
+      const dir = Math.sign(pr.vx) || 1, b = pr.y + pr.h, t = pr.t || 0, H = pr.h * 1.45, fx = pr.cx + dir * 8;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      S.glow(ctx, fx - dir * 6, b - 16, 64, '#ff1020', 0.55);
+      // rasto: o chão fica a arder atrás da onda
+      const lg = ctx.createLinearGradient(fx, 0, fx - dir * 120, 0); lg.addColorStop(0, 'rgba(255,50,60,0.75)'); lg.addColorStop(0.4, 'rgba(200,10,30,0.35)'); lg.addColorStop(1, 'rgba(90,0,10,0)');
+      ctx.fillStyle = lg; ctx.fillRect(dir > 0 ? fx - 120 : fx, b - 3, 120, 3);
+      const cres = (h, back, lean, col) => {
+        ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(fx - dir * back, b);
+        ctx.quadraticCurveTo(fx - dir * back * 0.35, b - h * 0.35, fx + dir * lean, b - h);
+        ctx.quadraticCurveTo(fx + dir * 7, b - h * 0.45, fx + dir * 5, b); ctx.closePath(); ctx.fill();
+      };
+      const fl = Math.sin(t * 31) * 0.06;
+      cres(H * (1 + fl), 40, -2, 'rgba(150,0,20,0.55)');
+      cres(H * (0.9 - fl), 30, 1, 'rgba(255,30,45,0.75)');
+      cres(H * 0.72, 20, 3, 'rgba(255,120,120,0.8)');
+      cres(H * 0.5, 12, 4, 'rgba(255,245,240,0.95)');
+      // línguas de chama a soltar-se da crista
+      for (let i = 0; i < 4; i++) {
+        const ph = t * 17 + i * 2.3, ox = fx - dir * (6 + i * 9), hh = H * (0.35 + 0.3 * Math.abs(Math.sin(ph))) * (1 - i * 0.18), w = 4.5 - i * 0.6;
+        ctx.fillStyle = `rgba(255,${60 + i * 20},${70 + i * 10},${0.7 - i * 0.12})`;
+        ctx.beginPath(); ctx.moveTo(ox - w, b - H * 0.2 * (1 - i * 0.2)); ctx.quadraticCurveTo(ox + Math.sin(ph) * 3, b - H * 0.5 - hh * 0.4, ox - dir * 3 + Math.sin(ph * 1.4) * 4, b - H * 0.3 - hh); ctx.quadraticCurveTo(ox + w, b - H * 0.4, ox + w, b - H * 0.15); ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+      return;
+    } else if (k === 'scale') {
+      // escama iridescente da Mãe-Mariposa: losango que muda de cor e cintila
+      const hue = ((pr.hue || 0) + (pr.t || 0) * 220) % 360, rot = (pr.t || 0) * 7 + (pr.hue || 0);
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      S.glow(ctx, x, y, 11, `hsl(${hue},90%,62%)`, 0.55);
+      ctx.translate(x, y); ctx.rotate(rot);
+      ctx.fillStyle = `hsla(${hue},95%,72%,0.95)`; ctx.beginPath(); ctx.moveTo(0, -4.6); ctx.lineTo(2.6, 0); ctx.lineTo(0, 4.6); ctx.lineTo(-2.6, 0); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.beginPath(); ctx.moveTo(0, -2.4); ctx.lineTo(1, 0); ctx.lineTo(0, 1.2); ctx.lineTo(-1, 0); ctx.closePath(); ctx.fill();
+      ctx.restore();
+      return;
+    } else if (k === 'tongs') {
+      // tenaz em brasa da Mestra Hilde: duas mandíbulas de ferro que abrem a ir e fecham a voltar
+      const dir = Math.sign(pr.vx) || 1, open = pr.back ? 0.1 : 0.55 + 0.15 * Math.sin((pr.t || 0) * 30);
+      ctx.save(); ctx.translate(x, y); ctx.scale(pr.back ? -dir : dir, 1);
+      S.glow(ctx, 6, 0, 16, '#ff7020', 0.55);
+      ctx.lineCap = 'round';
+      for (const sgn of [-1, 1]) {
+        ctx.strokeStyle = '#1e1a18'; ctx.lineWidth = 3.4; ctx.beginPath(); ctx.moveTo(-7, 0); ctx.quadraticCurveTo(0, sgn * 5 * open, 8, sgn * 1.6 * open); ctx.stroke();
+        ctx.strokeStyle = '#5a4c44'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(-6, sgn * 0.4); ctx.quadraticCurveTo(0, sgn * 4.2 * open, 7, sgn * 1.4 * open); ctx.stroke();
+        ctx.fillStyle = '#ffb050'; ctx.beginPath(); ctx.arc(8.4, sgn * 1.6 * open, 1.5, 0, U.TAU); ctx.fill();
+      }
+      ctx.fillStyle = '#2a2420'; ctx.beginPath(); ctx.arc(-6.5, 0, 2.2, 0, U.TAU); ctx.fill();
+      ctx.fillStyle = '#ffd890'; ctx.beginPath(); ctx.arc(-6.5, 0, 0.8, 0, U.TAU); ctx.fill();
+      ctx.restore();
+      return;
+    } else if (k === 'plume') {
+      // pena de luz da Seraphine: lâmina de pena dourada com a ráquis clara, a ondular
+      const dir = Math.sign(pr.vx) || 1, fl = Math.sin((pr.t || 0) * 18 + pr.y * 0.3) * 0.18;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      S.glow(ctx, x, y, 13, '#ffe8b0', 0.5);
+      ctx.translate(x, y); ctx.scale(dir, 1); ctx.rotate(fl);
+      const g = ctx.createLinearGradient(-8, 0, 8, 0); g.addColorStop(0, 'rgba(255,220,150,0.15)'); g.addColorStop(0.6, 'rgba(255,240,205,0.85)'); g.addColorStop(1, 'rgba(255,255,250,0.95)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(-8, 0.6); ctx.quadraticCurveTo(-1, -4.2, 8, -0.4); ctx.quadraticCurveTo(-1, 3.2, -8, 0.6); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 0.7; ctx.beginPath(); ctx.moveTo(-9, 0.7); ctx.lineTo(8, -0.4); ctx.stroke();
+      ctx.restore();
+      return;
+    } else if (k === 'blast') {
+      // rebentamento de chamas do montante cravado (curto): línguas de fogo a subir e a apagar
+      const k2 = U.clamp((pr.t || 0) / 0.22, 0, 1), b2 = pr.y + pr.h;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      S.glow(ctx, x, b2 - 18, 50, '#ff5010', 0.7 * (1 - k2));
+      for (let i = 0; i < 7; i++) {
+        const ox = x + (i - 3) * 6.5, h = pr.h * (0.55 + 0.45 * Math.sin(i * 1.7 + 1)) * (0.6 + k2 * 0.6), a = (1 - k2) * (i % 3 === 1 ? 0.95 : 0.7);
+        ctx.fillStyle = i === 3 ? `rgba(255,245,215,${a})` : `rgba(255,${120 + i * 12},40,${a})`;
+        ctx.beginPath(); ctx.moveTo(ox - 6, b2); ctx.quadraticCurveTo(ox - 4, b2 - h * 0.55, ox + Math.sin(i * 2.1) * 3, b2 - h); ctx.quadraticCurveTo(ox + 4, b2 - h * 0.5, ox + 6, b2); ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+      return;
     } else if (k === 'feather') {
       ctx.save(); ctx.translate(x, y); ctx.rotate(Math.atan2(pr.vy, pr.vx)); ctx.fillStyle = '#1a1820'; ctx.beginPath(); ctx.ellipse(0, 0, 7, 2, 0, 0, U.TAU); ctx.fill(); ctx.restore();
     } else if (k === 'incense') {

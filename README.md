@@ -1,13 +1,15 @@
 # Vesperal: A Última Chama
 
-> **Versão em desenvolvimento.** O jogo ainda não está terminado: faltam os fundos novos das regiões e o teste completo de uma partida do início ao fim.
+> **Versão em desenvolvimento.** O jogo ainda não está terminado: faltam os fundos novos das regiões, dois chefes novos e o teste completo de uma partida do início ao fim.
 
 Metroidvania 2D de fantasia sombria para o navegador. O Desperto acorda numa cova de cinza, sem nome nem memória, com uma pequena chama no peito, e atravessa uma cidade morta até ao trono de Aldric.
 
 - 7 regiões ligadas num só mapa, com altares de brasas, paredes falsas e passagens secretas
-- 14 chefes, cada um com a sua música, um ponto fraco que se vê na luta e uma dica
+- 14 chefes, cada um com a sua música, golpes que não se repetem de chefe para chefe, um ponto fraco que se vê na luta e uma dica
+- O rei final tem um golpe que mata de uma vez, bem avisado e possível de evitar
 - Missões dos NPC (com retratos no diálogo) e 3 finais
-- Escalada de paredes, esquiva, parry e guarda, armas com ritmos diferentes
+- Todo o mapa percorre-se a saltar (com o salto duplo e a investida quando os ganhas); trepar paredes é um atalho opcional
+- Esquiva, parry e guarda, armas com ritmos diferentes
 - Português, English, Español e Français
 - Música e sons sintetizados em tempo real (Web Audio), sem ficheiros de áudio
 - Teclado, comando e ecrã tátil; gravação automática no navegador
@@ -43,6 +45,7 @@ Os controlos podem ser alterados em *Definições → Controlos*. Em *Definiçõ
 | `index.html`, `css/`, `js/` | o jogo (JavaScript sem bibliotecas, Canvas 2D) |
 | `assets/` | folhas de sprites, ícones e HUD gerados pelo atelier |
 | `tools/art/` | atelier que desenha as personagens, chefes, armas e ícones (`build.py`) |
+| `tools/reach/` | verificador de alcance: simula os saltos com a física do jogo e lista o que não se alcança (`node tools/reach/reach.js`) |
 | `tools/cover/` | capa (trabalho em pausa) |
 | `tests/` | testes automáticos com Playwright (`python3 tests/gameplay.py`) e validador do mapa (`node tests/validate.js`) |
 

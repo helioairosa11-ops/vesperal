@@ -6,11 +6,11 @@
 
   // ---------------------------------------------------------------- paleta
   const M = {
-    cloak: A.mat('#2b2632', { shadow: '#18151d', light: '#463f50', deep: '#0f0d13' }),
+    cloak: A.mat('#362e40', { shadow: '#1d1825', light: '#5e5270', deep: '#110d17' }),
     robe: A.mat('#9a9080', { shadow: '#655d51', light: '#c9bea8', deep: '#3d3730' }),
     gold: A.mat('#a8874e', { shadow: '#6d5530', light: '#e6c886' }),
     wine: A.mat('#55202a', { shadow: '#33121a', light: '#7c3340', deep: '#1e0a0f' }),
-    leather: A.mat('#3d2f2a', { shadow: '#251b19', light: '#5c493f', deep: '#160f0d' }),
+    leather: A.mat('#4a382f', { shadow: '#2a1e1a', light: '#725a4a', deep: '#170f0d' }),
     cloth: A.mat('#2c2629', { shadow: '#191416', light: '#40383b' }),
     linen: A.mat('#8e8370', { shadow: '#5f5646', light: '#b3a78f' }),
     boot: A.mat('#2c2225', { shadow: '#171113', light: '#4a3b3e' }),
@@ -314,7 +314,8 @@
     A.stroke(ctx, [[3.55, -2.9], [3.1, -2.2], [3.2, -1.5]], IW * 0.9, A.rgba('#6d604e', 0.55), S);
     const eye = A.path((q) => { q.M(2.3, -3.15); q.Q(2.85, -3.62, 3.4, -3.25); q.Q(2.85, -2.92, 2.3, -3.15); q.Z(); }, S);
     ctx.fillStyle = '#0d080b'; ctx.fill(eye);
-    if (x.eyeGlow) { ctx.fillStyle = A.rgba('#ffb060', 0.6 * x.eyeGlow); ctx.fill(eye); }
+    const eg0 = x.eyeGlow === undefined ? 0.85 : x.eyeGlow;
+    if (eg0 > 0) { ctx.fillStyle = A.rgba('#ffb060', 0.75 * Math.min(1, eg0)); ctx.fill(eye); A.glow(ctx, 2.85 * S, -3.25 * S, S * 1.2, '#ff9a40', 0.45 * Math.min(1, eg0)); }
     const crack = [[2.0, -5.2], [2.3, -4.45], [2.1, -3.85], [2.7, -2.95], [2.4, -2.15], [2.8, -1.35], [2.5, -0.6]];
     A.stroke(ctx, crack, S * 0.32, '#4e3c28', S);
     A.stroke(ctx, crack, S * 0.15, '#f0cc7a', S);

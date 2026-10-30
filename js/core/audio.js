@@ -485,6 +485,16 @@
   SFX.moth = (d, t) => { for (let i = 0; i < 6; i++) nburst(d, t + i * 0.03, 'bandpass', 250, 4, 0.08, 0.03); };
   SFX.choir_hit = (d, t) => { ['D3', 'A3', 'D4', 'F4'].forEach((n) => INST.choir(d, t, A.noteFreq(n), 1.2, 0.9)); };
   SFX.light = (d, t) => { tone(d, t, 'sine', 600, 2400, 0.08, 0.5, 0.2); INST.glass(d, t, A.noteFreq('E6'), 0.6, 0.6); };
+  // o Juízo do Rei: um coro grave que sobe durante a preparação (1,6 s) e o estrondo que o fecha
+  SFX.judgement = (d, t) => {
+    [55, 55.6, 82.4].forEach((f0) => { const g = gainNode(0); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.16, t + 1.5); g.gain.setTargetAtTime(0.0001, t + 1.6, 0.08); const o = osc('sawtooth', f0, t, t + 2); o.frequency.exponentialRampToValueAtTime(f0 * 2, t + 1.6); const lp = filt('lowpass', 260, 4); lp.frequency.exponentialRampToValueAtTime(2600, t + 1.6); o.connect(lp); lp.connect(g); g.connect(d); });
+    ['D3', 'A3', 'D4'].forEach((n, i) => INST.choir(d, t + 0.2 + i * 0.35, A.noteFreq(n), 1.4 - i * 0.35, 0.55));
+    const f = nburst(d, t, 'bandpass', 300, 2, 0.18, 1.6, 1.4); f.frequency.exponentialRampToValueAtTime(5000, t + 1.6);
+  };
+  SFX.judgement_slam = (d, t) => {
+    tone(d, t, 'sine', 120, 28, 1.1, 1.4); tone(d, t, 'sawtooth', 70, 35, 0.35, 0.8);
+    nburst(d, t, 'lowpass', 2400, 0.6, 0.9, 1.1, 0.002); INST.bigbell(d, t, A.noteFreq('D2'), 3, 0.6);
+  };
   A.SFX = SFX;
 
   A.sfx = function (name, opts) {

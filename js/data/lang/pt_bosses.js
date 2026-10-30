@@ -57,12 +57,14 @@
     ins_i44_t: "Partitura rasgada, presa à coluna",
     ins_i44: "O menestrel não desce para ninguém. Toca dos balcões dos sinos e a música dele afasta o aço que sobe. Quem o quiser calar trepa: as paredes, a coluna, as mísulas onde se recupera o fôlego. E bate no tempo — ele próprio ensinou.",
     tip_caedmon_volley: "\"Ao alto, escudos!\" — os archeiros mortos disparam. Abriga-te debaixo do pavês dele!",
-    tip_matilheira_wall: "A Matilheira embateu na parede e está atordoada — ataca! (Trepar a parede ou subir às plataformas livra-te da investida.)",
+    tip_matilheira_wall: "A Matilheira ficou sem fôlego depois da correria: ataca agora! (Trepa a parede ou sobe às plataformas para fugir da investida.)",
     inv_hint_use: "Confirmar: usar / equipar",
     inv_hint_unequip: "Confirmar: desequipar",
     tip_vael_stuck: "A bola do mangual cravou-se no chão! Ataca enquanto Vael a arranca.",
     tip_gemeos_friendly: "O Malho não distingue irmãos: põe a Lâmina entre ti e a martelada.",
     gemeos_friendly: "Irmão…! Sai da frente!",
     tip_ozias_orb: "O orbe do cálice pode ser devolvido: faz parry quando ele chegar.",
+    tip_aldric_judgement: "O Juízo do Rei mata de um golpe: salta por cima da onda carmesim ou esquiva-te através dela!",
+    tip_seraphine_wings: "Vem aí uma parede de penas de luz: mete-te na abertura quando ela passar, ou atravessa-a com a esquiva.",
   });
 })(window.VS);

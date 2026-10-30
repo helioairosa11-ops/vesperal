@@ -68,7 +68,7 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); 
 @keyframes mmIn { from { opacity: 0; transform: translateY(-48%); } }
 .mainmenu::before, .mainmenu::after { display: none; }
 .logo { margin-bottom: clamp(12px, 4.5vh, 44px); }
-.logo-title { display: inline-block; white-space: nowrap; padding-right: .16em; font-family: var(--title); font-weight: 700; font-size: clamp(40px, 7.4vw, 96px); letter-spacing: .16em; line-height: 1.05; background: linear-gradient(180deg, #fffaf0 0%, #f2dcae 38%, #c89a52 66%, #fbe7bf 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 2px 0 #000) drop-shadow(0 0 22px rgba(255, 120, 50, .35)); }
+.logo-title { display: inline-block; white-space: nowrap; padding-right: .16em; font-family: var(--title); font-weight: 700; font-size: clamp(40px, 7.4vw, 96px); letter-spacing: .16em; line-height: 1.05; background: linear-gradient(180deg, #fffaf0 0%, #f2dcae 38%, #c89a52 66%, #fbe7bf 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 2px 0 #000) drop-shadow(0 0 18px rgba(255, 120, 50, .3)); will-change: transform; transform: translateZ(0); }
 .logo-orn { display: flex; align-items: center; gap: 10px; margin: clamp(6px, 1.4vh, 12px) 0 clamp(4px, 1vh, 8px); width: min(40vw, 440px); }
 .logo-orn i { flex: 1; height: 1px; background: linear-gradient(90deg, rgba(214,178,120,0), rgba(214,178,120,.85)); }
 .logo-orn i:last-child { background: linear-gradient(90deg, rgba(214,178,120,.85), rgba(214,178,120,0)); }
@@ -80,7 +80,7 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); 
 .mainmenu .btn.focus, .mainmenu .btn:hover { color: #fff4dc; background: linear-gradient(90deg, rgba(255,140,60,.16), rgba(255,140,60,0) 80%); text-shadow: 0 0 14px rgba(255,150,70,.55), 0 1px 2px #000; }
 .mainmenu .btn.focus::after, .mainmenu .btn:hover::after { right: 0; background: linear-gradient(90deg, rgba(255,190,120,.9), rgba(255,190,120,0)); }
 /* chama pequena à esquerda da opção escolhida */
-.mainmenu .btn.focus::before, .mainmenu .btn:hover::before { content: ''; position: absolute; left: 10px; top: 50%; width: 12px; height: 18px; transform: translateY(-58%); background: radial-gradient(ellipse 50% 60% at 50% 70%, #fff2c8 0 18%, #ffb24a 30%, #ff6a1a 55%, rgba(255,80,20,0) 72%); border-radius: 50% 50% 45% 45% / 70% 70% 30% 30%; filter: drop-shadow(0 0 6px rgba(255,140,50,.9)); animation: mmFlame .5s ease-in-out infinite alternate; }
+.mainmenu .btn.focus::before, .mainmenu .btn:hover::before { content: ''; position: absolute; left: 10px; top: 50%; width: 12px; height: 18px; transform: translateY(-58%); background: radial-gradient(ellipse 50% 60% at 50% 70%, #fff2c8 0 18%, #ffb24a 30%, #ff6a1a 55%, rgba(255,80,20,0) 72%); border-radius: 50% 50% 45% 45% / 70% 70% 30% 30%; box-shadow: 0 0 8px 1px rgba(255,140,50,.55); will-change: transform; animation: mmFlame .5s ease-in-out infinite alternate; }
 @keyframes mmFlame { from { transform: translateY(-58%) scale(1, 1); } to { transform: translateY(-60%) scale(.9, 1.1); } }
 .mm-foot { margin-top: 6px; padding-left: 34px; font-size: 12px; color: rgba(200,190,175,.5); letter-spacing: .06em; }
 .mm-credit { margin-top: clamp(14px, 4vh, 34px); padding-left: 34px; font-family: var(--title); font-size: 11px; letter-spacing: .3em; color: rgba(214,178,120,.6); text-transform: uppercase; }

@@ -75,6 +75,8 @@
   };
   App.toMenu = function () {
     UI.closeAll(); if (UI.dlg) UI.dlgEnd(-1);
+    // avisos e falas do jogo não ficam por cima do menu
+    if (UI.toastEl) UI.toastEl.innerHTML = ''; if (UI.barkEl) UI.barkEl.classList.remove('show'); UI.bossBar(null);
     App.game = null; VS.state = null; App.mode = 'menu'; App.paused = false;
     A.setIntensity(0);
     VS.Menus.main();
@@ -136,34 +138,43 @@
   App.drawMenuBg = function (ctx, dt) {
     const R = VS.REGIONS.r1, t = App.menuT, SW = U.SCREEN_W, SH = U.SCREEN_H;
     G.time += dt;
+    const gy = SH - 34, bx = 476, by = gy - 14;
+    // planos distantes, chão e silhuetas: numa imagem de resolução reduzida (como no jogo) — uma só passagem
+    // de ecrã inteiro no canvas principal em vez de dezenas de gradientes à resolução nativa
+    const bc = G.bgLayer(), k = G.bgScale * (U.VIEW_W / SW);
+    bc.setTransform(k, 0, 0, k, 0, 0);
+    VS.BG.drawSky(bc, R, t, SW, SH);
+    VS.BG.draw(bc, R, { x: 120 + t * 5, y: 0 }, SH, k, SW, SH);
+    const M = App._menuG || (App._menuG = (() => {
+      const o = {};
+      o.fg = bc.createLinearGradient(0, gy - 6, 0, SH); o.fg.addColorStop(0, '#15100f'); o.fg.addColorStop(1, '#050404');
+      o.col = bc.createLinearGradient(0, 0, SW * 0.6, 0); o.col.addColorStop(0, 'rgba(5,4,6,0.78)'); o.col.addColorStop(0.7, 'rgba(5,4,6,0.35)'); o.col.addColorStop(1, 'rgba(5,4,6,0)');
+      o.ground = new Path2D(); o.ground.moveTo(0, gy + 4); for (let x = 0; x <= SW; x += 16) o.ground.lineTo(x, gy + Math.sin(x * 0.07) * 1.6 + (x % 48 === 0 ? -2 : 0)); o.ground.lineTo(SW, SH); o.ground.lineTo(0, SH); o.ground.closePath();
+      o.graves = new Path2D(); for (const [x, w, h] of [[300, 10, 18], [560, 12, 22], [600, 8, 14], [210, 7, 12]]) { o.graves.moveTo(x - w / 2, gy + 2); o.graves.lineTo(x - w / 2, gy - h + w / 2); o.graves.quadraticCurveTo(x, gy - h - 2, x + w / 2, gy - h + w / 2); o.graves.lineTo(x + w / 2, gy + 2); o.graves.closePath(); }
+      o.graves.rect(578, gy - 30, 2.4, 30); o.graves.rect(570, gy - 24, 18, 2.4);
+      return o;
+    })());
+    bc.fillStyle = M.fg; bc.fill(M.ground);
+    bc.fillStyle = '#0b0808'; bc.fill(M.graves);
+    bc.fillStyle = M.col; bc.fillRect(0, 0, SW * 0.6, SH);
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(G.bgCanvas, 0, 0, G.bgCanvas.width, G.bgCanvas.height, 0, 0, G.canvas.width, G.canvas.height);
     G.hudTransform(ctx);
-    VS.BG.drawSky(ctx, R, t, SW, SH);
-    const cam = { x: 120 + t * 5, y: 0 };
-    VS.BG.draw(ctx, R, cam, SH, G.hudScale, SW, SH);
-    // chão de pedra, entulho e campas em silhueta
-    const gy = SH - 34;
-    const fg = ctx.createLinearGradient(0, gy - 6, 0, SH); fg.addColorStop(0, '#15100f'); fg.addColorStop(1, '#050404');
-    ctx.fillStyle = fg; ctx.beginPath(); ctx.moveTo(0, gy + 4);
-    for (let x = 0; x <= SW; x += 16) ctx.lineTo(x, gy + Math.sin(x * 0.07) * 1.6 + (x % 48 === 0 ? -2 : 0));
-    ctx.lineTo(SW, SH); ctx.lineTo(0, SH); ctx.fill();
-    ctx.fillStyle = '#0b0808';
-    for (const [x, w, h] of [[300, 10, 18], [560, 12, 22], [600, 8, 14], [210, 7, 12]]) { ctx.beginPath(); ctx.moveTo(x - w / 2, gy + 2); ctx.lineTo(x - w / 2, gy - h + w / 2); ctx.quadraticCurveTo(x, gy - h - 2, x + w / 2, gy - h + w / 2); ctx.lineTo(x + w / 2, gy + 2); ctx.fill(); }
-    ctx.fillRect(578, gy - 30, 2.4, 30); ctx.fillRect(570, gy - 24, 18, 2.4); // cruz tombada
-    // braseiro de ferro com a Última Chama
-    const bx = 476, by = gy - 14;
-    const L = ctx.createRadialGradient(bx, by - 10, 0, bx, by - 10, 170); L.addColorStop(0, 'rgba(255,140,60,0.32)'); L.addColorStop(0.5, 'rgba(255,100,40,0.10)'); L.addColorStop(1, 'rgba(255,90,30,0)');
-    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = L; ctx.fillRect(bx - 170, by - 180, 340, 220); ctx.restore();
+    // braseiro de ferro com a Última Chama (luz: sprite de brilho em cache; chamas a cada imagem)
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.42; ctx.drawImage(G.glowSprite('#ff8c3c'), bx - 170, by - 180, 340, 340);
+    ctx.globalAlpha = 1; ctx.restore();
     ctx.fillStyle = '#1c1614'; ctx.beginPath(); ctx.moveTo(bx - 7, gy + 2); ctx.lineTo(bx - 3, by + 6); ctx.lineTo(bx + 3, by + 6); ctx.lineTo(bx + 7, gy + 2); ctx.fill();
     ctx.fillStyle = '#2a221e'; ctx.beginPath(); ctx.moveTo(bx - 16, by - 2); ctx.quadraticCurveTo(bx, by + 10, bx + 16, by - 2); ctx.lineTo(bx + 13, by + 2); ctx.quadraticCurveTo(bx, by + 8, bx - 13, by + 2); ctx.fill();
     ctx.strokeStyle = '#6a5040'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(bx - 16, by - 2); ctx.quadraticCurveTo(bx, by + 10, bx + 16, by - 2); ctx.stroke();
     ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    if (!App._flameG) { App._flameG = ctx.createLinearGradient(0, by, 0, by - 22); App._flameG.addColorStop(0, 'rgba(255,110,30,0.7)'); App._flameG.addColorStop(0.45, 'rgba(255,150,50,0.5)'); App._flameG.addColorStop(1, 'rgba(255,200,120,0)'); }
+    ctx.fillStyle = App._flameG;
     for (let i = 0; i < 9; i++) {
-      const k = i / 8, fx = bx - 9 + k * 18, hh = (10 + 10 * Math.sin(k * Math.PI)) * (0.75 + 0.3 * Math.sin(t * 7 + i * 1.9)), sway = Math.sin(t * 3 + i) * 2.4, w = 2.6 + Math.sin(k * Math.PI) * 1.4;
-      const fgd = ctx.createLinearGradient(0, by, 0, by - hh); fgd.addColorStop(0, 'rgba(255,110,30,0.7)'); fgd.addColorStop(0.45, 'rgba(255,150,50,0.5)'); fgd.addColorStop(1, 'rgba(255,200,120,0)');
-      ctx.fillStyle = fgd; ctx.beginPath(); ctx.moveTo(fx - w, by); ctx.quadraticCurveTo(fx - w * 1.1, by - hh * 0.45, fx + sway, by - hh); ctx.quadraticCurveTo(fx + w * 1.1, by - hh * 0.45, fx + w, by); ctx.fill();
+      const k2 = i / 8, fx = bx - 9 + k2 * 18, hh = (10 + 10 * Math.sin(k2 * Math.PI)) * (0.75 + 0.3 * Math.sin(t * 7 + i * 1.9)), sway = Math.sin(t * 3 + i) * 2.4, w = 2.6 + Math.sin(k2 * Math.PI) * 1.4;
+      ctx.beginPath(); ctx.moveTo(fx - w, by); ctx.quadraticCurveTo(fx - w * 1.1, by - hh * 0.45, fx + sway, by - hh); ctx.quadraticCurveTo(fx + w * 1.1, by - hh * 0.45, fx + w, by); ctx.fill();
     }
-    // núcleo branco-quente baixo, junto às brasas
-    const core = ctx.createRadialGradient(bx, by - 3, 0, bx, by - 3, 9); core.addColorStop(0, 'rgba(255,240,200,0.55)'); core.addColorStop(1, 'rgba(255,180,90,0)'); ctx.fillStyle = core; ctx.fillRect(bx - 10, by - 12, 20, 14);
+    ctx.globalAlpha = 0.55; ctx.drawImage(G.glowSprite('#fff0c8'), bx - 10, by - 13, 20, 20); ctx.globalAlpha = 1;
     VS.Sprites.glow(ctx, bx, by - 6, 54, '#ff7a30', 0.28);
     ctx.restore();
     // a protagonista, sentada a descansar junto ao fogo
@@ -171,17 +182,14 @@
     if (sh && VS.Assets.ok(sh.img)) {
       const f = VS.Assets.frame(sh, 'rest', (t * 4) % 1000);
       ctx.save(); ctx.translate(440, gy + 1); ctx.scale(2.1, 2.1); VS.Assets.drawFrame(ctx, sh, f); ctx.restore();
-      // a luz do fogo pinta-lhe o lado direito
-      ctx.save(); ctx.globalCompositeOperation = 'lighter'; const rl = ctx.createRadialGradient(462, gy - 30, 0, 462, gy - 30, 46); rl.addColorStop(0, 'rgba(255,140,60,0.16)'); rl.addColorStop(1, 'rgba(255,140,60,0)'); ctx.fillStyle = rl; ctx.fillRect(410, gy - 80, 100, 90); ctx.restore();
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = 0.16; ctx.drawImage(G.glowSprite('#ff8c3c'), 416, gy - 76, 92, 92); ctx.restore();
     }
-    // cinza a cair e brasas a subir
-    if (Math.random() < 0.8) G.emit({ x: Math.random() * SW, y: -5, vx: U.rand(-15, 5), vy: U.rand(15, 35), life: 12, size: U.rand(0.6, 1.5), color: U.pick(['#9a9090', '#7a7070']), kind: 'flake', vr: 2, wobble: 1.2, fade: false, alpha: 0.7 });
-    if (Math.random() < 0.45) G.emit({ x: bx + U.rand(-10, 10), y: by - 8, vx: U.rand(-18, 18), vy: U.rand(-70, -30), life: U.rand(2, 4), size: U.rand(0.8, 1.6), color: U.pick(['#ffb040', '#ffd080', '#ff7020']), add: true, wobble: 2.4, shrink: true });
+    // cinza a cair e brasas a subir (com teto: nunca mais que ~180 partículas no menu)
+    const n = G.particles.length;
+    if (n < 140 && Math.random() < 0.55 * (G.partMul || 1)) G.emit({ x: Math.random() * SW, y: -5, vx: U.rand(-15, 5), vy: U.rand(18, 38), life: 9, size: U.rand(0.6, 1.5), color: U.pick(['#9a9090', '#7a7070']), kind: 'flake', vr: 2, wobble: 1.2, fade: false, alpha: 0.7 });
+    if (n < 180 && Math.random() < 0.4 * (G.partMul || 1)) G.emit({ x: bx + U.rand(-10, 10), y: by - 8, vx: U.rand(-18, 18), vy: U.rand(-70, -30), life: U.rand(2, 3.5), size: U.rand(0.8, 1.6), color: U.pick(['#ffb040', '#ffd080', '#ff7020']), add: true, wobble: 2.4, shrink: true });
     G.updateParticles(dt);
     G.drawParticles(ctx, 0);
-    // escurece a coluna das opções para o texto ler bem
-    const cg = ctx.createLinearGradient(0, 0, SW * 0.6, 0); cg.addColorStop(0, 'rgba(5,4,6,0.78)'); cg.addColorStop(0.7, 'rgba(5,4,6,0.35)'); cg.addColorStop(1, 'rgba(5,4,6,0)');
-    ctx.fillStyle = cg; ctx.fillRect(0, 0, SW * 0.6, SH);
     G.vignette(0.75, 'rgba(255,120,60,0.06)');
   };
 

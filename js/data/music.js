@@ -13,19 +13,36 @@
 
   // ---------------- Menu principal: "Vesperal" ----------------
   M.menu = {
+    // A: o tema ao piano sobre a harpa; B: a flauta leva uma melodia mais esperançosa (Sib → Fá → Dó → Rém),
+    // o piano passa a contracanto, o coro e os tímpanos crescem; um sino fecha cada secção
     bpm: 66, fadeIn: 3,
     parts: [
       { inst: 'piano', vol: 0.9, notes:
         'A4:1.5 D5:0.5 F5:1 E5:1 D5:2 F5:1 D5:1 C5:1.5 A4:0.5 F4:1 A4:1 G4:3 r:1 ' +
         'A4:1.5 D5:0.5 F5:1 A5:1 G5:2 F5:1 D5:1 F5:1.5 E5:0.5 D5:1 E5:1 C#5:3 r:1 ' +
         'D5:1 A4:1 F5:1.5 E5:0.5 D5:2 Bb4:2 C5:1 A4:1 C5:1 F5:1 E5:3 r:1 ' +
-        'F5:1 E5:1 D5:1 A4:1 Bb4:2 D5:1 G5:1 F5:1.5 E5:0.5 D5:1 C#5:1 D5:4' },
+        'F5:1 E5:1 D5:1 A4:1 Bb4:2 D5:1 G5:1 F5:1.5 E5:0.5 D5:1 C#5:1 D5:4 ' +
+        'Bb3:1 D4:1 F4:1 D4:1 A3:1 C4:1 F4:1 C4:1 G3:1 C4:1 E4:1 C4:1 A3:1 D4:1 F4:1 D4:1 ' +
+        'Bb3:1 D4:1 G4:1 D4:1 Bb3:1 D4:1 F4:1 D4:1 A3:1 C#4:1 E4:1 C#4:1 E4:1 C#4:1 A3:1 E3:1 ' +
+        'Bb3:1 D4:1 F4:1 D4:1 A3:1 C4:1 F4:1 C4:1 G3:1 C4:1 E4:1 C4:1 A3:1 C4:1 E4:1 C4:1 ' +
+        'Bb3:1 D4:1 G4:1 D4:1 A3:1 C#4:1 E4:1 C#4:1 A3:1 D4:1 F4:1 D4:1 D4:2 A3:2' },
+      { inst: 'flute', vol: 0.62, notes: 'r:64 ' +
+        'D5:2 F5:1 Bb5:1 A5:3 F5:1 G5:2 E5:1 C5:1 D5:3 A4:1 Bb4:1 D5:1 G5:2 F5:2 D5:1 Bb4:1 C#5:2 E5:2 A4:4 ' +
+        'D5:1 F5:1 Bb5:2 A5:2 C6:2 G5:1 E5:1 G5:1 C6:1 A5:3 E5:1 Bb5:2 G5:1 D5:1 C#5:1 E5:1 A5:2 F5:2 E5:1 C#5:1 D5:4' },
       { inst: 'harp', vol: 0.55, notes: arp(['D3 A3 D4 F4', 'Bb2 F3 Bb3 D4', 'F2 C3 F3 A3', 'C3 G3 C4 E4', 'D3 A3 D4 F4', 'G2 D3 G3 Bb3', 'Bb2 F3 Bb3 D4', 'A2 E3 A3 C#4',
-        'D3 A3 D4 F4', 'Bb2 F3 Bb3 D4', 'F2 C3 F3 A3', 'E2 C3 E3 G3', 'D3 A3 D4 F4', 'G2 D3 G3 Bb3', 'A2 E3 A3 C#4', 'D3 A3 D4 F4'], [0, 1, 2, 3, 2, 1, 2, 1], 0.5) },
+        'D3 A3 D4 F4', 'Bb2 F3 Bb3 D4', 'F2 C3 F3 A3', 'E2 C3 E3 G3', 'D3 A3 D4 F4', 'G2 D3 G3 Bb3', 'A2 E3 A3 C#4', 'D3 A3 D4 F4'], [0, 1, 2, 3, 2, 1, 2, 1], 0.5) + ' ' +
+        arp(['Bb2 F3 Bb3 D4', 'F2 C3 F3 A3', 'C3 G3 C4 E4', 'D3 A3 D4 F4', 'G2 D3 G3 Bb3', 'Bb2 F3 Bb3 D4', 'A2 E3 A3 C#4', 'A2 E3 A3 C#4',
+        'Bb2 F3 Bb3 D4', 'F2 C3 F3 A3', 'C3 G3 C4 E4', 'A2 E3 A3 C4', 'G2 D3 G3 Bb3', 'A2 E3 A3 C#4', 'D3 A3 D4 F4', 'D3 A3 D4 F4'], [0, 2, 1, 3, 2, 1, 3, 2], 0.5) },
       { inst: 'strings', vol: 0.6, notes: chords(['D3+F3+A3', 'Bb2+D3+F3', 'F3+A3+C4', 'C3+E3+G3', 'D3+F3+A3', 'G2+Bb2+D3', 'Bb2+D3+F3', 'A2+C#3+E3',
-        'D3+F3+A3', 'Bb2+D3+F3', 'F3+A3+C4', 'E3+G3+C4', 'D3+F3+A3', 'G2+Bb2+D3', 'A2+C#3+E3', 'D3+F3+A3'], 4) },
-      { inst: 'cello', vol: 0.8, notes: 'D2:4 Bb1:4 F2:4 C2:4 D2:4 G1:4 Bb1:4 A1:4 D2:4 Bb1:4 F2:4 E2:4 D2:4 G1:4 A1:4 D2:4' },
-      { inst: 'choir', vol: 0.45, notes: 'r:32 A3:8 F3:8 A3:4 G3:4 E3:8' },
+        'D3+F3+A3', 'Bb2+D3+F3', 'F3+A3+C4', 'E3+G3+C4', 'D3+F3+A3', 'G2+Bb2+D3', 'A2+C#3+E3', 'D3+F3+A3',
+        'Bb2+D3+F3', 'F2+A2+C3', 'C3+E3+G3', 'D3+F3+A3', 'G2+Bb2+D3', 'Bb2+D3+F3', 'A2+C#3+E3', 'A2+C#3+E3',
+        'Bb2+D3+F3', 'F3+A3+C4', 'C3+E3+G3', 'A2+C3+E3', 'G2+Bb2+D3', 'A2+C#3+E3', 'D3+F3+A3', 'D3+F3+A3'], 4) },
+      { inst: 'cello', vol: 0.8, notes: 'D2:4 Bb1:4 F2:4 C2:4 D2:4 G1:4 Bb1:4 A1:4 D2:4 Bb1:4 F2:4 E2:4 D2:4 G1:4 A1:4 D2:4 ' +
+        'Bb1:4 F2:4 C2:4 D2:4 G1:4 Bb1:4 A1:4 A1:4 Bb1:4 F2:4 C2:4 A1:4 G1:4 A1:4 D2:4 D2:4' },
+      { inst: 'choir', vol: 0.45, notes: 'r:32 A3:8 F3:8 A3:4 G3:4 E3:8 ' +
+        'D4+F4:8 C4+E4:8 Bb3+D4:8 A3+C#4:8 D4+F4:8 C4+E4:8 Bb3+D4:4 A3+C#4:4 A3+D4:8' },
+      { inst: 'timp', vol: 0.4, notes: 'r:64 Bb1:1 r:15 G1:1 r:15 Bb1:1 r:15 A1:1 r:11 A1:1 A1:1 D2:2' },
+      { inst: 'bell', vol: 0.22, notes: 'r:60 D6:4 r:60 A5:4' },
     ],
   };
 

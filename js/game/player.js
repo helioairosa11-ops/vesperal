@@ -9,9 +9,9 @@
 
   const C = {
     W: 12, H: 30, CH: 18,
-    RUN: 150, CRAWL: 55, ACC_G: 1700, ACC_A: 1150, FRIC: 2100,
+    RUN: 160, CRAWL: 58, ACC_G: 1700, ACC_A: 1150, FRIC: 2100,
     GRAV: 1350, MAXFALL: 470, JUMP: -445, JUMP_CUT: 0.42, DOUBLE: -405,
-    COYOTE: 0.1, JUMP_BUF: 0.13,
+    COYOTE: 0.12, JUMP_BUF: 0.15,
     WALL_SLIDE: 70, WALL_JVX: 200, WALL_JVY: -430, WALL_LOCK: 0.15,
     CLIMB_UP: 58, CLIMB_UP_G: 80, CLIMB_DOWN: 150, CLIMB_STAM: 1.4, CLIMB_STAM_G: 3.0, CLIMB_HOP: -300,
     PARRY: 0.2, PARRY_LATE: 0.07, PARRY_BUF: 0.18, IFRAMES: 0.9,
@@ -52,7 +52,7 @@
     get st() { return VS.state; }
     get dir() { return this.facing; }
     get busy() { return !!this.action; }
-    get canAct() { return !this.action || (this.action.phase === 'rec' && this.action.t > this.action.rec * 0.35); }
+    get canAct() { const a = this.action; return !a || (a.phase === 'rec' && a.t > a.rec * 0.2) || (a.type === 'attack' && a.phase === 'wind'); }
 
     // ---------- ciclo ----------
     update(dt, game) {
@@ -111,7 +111,10 @@
       if (a) {
         if (a.type === 'dodge') { target = this.vx; acc = 0; }
         else if (a.type === 'attack' || a.type === 'heavy') {
-          if (this.onGround) { target = a.lungeV || 0; acc = C.FRIC * 1.2; if (a.phase === 'rec' && a.t > a.rec * 0.5) { target = ax * speed * 0.4; acc = C.ACC_G; } }
+          if (this.onGround) {
+            const late = a.phase === 'rec' && a.t > a.rec * 0.3, free = late ? 0.8 : a.type === 'heavy' ? 0.12 : 0.3;
+            target = (a.lungeV || 0) + ax * speed * free; acc = late ? C.ACC_G : C.FRIC * 1.2;
+          }
           else target = ax * speed * 0.9;
         }
         else if (a.type === 'heal') { target = ax * speed * 0.25; }
@@ -317,7 +320,7 @@
       const short = air && !this.st.abilities.dash;
       this.action = { type: 'dodge', t: 0, dur: air ? (short ? 0.13 : 0.2) : 0.34, air, short, dir: this.facing };
       if (air) { this.airDash = true; this.vy = 0; this.climbing = false; }
-      this.dodgeCd = air ? 0.35 : 0.42;
+      this.dodgeCd = air ? 0.3 : 0.32;
       VS.Audio.sfx('dodge');
       VS.Gfx.burst(this.cx, this.bottom - 2, 8, { color: air ? '#c8b8a8' : '#7a7068', speed: 70, angle: this.facing > 0 ? Math.PI : 0, spread: 1, life: 0.4, size: 1.6 });
     }
@@ -685,8 +688,8 @@
     }
     updateCloak(dt) {
       // corrente de pontos com verlet ancorada aos ombros
-      const s = { x: this.cx - this.dir * 2, y: this.bottom - (this.crouch ? 14 : 24) };
-      const pts = this.cloak, seg = this.crouch ? 2.5 : 4;
+      const s = { x: this.cx - this.dir * 2.5, y: this.bottom - (this.crouch ? 15 : 25) };
+      const pts = this.cloak, seg = this.crouch ? 2.6 : 3.8;
       pts[0].x = s.x; pts[0].y = s.y;
       for (let i = 1; i < pts.length; i++) {
         const p = pts[i];
@@ -701,6 +704,8 @@
         const diff = (dd - seg) / dd;
         b.x -= dx * diff; b.y -= dy * diff;
       }
+      // um cachecol não sobe a direito por cima da cabeça (a cair depressa esvoaça só um pouco acima do pescoço)
+      for (let i = 1; i < pts.length; i++) { const q = pts[i]; const lim = s.y - 3 - i * 0.6; if (q.y < lim) { q.y = lim; q.py = Math.min(q.py, lim + 0.5); } }
     }
     hurtbox() { return { x: this.x + 1, y: this.y + 2, w: this.w - 2, h: this.h - 2 }; }
     emitLight() {

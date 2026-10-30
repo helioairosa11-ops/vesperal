@@ -364,27 +364,163 @@
     }
   };
 
+  // plataformas finas: cada plataforma (segmento contínuo de '=') escolhe um de três estilos da sua região,
+  // desenhados por segmento (pontas, meio, apoios) — nada de uma só tábua repetida pelo mundo inteiro
+  const PLAT_STYLES = {
+    r1: ['planks', 'balcony', 'sign'], crypt: ['slab', 'coffin', 'planks'], r2: ['timber', 'corbel', 'scaffold'],
+    r3: ['grate', 'girder', 'chaingrate'], r4: ['log', 'lily', 'fungus'], r5: ['bellbeam', 'gallery', 'ropeplank'],
+    r6: ['ledge', 'trefoil', 'loft'], r7: ['marble', 'carpet', 'gilt'], sanct: ['ledge', 'trefoil', 'ledge'],
+  };
+  function platSeg(room, tx, ty) {
+    let x0 = tx, x1 = tx;
+    while (room.tile(x0 - 1, ty) === '=') x0--;
+    while (room.tile(x1 + 1, ty) === '=') x1++;
+    return [x0, x1];
+  }
   function drawPlatform(c, room, R, tx, ty) {
     const x = tx * T, y = ty * T, k = R.key;
-    const lEnd = room.tile(tx - 1, ty) !== '=', rEnd = room.tile(tx + 1, ty) !== '=';
-    if (k === 'r3') {
-      c.fillStyle = '#3a2c26'; c.fillRect(x, y, T, 4); c.fillStyle = '#8a6a50'; c.fillRect(x, y, T, 1);
-      c.strokeStyle = '#1a1210'; c.lineWidth = 0.8; for (let i = 2; i < T; i += 4) { c.beginPath(); c.moveTo(x + i, y + 1); c.lineTo(x + i, y + 4); c.stroke(); }
-      if (lEnd || rEnd) { c.strokeStyle = '#1a1210'; c.lineWidth = 1; c.beginPath(); const sx = lEnd ? x + 3 : x + T - 3; c.moveTo(sx, y); c.lineTo(sx, y - 40); c.stroke(); }
-    } else if (k === 'r4') {
-      c.fillStyle = '#3a3020'; c.beginPath(); c.ellipse(x + T / 2, y + 2.5, T * 0.58, 2.8, 0, 0, U.TAU); c.fill();
-      c.fillStyle = '#5a7a40'; c.fillRect(x + 1, y - 0.5, T - 2, 1.3);
-      if (rEnd) { c.fillStyle = '#4e7a46'; c.beginPath(); c.ellipse(x + T + 2, y + 1, 4, 2, 0.5, 0, U.TAU); c.fill(); }
-    } else if (k === 'r6' || k === 'r7' || k === 'sanct') {
-      c.fillStyle = R.stone; c.fillRect(x, y, T, 5); c.fillStyle = R.topAccent; c.fillRect(x, y, T, 1);
-      c.fillStyle = U.rgba('#000', 0.3); c.fillRect(x, y + 4, T, 1);
-      if (lEnd) { c.fillStyle = R.stone; c.beginPath(); c.moveTo(x, y + 5); c.lineTo(x + 7, y + 5); c.lineTo(x + 2, y + 10); c.closePath(); c.fill(); }
-      if (rEnd) { c.fillStyle = R.stone; c.beginPath(); c.moveTo(x + T, y + 5); c.lineTo(x + T - 7, y + 5); c.lineTo(x + T - 2, y + 10); c.closePath(); c.fill(); }
-    } else {
-      c.fillStyle = '#3e2c1e'; c.fillRect(x, y, T, 4.5); c.fillStyle = '#7a5a3a'; c.fillRect(x, y, T, 1.1);
-      c.strokeStyle = '#1e140c'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(x + ((tx * 7) % 13) + 3, y + 1); c.lineTo(x + ((tx * 7) % 13) + 3, y + 4.5); c.stroke();
-      c.fillStyle = '#2a1e14'; c.fillRect(x + 2, y + 1.5, 1, 1); c.fillRect(x + T - 3, y + 1.5, 1, 1);
-      if (lEnd || rEnd) { c.strokeStyle = '#2a1e14'; c.lineWidth = 1.5; c.beginPath(); const sx = lEnd ? x + 3 : x + T - 3; c.moveTo(sx, y + 4); c.lineTo(sx + (lEnd ? 5 : -5), y + 11); c.stroke(); }
+    const [x0, x1] = platSeg(room, tx, ty), lEnd = tx === x0, rEnd = tx === x1, i = tx - x0, n = x1 - x0 + 1;
+    const list = PLAT_STYLES[k] || PLAT_STYLES.r1;
+    const h = (U.hash(room.id + ':' + x0 + ':' + ty) >>> 0);
+    const st = list[h % list.length];
+    const line = (x1_, y1_, x2_, y2_, w, col) => { c.strokeStyle = col; c.lineWidth = w; c.beginPath(); c.moveTo(x1_, y1_); c.lineTo(x2_, y2_); c.stroke(); };
+    switch (st) {
+      case 'planks': { // tábuas de madeira com mãos-francesas nas pontas
+        c.fillStyle = '#3e2c1e'; c.fillRect(x, y, T, 4.5); c.fillStyle = '#7a5a3a'; c.fillRect(x, y, T, 1.1);
+        line(x + ((tx * 7) % 13) + 3, y + 1, x + ((tx * 7) % 13) + 3, y + 4.5, 0.6, '#1e140c');
+        c.fillStyle = '#2a1e14'; c.fillRect(x + 2, y + 1.5, 1, 1); c.fillRect(x + T - 3, y + 1.5, 1, 1);
+        if (lEnd || rEnd) line(lEnd ? x + 3 : x + T - 3, y + 4, (lEnd ? x + 3 : x + T - 3) + (lEnd ? 5 : -5), y + 11, 1.5, '#2a1e14');
+        break;
+      }
+      case 'balcony': { // laje de pedra com grade de ferro
+        c.fillStyle = R.stone; c.fillRect(x, y, T, 5); c.fillStyle = R.topAccent; c.fillRect(x, y, T, 1); c.fillStyle = 'rgba(0,0,0,0.35)'; c.fillRect(x, y + 4, T, 1.2);
+        line(x, y - 9, x + T, y - 9, 0.9, '#1c1a20');
+        for (const px of [x + 3, x + 13]) line(px, y, px, y - 9, 0.7, '#1c1a20');
+        if (lEnd || rEnd) { c.fillStyle = R.stone; c.beginPath(); const ex = lEnd ? x : x + T; c.moveTo(ex, y + 5); c.lineTo(ex + (lEnd ? 8 : -8), y + 5); c.lineTo(ex + (lEnd ? 2 : -2), y + 12); c.closePath(); c.fill(); }
+        break;
+      }
+      case 'sign': { // tábua de tabuleta suspensa por cordas
+        c.fillStyle = '#4a3422'; c.fillRect(x, y, T, 4); c.fillStyle = '#8a6a44'; c.fillRect(x, y, T, 1);
+        if (i % 2 === 0) { c.fillStyle = '#2a1c12'; c.fillRect(x + 6, y + 1.4, 8, 1.2); }
+        if (lEnd || rEnd) line(lEnd ? x + 2 : x + T - 2, y, lEnd ? x + 4 : x + T - 4, y - 60, 0.8, '#5a4a3a');
+        break;
+      }
+      case 'slab': { // laje de ossário com crânios nos nichos
+        c.fillStyle = '#4a4440'; c.fillRect(x, y, T, 5); c.fillStyle = '#8a8070'; c.fillRect(x, y, T, 1);
+        if ((tx + ty) % 3 === 0) { c.fillStyle = '#1a1614'; c.beginPath(); c.arc(x + T / 2, y + 3, 1.8, 0, U.TAU); c.fill(); c.fillStyle = '#c8bca0'; c.beginPath(); c.arc(x + T / 2, y + 2.8, 1.2, 0, U.TAU); c.fill(); }
+        break;
+      }
+      case 'coffin': { // tampa de caixão de madeira escura com pregos
+        c.fillStyle = '#2e2018'; c.fillRect(x, y, T, 4.5); c.fillStyle = '#5a3e2a'; c.fillRect(x, y, T, 1);
+        c.fillStyle = '#9a8a6a'; c.fillRect(x + 4, y + 2, 1, 1); c.fillRect(x + 15, y + 2, 1, 1);
+        if (lEnd || rEnd) { c.fillStyle = '#2e2018'; c.fillRect(lEnd ? x : x + T - 3, y - 1.5, 3, 6); }
+        break;
+      }
+      case 'timber': { // viga grossa com cintas de ferro
+        c.fillStyle = '#3a2a1c'; c.fillRect(x, y, T, 5); c.fillStyle = '#6e5236'; c.fillRect(x, y, T, 1.2);
+        if (i % 2 === 1 || n === 1) { c.fillStyle = '#2a2a30'; c.fillRect(x + 8, y, 3, 5); c.fillStyle = '#6a6a74'; c.fillRect(x + 8, y, 3, 0.8); }
+        line(x, y + 3.2, x + T, y + 3.4, 0.4, 'rgba(0,0,0,0.4)');
+        break;
+      }
+      case 'corbel': { // laje de pedra sobre mísulas
+        c.fillStyle = R.stone; c.fillRect(x, y, T, 4.5); c.fillStyle = R.topAccent; c.fillRect(x, y, T, 1);
+        if (i % 2 === 0) { c.fillStyle = R.stoneDark; c.beginPath(); c.moveTo(x + 4, y + 4.5); c.lineTo(x + 14, y + 4.5); c.lineTo(x + 9, y + 12); c.closePath(); c.fill(); }
+        break;
+      }
+      case 'scaffold': { // andaime de tábuas com escoras em diagonal
+        c.fillStyle = '#4a3624'; c.fillRect(x, y, T, 3.5); c.fillStyle = '#86663e'; c.fillRect(x, y, T, 1);
+        line(x + 2, y + 3.5, x + T - 2, y + 16, 1, '#3a2a1a'); line(x + T - 2, y + 3.5, x + 2, y + 16, 1, '#3a2a1a');
+        break;
+      }
+      case 'grate': { // grelha de ferro (Forjas)
+        c.fillStyle = '#3a2c26'; c.fillRect(x, y, T, 4); c.fillStyle = '#8a6a50'; c.fillRect(x, y, T, 1);
+        c.strokeStyle = '#1a1210'; c.lineWidth = 0.8; for (let j = 2; j < T; j += 4) { c.beginPath(); c.moveTo(x + j, y + 1); c.lineTo(x + j, y + 4); c.stroke(); }
+        if (lEnd || rEnd) line(lEnd ? x + 3 : x + T - 3, y, lEnd ? x + 3 : x + T - 3, y - 40, 1, '#1a1210');
+        break;
+      }
+      case 'girder': { // viga de ferro rebitada
+        c.fillStyle = '#3c3a40'; c.fillRect(x, y, T, 5); c.fillStyle = '#7a7884'; c.fillRect(x, y, T, 1);
+        c.fillStyle = '#1e1c22'; c.fillRect(x, y + 4, T, 1);
+        c.fillStyle = '#9a98a4'; for (const rx of [x + 3, x + 10, x + 17]) { c.beginPath(); c.arc(rx, y + 2.6, 0.7, 0, U.TAU); c.fill(); }
+        break;
+      }
+      case 'chaingrate': { // grelha pendurada de correntes, brasa por baixo
+        c.fillStyle = '#2e2420'; c.fillRect(x, y, T, 3.5); c.fillStyle = '#a07050'; c.fillRect(x, y, T, 0.8);
+        c.fillStyle = 'rgba(255,110,40,0.25)'; c.fillRect(x + 1, y + 3.5, T - 2, 1);
+        if (lEnd || rEnd) for (let j = 0; j < 8; j++) { c.strokeStyle = '#4a4048'; c.lineWidth = 0.7; c.beginPath(); c.ellipse(lEnd ? x + 3 : x + T - 3, y - 3 - j * 5, 1.2, 2.4, 0, 0, U.TAU); c.stroke(); }
+        break;
+      }
+      case 'log': { // tronco tombado com musgo
+        c.fillStyle = '#3a3020'; c.beginPath(); c.ellipse(x + T / 2, y + 2.5, T * 0.58, 2.8, 0, 0, U.TAU); c.fill();
+        c.fillStyle = '#5a7a40'; c.fillRect(x + 1, y - 0.5, T - 2, 1.3);
+        if (rEnd) { c.fillStyle = '#4e7a46'; c.beginPath(); c.ellipse(x + T + 2, y + 1, 4, 2, 0.5, 0, U.TAU); c.fill(); }
+        break;
+      }
+      case 'lily': { // folhas de nenúfar gigantes, uma por tile, ligeiramente desencontradas
+        const o = ((tx * 13) % 5) - 2;
+        c.fillStyle = '#2e5a32'; c.beginPath(); c.ellipse(x + T / 2 + o, y + 1.8, T * 0.6, 2.6, 0, 0, U.TAU); c.fill();
+        c.fillStyle = '#5e9a54'; c.beginPath(); c.ellipse(x + T / 2 + o, y + 1.2, T * 0.56, 1.8, 0, 0, U.TAU); c.fill();
+        c.strokeStyle = '#2e5a32'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(x + T / 2 + o, y + 1.2); c.lineTo(x + T / 2 + o + 6, y + 0.4); c.stroke();
+        if (i === Math.floor(n / 2)) { c.fillStyle = '#e8d8f0'; c.beginPath(); c.ellipse(x + 6, y - 0.6, 2, 1.4, 0, 0, U.TAU); c.fill(); }
+        break;
+      }
+      case 'fungus': { // prateleira de cogumelos (chapéus sobrepostos)
+        c.fillStyle = '#6a4a3a'; c.beginPath(); c.ellipse(x + T / 2, y + 2, T * 0.62, 3, 0, Math.PI, 0); c.fill();
+        c.fillStyle = '#a07a5a'; c.fillRect(x + 1, y, T - 2, 1);
+        c.fillStyle = 'rgba(230,220,180,0.7)'; for (const fx of [x + 5, x + 13]) { c.beginPath(); c.arc(fx, y + 1.2, 0.8, 0, U.TAU); c.fill(); }
+        c.fillStyle = 'rgba(150,240,170,0.15)'; c.fillRect(x, y + 2, T, 2);
+        break;
+      }
+      case 'bellbeam': { // viga de carvalho do sinal dos sinos, parafusos de bronze
+        c.fillStyle = '#4a3420'; c.fillRect(x, y, T, 5); c.fillStyle = '#86603a'; c.fillRect(x, y, T, 1.2);
+        c.fillStyle = '#b08a48'; c.beginPath(); c.arc(x + T / 2, y + 2.8, 1.1, 0, U.TAU); c.fill();
+        if (lEnd || rEnd) { c.fillStyle = '#3a2818'; c.fillRect(lEnd ? x : x + T - 4, y + 5, 4, 8); }
+        break;
+      }
+      case 'gallery': { // galeria de madeira com balaústres
+        c.fillStyle = '#3e2a1a'; c.fillRect(x, y, T, 4); c.fillStyle = '#7e5a38'; c.fillRect(x, y, T, 1);
+        line(x, y - 10, x + T, y - 10, 1.2, '#5a3e26');
+        for (const bx of [x + 4, x + 10, x + 16]) { c.fillStyle = '#4e3420'; c.fillRect(bx - 0.8, y - 10, 1.6, 10); }
+        break;
+      }
+      case 'ropeplank': { // tábua pendurada de cordas grossas
+        c.fillStyle = '#5a4026'; c.fillRect(x, y, T, 3.5); c.fillStyle = '#9a7448'; c.fillRect(x, y, T, 0.9);
+        if (lEnd || rEnd) { const rx = lEnd ? x + 2 : x + T - 2; line(rx, y, rx + (lEnd ? 1 : -1), y - 70, 1.3, '#7a6a50'); line(rx, y, rx + (lEnd ? 1 : -1), y - 70, 0.5, '#a8987a'); }
+        break;
+      }
+      case 'ledge': { // saliência de pedra (catedral / santuário)
+        c.fillStyle = R.stone; c.fillRect(x, y, T, 5); c.fillStyle = R.topAccent; c.fillRect(x, y, T, 1);
+        c.fillStyle = U.rgba('#000', 0.3); c.fillRect(x, y + 4, T, 1);
+        if (lEnd) { c.fillStyle = R.stone; c.beginPath(); c.moveTo(x, y + 5); c.lineTo(x + 7, y + 5); c.lineTo(x + 2, y + 10); c.closePath(); c.fill(); }
+        if (rEnd) { c.fillStyle = R.stone; c.beginPath(); c.moveTo(x + T, y + 5); c.lineTo(x + T - 7, y + 5); c.lineTo(x + T - 2, y + 10); c.closePath(); c.fill(); }
+        break;
+      }
+      case 'trefoil': { // saliência com arquinhos góticos (trevos) por baixo e friso dourado
+        c.fillStyle = R.stone; c.fillRect(x, y, T, 4.5); c.fillStyle = '#c8a860'; c.fillRect(x, y, T, 0.9);
+        c.fillStyle = R.stoneDark; c.beginPath(); c.arc(x + T / 2, y + 4.5, 4, 0, Math.PI); c.fill();
+        c.fillStyle = 'rgba(0,0,0,0.5)'; c.beginPath(); c.arc(x + T / 2, y + 4.5, 2.2, 0, Math.PI); c.fill();
+        break;
+      }
+      case 'loft': { // coro de madeira com corrimão
+        c.fillStyle = '#3a2618'; c.fillRect(x, y, T, 4.5); c.fillStyle = '#7a5434'; c.fillRect(x, y, T, 1);
+        line(x, y - 8, x + T, y - 8, 1.4, '#6a4428'); if (i % 2 === 0) line(x + T / 2, y, x + T / 2, y - 8, 1.2, '#4e3220');
+        break;
+      }
+      case 'marble': { // mármore claro com orla de ouro (palácio)
+        c.fillStyle = '#6a6070'; c.fillRect(x, y, T, 5); c.fillStyle = '#d8d0d8'; c.fillRect(x, y, T, 1.2); c.fillStyle = '#c8a050'; c.fillRect(x, y + 4, T, 1);
+        line(x + (tx * 5) % 15 + 2, y + 1.5, x + (tx * 5) % 15 + 6, y + 3.6, 0.4, 'rgba(255,255,255,0.35)');
+        break;
+      }
+      case 'carpet': { // varanda de madeira com passadeira vermelha
+        c.fillStyle = '#3a2416'; c.fillRect(x, y, T, 5); c.fillStyle = '#8a1a24'; c.fillRect(x, y - 0.5, T, 2); c.fillStyle = '#d0a040'; c.fillRect(x, y + 1.3, T, 0.5);
+        break;
+      }
+      case 'gilt': { // prateleira de pedra com mísula dourada
+        c.fillStyle = R.stone; c.fillRect(x, y, T, 4); c.fillStyle = R.topAccent; c.fillRect(x, y, T, 1);
+        if (i % 3 === 1 || n < 3) { c.fillStyle = '#b08a40'; c.beginPath(); c.moveTo(x + 6, y + 4); c.quadraticCurveTo(x + 6, y + 11, x + 12, y + 12); c.lineTo(x + 14, y + 4); c.closePath(); c.fill(); }
+        break;
+      }
+      default: { c.fillStyle = R.stone; c.fillRect(x, y, T, 5); c.fillStyle = R.topAccent; c.fillRect(x, y, T, 1); }
     }
   }
   function drawSpike(c, room, R, tx, ty) {

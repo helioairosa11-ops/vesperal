@@ -45,6 +45,25 @@
       for (let x = 0; x < W; x += 22) { const k = 0.5 + 0.5 * Math.sin(t * 9 + x * 0.13); const gx = x + ((t * 30 + x) % 22); const g2 = ctx.createRadialGradient(gx, y, 0, gx, y, 5); g2.addColorStop(0, `rgba(255,240,200,${0.35 * k})`); g2.addColorStop(1, 'rgba(255,240,200,0)'); ctx.fillStyle = g2; ctx.fillRect(gx - 5, y - 5, 10, 10); }
       ctx.restore();
     }
+    // auréolas (Ozias e o eco de Ozias): o círculo de luz com runas a girar e um anel interior que se fecha; ao fechar, um clarão
+    if (e.halos) for (const h of e.halos) {
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      if (!h.fired) {
+        const k = U.clamp(h.t / h.warn, 0, 1), p2 = 0.75 + 0.25 * Math.sin(t * 16);
+        ctx.strokeStyle = `rgba(255,238,190,${0.35 + 0.35 * k})`; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(h.x, h.y, h.r, 0, U.TAU); ctx.stroke();
+        ctx.strokeStyle = `rgba(255,250,230,${0.55 * p2})`; ctx.lineWidth = 2.2;
+        for (let i = 0; i < 12; i++) { const a0 = t * 1.4 + i * U.TAU / 12; ctx.beginPath(); ctx.arc(h.x, h.y, h.r - 4, a0, a0 + 0.22); ctx.stroke(); }
+        const ri = h.r * (1 - k * 0.92);
+        ctx.strokeStyle = `rgba(255,255,255,${0.4 + 0.5 * k})`; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(h.x, h.y, Math.max(1, ri), 0, U.TAU); ctx.stroke();
+        const gg = ctx.createRadialGradient(h.x, h.y, 0, h.x, h.y, h.r); gg.addColorStop(0, `rgba(255,240,200,${0.05 + 0.18 * k})`); gg.addColorStop(1, 'rgba(255,230,180,0)');
+        ctx.fillStyle = gg; ctx.fillRect(h.x - h.r, h.y - h.r, h.r * 2, h.r * 2);
+      } else {
+        const k = U.clamp((h.t - h.warn) / 0.4, 0, 1), R = h.r * (1 + k * 0.3);
+        const gg = ctx.createRadialGradient(h.x, h.y, 0, h.x, h.y, R); gg.addColorStop(0, `rgba(255,255,250,${0.95 * (1 - k)})`); gg.addColorStop(0.6, `rgba(255,230,170,${0.55 * (1 - k)})`); gg.addColorStop(1, 'rgba(255,220,150,0)');
+        ctx.fillStyle = gg; ctx.fillRect(h.x - R, h.y - R, R * 2, R * 2);
+      }
+      ctx.restore();
+    }
     if (e.ringOn) {
       const R = e.ringR, cx = e.cx, cy = e.cy;
       ctx.save(); ctx.globalCompositeOperation = 'lighter';

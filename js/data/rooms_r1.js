@@ -55,7 +55,8 @@
     b.carve(8, 15, 11, 17); b.plat(8, 11, 16);
     b.exitL(10, 14);
     b.e('door', 3, 10, { id: 'd_palace', h: 5, open: 'embers:5' });
-    b.carve(62, 3, 63, 7); b.plat(54, 60, 11); b.solid(57, 8, 63, 8); b.carve(57, 3, 61, 7);
+    b.solid(2, 3, 3, 9); // por cima do portão do palácio não se passa (nem com o salto duplo)
+    b.carve(62, 3, 63, 7); b.plat(52, 57, 12); b.solid(57, 8, 63, 8); b.carve(57, 3, 61, 7);
     b.solid(24, 12, 27, 14); b.plat(28, 34, 10);
     b.enemy('wisp', 20, 8); b.enemy('wisp', 44, 7); b.enemy('husk', 40, 14); b.enemy('sexton', 49, 14);
     b.e('inscription', 33, 14, { id: 'i04' });
@@ -81,9 +82,9 @@
     b.fill(); b.carve(2, 4, 61, 14); b.ragged(2, 61, 4, 2);
     b.exitL(10, 14); b.exitR(10, 14);
     b.carve(50, 15, 53, 17);
-    b.plat(20, 26, 11); b.plat(34, 40, 10);
+    b.plat(20, 26, 12); b.plat(30, 36, 9);
     b.solid(4, 13, 5, 14);
-    b.item('ash_steel', 37, 9);
+    b.item('ash_steel', 33, 8);
     b.e('npc', 9, 14, { id: 'hrolf', cond: (s) => !s.bosses.caedmon && s.quests.hrolf < 50 });
     b.enemy('husk', 16, 14); b.enemy('husk', 30, 14); b.enemy('crawler', 44, 14); b.enemy('wisp', 57, 8);
     b.e('urn', 24, 14); b.e('urn', 46, 14); b.e('urn', 60, 14);
@@ -150,7 +151,7 @@
     b.solid(2, 3, 15, 9); b.fake(14, 10, 15, 14);
     b.item('candle_fragment', 4, 14);
     b.e('shrine', 9, 14, { item: 'w_espirito' }); // segredo: a Lâmina do Espírito presa entre os ossos
-    b.plat(28, 34, 10); b.item('ash_heart', 31, 9);
+    b.crumble(22, 24, 12); b.plat(28, 34, 10); b.item('ash_heart', 31, 9);
     b.item('r_lantern', 22, 14);
     b.e('inscription', 50, 14, { id: 'i07' });
     b.enemy('courtier', 40, 10); b.enemy('husk', 26, 14); b.enemy('husk', 45, 14); b.enemy('crawler', 36, 14);

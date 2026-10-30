@@ -57,12 +57,14 @@
     ins_i44_t: "Partitura rota, clavada en la columna",
     ins_i44: "El juglar no baja por nadie. Toca desde los balcones de las campanas y su música aparta el acero que sube. Quien quiera callarlo, que trepe: las paredes, la columna, las ménsulas donde se recupera el aliento. Y que golpee a tiempo; él mismo lo enseñó.",
     tip_caedmon_volley: "«¡Escudos en alto!» — los arqueros muertos disparan. ¡Refúgiate bajo su pavés!",
-    tip_matilheira_wall: "La Madre de la Jauría chocó contra la pared y está aturdida: ¡ataca! (Trepar la pared o subir a las plataformas te libra de la embestida.)",
+    tip_matilheira_wall: "La Vieja Madre de la Jauría se ha quedado sin aliento tras la carrera: ¡ataca ahora! (Trepa la pared o sube a las plataformas para escapar de la embestida.)",
     inv_hint_use: "Confirmar: usar / equipar",
     inv_hint_unequip: "Confirmar: desequipar",
     tip_vael_stuck: "¡La bola del mayal se clavó en el suelo! Ataca mientras Vael la arranca.",
     tip_gemeos_friendly: "El Mazo no distingue hermanos: pon a la Hoja entre tú y el golpe.",
     gemeos_friendly: "¡Hermano…! ¡Apártate!",
     tip_ozias_orb: "El orbe del cáliz puede devolverse: haz parry cuando llegue.",
+    tip_aldric_judgement: "El Juicio del Rey mata de un golpe: ¡salta sobre la ola carmesí o esquívala atravesándola!",
+    tip_seraphine_wings: "Se acerca un muro de plumas de luz: métete en su hueco cuando pase, o atraviésalo esquivando.",
   });
 })(window.VS);

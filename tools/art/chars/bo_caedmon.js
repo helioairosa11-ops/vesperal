@@ -53,10 +53,14 @@
     K.bands(ctx, K.tubePath([at(-2.6), at(1.2)], [0.42, 0.4], false), at(-2.6), at(1.2), 0.45, 0, 1, 4, M.leather);
     K.dot(ctx, ...at(-3.0), 0.8, M.gold.base); K.dot(ctx, ...at(-3.1, -0.2), 0.3, M.gold.light);
     K.blob(ctx, [at(1.1, -3.0), at(1.4, -3.2), at(1.9, -1.0), at(1.9, 1.0), at(1.4, 3.2), at(1.1, 3.0), at(1.4, 0.8), at(1.4, -0.8)], M.gold, { depth: S * 0.15 });
-    const blade = K.polyPath([at(1.9, -1.0), at(14.6, -0.75), at(16.8, 0), at(14.6, 0.75), at(1.9, 1.0)]);
+    // lâmina de montante (comprida: o alcance é a arma dele)
+    const BL = 23.0;
+    const blade = K.polyPath([at(1.9, -1.05), at(BL - 2.6, -0.8), at(BL, 0), at(BL - 2.6, 0.8), at(1.9, 1.05)]);
     K.paint(ctx, blade, M.steel, { depth: S * 0.3, hlw: S * 0.2 });
-    ctx.save(); ctx.clip(blade); K.line(ctx, [at(2.4, 0), at(12.0, 0)], 0.3, A.rgba(M.steel.deep, 0.7)); K.line(ctx, [at(2.4, -0.62), at(15.0, -0.5)], 0.18, A.rgba('#ffffff', 0.75)); ctx.restore();
-    x._tip = at(16.8, 0); x._grip = g;
+    ctx.save(); ctx.clip(blade); K.line(ctx, [at(2.4, 0), at(BL * 0.72, 0)], 0.32, A.rgba(M.steel.deep, 0.7)); K.line(ctx, [at(2.4, -0.66), at(BL - 2.0, -0.52)], 0.18, A.rgba('#ffffff', 0.75));
+    // ricasso com a chama gravada junto à guarda
+    K.line(ctx, [at(2.3, -0.5), at(3.6, 0), at(2.3, 0.5)], 0.16, A.rgba(M.gold.base, 0.8)); ctx.restore();
+    x._tip = at(BL, 0); x._grip = g;
   }
   // pavês: tábuas de carvalho escuro com moldura de ferro, a chama da rainha pintada num crescente (vermelho
   // gasto e ouro), lascas de golpes e três setas partidas cravadas

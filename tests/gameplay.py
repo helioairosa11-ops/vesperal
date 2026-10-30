@@ -1010,8 +1010,178 @@ def t_weak(R, b):
     pg.close()
 
 
+def t_judge(R, b):
+    """Aldric — o Juízo do Rei: golpe que mata de uma vez, mas bem avisado, que se salta ou atravessa com a esquiva; não se apara"""
+    pg = b.new_page(viewport={'width': 1280, 'height': 720}); errs = []; page_errors(pg, errs)
+    boot(pg)
+    SETUP = """(() => { const B = T.B = T.bossEnts()[0], p = T.p(); B.K = Object.assign({}, B.K, { think() {} }); B.cool = 99; B.atk = null; B.phase = %d; B.vx = 0;
+      VSDebug.god(false); const st = VS.state; st.hp = st.hpMax || st.maxHp || 100; p.iframes = 0; p.action = null; p.vx = 0;
+      B.x = 700; p.x = B.cx - 170; p.facing = 1; B.facing = -1; T.releaseAll(); T.judge = []; B.attack('judgement'); })()"""
+    def arena(ph):
+        new_game(pg); pg.evaluate('VSDebug.allAbilities(); VSDebug.god(true)')
+        warp(pg, 'r7_throne'); place_for_boss(pg, 'r7_throne')
+        wait(pg, 'T.bossEnts().length > 0 && !T.bossEnts()[0].intro', 14)
+        pg.evaluate(SETUP % ph)
+    def outcome():
+        wait(pg, '!T.B.atk', 6); frames(pg, 20)
+        return pg.evaluate('({ dead: !!(T.p().action && T.p().action.type === "dead"), hp: VS.state.hp, hits: T.hits.slice(-4) })')
+    # 1) parada: morre de um golpe (com a vida cheia)
+    arena(1)
+    frames(pg, 60); shot(pg, 'judge_wind')
+    wait(pg, 'T.B.atk && T.B.atk.phase !== "wind"', 3); frames(pg, 9); shot(pg, 'judge_wave')
+    r = outcome()
+    R.check('Aldric: o Juízo mata de um golpe quem fica parado (vida cheia)', r['dead'], r)
+    # 2) parry não serve: continua a matar
+    arena(1)
+    pg.evaluate("""T.hooks.push(() => { const p = T.p(), w = T.g().ents.find((e) => e.judge && Math.abs(e.cx - p.cx) < 46); if (w) { T.tap('KeyI', 4); return true; } })""")
+    r = outcome()
+    R.check('Aldric: o Juízo não se apara (parry não salva)', r['dead'], r)
+    # 3) salto por cima da onda: sobrevive
+    arena(1)
+    pg.evaluate("""T.hooks.push(() => { const p = T.p(), w = T.g().ents.find((e) => e.judge && (p.cx - e.cx) * Math.sign(e.vx) > 0 && Math.abs(e.cx - p.cx) < 95); if (w) { T.tap('Space', 14); return true; } })""")
+    frames(pg, 125); shot(pg, 'judge_jump')
+    r = outcome()
+    R.check('Aldric: saltar por cima da onda do Juízo salva', not r['dead'] and r['hp'] > 0, r)
+    # 4) esquiva através da onda (fase 2: duas vagas): sobrevive
+    arena(2)
+    pg.evaluate("""(() => { T.nd = 0; T.hooks.push(() => { const p = T.p(); if (T.nd >= 4 || !T.g().ents.some((e) => e.judge) && !T.B.atk) return true; const w = T.g().ents.find((e) => e.judge && e.dodged !== e.id && (p.cx - e.cx) * Math.sign(e.vx) > 0 && Math.abs(e.cx - p.cx) < 62);
+      if (w && !(p.action && p.action.type === 'dodge')) { w.dodged = w.id; T.nd++; p.facing = -Math.sign(w.vx); T.tap('KeyL', 3); } }); })()""")
+    wait(pg, '!T.B.atk && !T.g().ents.some((e) => e.judge)', 8)
+    r = outcome()
+    nd = pg.evaluate('T.nd')
+    R.check('Aldric: esquivar através das ondas do Juízo (na última fase voltam das paredes) salva', not r['dead'] and nd >= 3, dict(r, dodges=nd))
+    R.check('Juízo sem erros', not errs, errs[:3])
+    pg.close()
+
+
+def t_moves(R, b):
+    """golpes redesenhados (sem repetições entre chefes): cada um corre sem erros e faz o que promete"""
+    pg = b.new_page(viewport={'width': 1280, 'height': 720}); errs = []; page_errors(pg, errs)
+    boot(pg); new_game(pg); pg.evaluate('VSDebug.allAbilities(); VSDebug.god(true)')
+    rooms = dict(BOSSES)
+    def arena(bid):
+        pg.evaluate('VS.UI.closeAll && VS.UI.closeAll()')
+        warp(pg, rooms[bid]); place_for_boss(pg, rooms[bid])
+        wait(pg, 'T.bossEnts().length > 0 && !T.bossEnts().some((e) => e.intro)', 14)
+        pg.evaluate("""(() => { T.hits = []; const es = T.bossEnts(); es.forEach((e) => { e.K = Object.assign({}, e.K, { think() {} }); e.cool = 99; e.atk = null; e.vx = 0; }); T.B = es[0]; })()""")
+    def run(js, n=90):
+        pg.evaluate(js); frames(pg, n)
+    # Vael — auto-da-fé: dois muros de fogo que se fecham; quem fica no meio é apanhado pelo rebentamento
+    arena('vael')
+    run("""(() => { const B = T.B, p = T.p(); p.x = B.cx + 150; p.vx = 0; p.iframes = 0; B.facing = 1; B.attack('pillars'); T.walls = []; T.hooks.push(() => { if (B.pyre) T.walls.push(B.pyre.r - B.pyre.l); if (!B.atk) return true; }); })()""", 150)
+    r = pg.evaluate('({ hits: T.hits.filter((h) => h === "hit").length, w0: T.walls[0], w1: T.walls[T.walls.length - 1] })')
+    R.check('Vael: os muros do auto-da-fé fecham-se e apanham quem fica no meio', r['hits'] >= 1 and r['w0'] > 200 and r['w1'] < 10, r)
+    # Autómato — vapor à volta do corpo depois do esmagamento; respiradouros nas grelhas fixas
+    arena('automato')
+    run("""(() => { const B = T.B, p = T.p(); p.x = B.cx + 46; p.vx = 0; p.iframes = 0; T.hits = []; B.facing = -1; B.attack('crush'); })()""", 110)
+    r1 = pg.evaluate('T.hits.filter((h) => h === "hit").length')
+    run("""(() => { const B = T.B; B.atk = null; T.cols = null; B.attack('vents'); T.hooks.push(() => { if (B.colXs && !T.cols) T.cols = B.colXs.slice(); if (!B.atk) return true; }); })()""", 130)
+    r2 = pg.evaluate('({ cols: T.cols, grates: T.B.grates })')
+    R.check('Autómato: o esmagamento solta um anel de vapor à volta dele', r1 >= 1, r1)
+    R.check('Autómato: os respiradouros sopram nas grelhas fixas do chão (metade de cada vez)', bool(r2['cols']) and all(x in r2['grates'] for x in r2['cols']) and len(r2['cols']) == 4, r2)
+    # Mariposa — espiral de escamas
+    arena('mariposa')
+    run("""(() => { T.B.attack('gust'); })()""", 80)
+    n = pg.evaluate("T.g().ents.filter((e) => e.kind === 'scale').length")
+    R.check('Mariposa: a espiral solta escamas a girar', n >= 10, n)
+    # Matilheira — a fúria vai e volta e acaba sem fôlego (exposta)
+    arena('matilheira')
+    pg.evaluate("""(() => { const B = T.B; B.phase = 1; B.K = Object.assign({}, B.K, { think: VS.Bosses.DEFS.matilheira.think }); B.cool = 0; B.atk = null; B.attack('rampage'); T.p().y -= 200; T.p().iframes = 99; })()""")
+    ok = wait(pg, 'T.B.pant > 0', 12)
+    m = pg.evaluate('T.B.K.damageMult(T.B, {})')
+    R.check('Matilheira: depois da fúria fica sem fôlego e leva mais dano', ok and m > 1.4, {'pant': ok, 'mult': m})
+    # Gémeos — remoinho do Malho
+    arena('gemeos')
+    r = pg.evaluate("""() => new Promise((res) => { const es = T.bossEnts(), a = es.find((e) => e.kind === 'b_gemeo_a'), b = es.find((e) => e.kind === 'b_gemeo_b');
+      const x0 = b.x, hp0 = a.hp, dir = Math.sign(T.p().cx - b.cx) || 1; a.x = b.cx + dir * 50 - (dir < 0 ? a.w : 0); a.y = b.bottom - a.h; b.attack('sweep');
+      let n = 0; T.hooks.push(() => { if (++n > 160) { res({ moved: Math.abs(b.x - x0), hp0, hp: a.hp }); return true; } }); })""")
+    R.check('Gémeos: o Malho rodopia e avança (e acerta no irmão)', r['moved'] > 60 and r['hp'] < r['hp0'], r)
+    # Hilde — a tenaz puxa a protagonista para a martelada
+    arena('hilde')
+    r = pg.evaluate("""() => new Promise((res) => { const B = T.B, p = T.p(); p.x = B.cx + 120; p.y = B.bottom - p.h; p.vx = 0; p.iframes = 0; B.facing = 1; T.hits = []; B.K = Object.assign({}, B.K, { think: VS.Bosses.DEFS.hilde.think }); B.cool = 99; B.attack('ingots');
+      const d0 = Math.abs(p.cx - B.cx); let n = 0, minD = 1e9, ham = false; T.hooks.push(() => { minD = Math.min(minD, Math.abs(p.cx - B.cx)); if (B.atk && B.atk.name === 'hammer') ham = true; if (++n > 150) { res({ d0, minD, ham, tongs: !!B.tongsProj }); return true; } }); })""")
+    R.check('Hilde: a tenaz apanha e puxa a protagonista e segue-se a martelada', r['minD'] < r['d0'] - 40 and r['ham'], r)
+    # Ozias — auréolas e leque de vidro
+    arena('ozias')
+    run("""(() => { const B = T.B, p = T.p(); p.vx = 0; p.iframes = 0; T.hits = []; B.phase = 1; B.attack('pillars'); T.nh = 0; T.hooks.push(() => { if (B.halos) T.nh = Math.max(T.nh, B.halos.length); if (!B.atk) return true; }); })()""", 120)
+    r = pg.evaluate('({ halos: T.nh, hits: T.hits.filter((h) => h === "hit").length })')
+    run("""(() => { T.B.atk = null; T.B.attack('shards'); })()""", 50)
+    g = pg.evaluate("T.g().ents.filter((e) => e.kind === 'glass').length")
+    R.check('Ozias: as auréolas fecham-se sobre quem fica dentro', r['halos'] >= 2 and r['hits'] >= 1, r)
+    R.check('Ozias: os vidros saem em leque apontado', g >= 5, g)
+    # Aldric — sem ondas no golpe de cima (só no Juízo); eco de Hilde deixa cair a bigorna
+    arena('aldric')
+    run("""(() => { const B = T.B; B.attack('overhead'); })()""", 90)
+    k = pg.evaluate("T.g().ents.filter((e) => e.kind === 'shockwave' || (e.kind === 'fire' && Math.abs(e.vx) > 0)).length")
+    run("""(() => { const B = T.B; B.atk = null; B.phase = 1; T.anv = false; B.attack('echo_hilde'); T.hooks.push(() => { if (B.anvilShadow) T.anv = true; if (!B.atk) return true; }); })()""", 120)
+    a = pg.evaluate('T.anv')
+    R.check('Aldric: o golpe de cima já não solta ondas pelo chão', k == 0, k)
+    R.check('Aldric: o eco de Hilde deixa cair a bigorna onde está a protagonista', a, a)
+    # Seraphine (chefe secreto) — parede de penas de luz com uma abertura
+    r = pg.evaluate("""() => new Promise((res) => { const g = T.g(); T.B.remove = true; const S = VS.Bosses.spawn({ boss: 'seraphine', x: 40, y: 12 }, g); g.spawn(S); S.intro = false; S.introDone = true; S.K = Object.assign({}, S.K, { think() {} });
+      let n = 0; T.hooks.push(() => { if (++n === 5) S.attack('beams'); if (n > 60) { const ps = g.ents.filter((e) => e.kind === 'plume'); const ys = ps.map((e) => Math.round(e.y)).sort((a, b) => a - b); let gap = 0; for (let i = 1; i < ys.length; i++) gap = Math.max(gap, ys[i] - ys[i - 1]); res({ n: ps.length, gap }); return true; } }); })""")
+    R.check('Seraphine: as asas soltam uma parede de penas com uma abertura por onde passar', r['n'] >= 8 and r['gap'] >= 45, r)
+    R.check('golpes redesenhados sem erros', not errs, errs[:3])
+    pg.close()
+
+
+REPLAY_JS = r"""(ex) => new Promise((res) => {
+  const g = T.g(), p = T.p(), st = VS.state, TT = VS.U.TILE;
+  Object.assign(st.abilities, { dash: true, double: true, wall: false, forge: true, veil: true });
+  g.ents = g.ents.filter((e) => !e.isEnemy && !(e instanceof VS.Projectile));
+  T.releaseAll(); p.action = null; p.iframes = 99; p.doubleUsed = false; p.airDash = false; p.dodgeCd = 0; p.climbing = false; p.wallLock = 0; p.crouch = false; p.h = 30;
+  p.x = ex.x; p.y = ex.y; p.vx = ex.vx; p.vy = 0; p.onGround = ex.onGround; p.coyote = ex.onGround ? 0.12 : 0; p.dropThrough = !!ex.drop; p.dropT = ex.drop ? 0.25 : 0; p.standOn = null;
+  const pl = ex.plan, t0 = p.t; let air = !ex.onGround, n = 0, lastSwim = -99;
+  const keys = (f) => {
+    const ax = f < pl.sw ? pl.d1 : pl.d2;
+    VS.Input.raw.KeyA = ax < 0; VS.Input.raw.KeyD = ax > 0;
+    let jump = (pl.jumpF >= 0 && f >= pl.jumpF && f < pl.holdF) || (pl.dblF !== undefined && f >= pl.dblF);
+    if (pl.dblF !== undefined && f === pl.dblF - 1) jump = false;
+    if (p.inWater && pl.swim !== false) { if (f - lastSwim >= 14) lastSwim = f; jump = f === lastSwim; }
+    VS.Input.raw.Space = jump;
+    VS.Input.raw.KeyL = pl.dashF !== undefined && (f === pl.dashF || f === pl.dashF + 1);
+  };
+  keys(0);
+  T.hooks.push(() => {
+    n++;
+    const f = Math.round((p.t - t0) * 60);
+    if (!p.onGround) air = true;
+    if (air && p.onGround && f > 0) {
+      T.releaseAll();
+      const room = g.room.id, tx = Math.floor(p.cx / TT), fy = Math.round(p.bottom / TT);
+      res({ room, tx, fy }); return true;
+    }
+    if (n > 400) { T.releaseAll(); res({ room: g.room.id, tx: -1, fy: -1, timeout: true }); return true; }
+    keys(f);
+  });
+})"""
+
+
+def t_reach(R, b):
+    """o analisador de alcance (tools/reach) usa a física do jogo: os saltos que ele encontra repetem-se dentro do jogo"""
+    import subprocess
+    exf = ROOT / 'tests' / 'out' / 'reach_examples.json'
+    subprocess.run(['node', str(ROOT / 'tools' / 'reach' / 'examples.js'), str(exf), 'r1_plaza', 'r1_market', 'r1_crypt', 'r2_cistern', 'r2_tower', 'r2_armory', 'r6_nave', 'r1_street', 'r1_belfry'], check=True, capture_output=True)
+    exs = json.loads(exf.read_text())
+    pg = b.new_page(viewport={'width': 1280, 'height': 720}); errs = []; page_errors(pg, errs)
+    boot(pg); new_game(pg); pg.evaluate('VSDebug.allAbilities(); VSDebug.god(true)')
+    ok = 0; bad = []
+    for ex in exs:
+        if pg.evaluate('T.g().room.id') != ex['room']:
+            warp(pg, ex['room']); frames(pg, 5)
+        pg.evaluate('VS.UI.closeAll && VS.UI.closeAll(); T.clean()')
+        r = pg.evaluate(REPLAY_JS, ex)
+        tg = ex['target']
+        good = r['room'] == tg['room'] and abs(r['tx'] - tg['tx']) <= 1 and r['fy'] == tg['fy']
+        if good: ok += 1
+        else: bad.append({'nota': ex['note'], 'esperado': tg, 'jogo': r})
+    R.check(f'alcance: os saltos do analisador repetem-se no jogo ({ok}/{len(exs)})', ok >= len(exs) * 0.9, bad[:6])
+    R.check('alcance sem erros', not errs, errs[:3])
+    pg.close()
+
+
 TESTS = {'menus': t_menus, 'combat': t_movement_combat, 'world': t_world, 'bosses': t_bosses, 'caedmon': t_caedmon, 'aldric': t_aldric, 'corvin': t_corvin,
-         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak}
+         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach}
 
 
 def main(filters):

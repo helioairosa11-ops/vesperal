@@ -194,7 +194,7 @@
           if (res === 'parry') {
             if (e.reflectable) { e.team = 'player'; e.vx = -e.vx * 1.3; e.vy = -e.vy * 0.5 - 40; e.dmg = Math.round(e.dmg * 2); e.life = 2; e.id = VS.Entity.newAttackId(); e.homing = 0; }
             else e.remove = true;
-          } else if (res === 'block' || res === 'hit') { if (!e.persist) { e.remove = true; e.onDestroy(this); } }
+          } else if (res === 'block' || res === 'hit') { if (res === 'hit' && e.onHitPlayer) e.onHitPlayer(p, this); if (!e.persist) { e.remove = true; e.onDestroy(this); } }
           else if (res === 'immune' || res === 'dodge') p.hitIds.delete(hb.id);
         }
         if (e.contactDmg && !e.dead && e.contactActive !== false && U.overlap(e.hurtbox(), ph)) {
@@ -260,8 +260,8 @@
     updateTransition(dt) {
       const tr = this.transition; tr.t += dt;
       if (tr.phase === 'out') {
-        this.fade = Math.min(1, tr.t / 0.12);
-        if (tr.t >= 0.12) {
+        this.fade = Math.min(1, tr.t / 0.07);
+        if (tr.t >= 0.07) {
           const p = this.player;
           const keep = { action: p.action && (p.action.type === 'dodge' || p.action.type === 'attack') ? null : p.action };
           this.loadRoom(tr.to, tr.entry);
@@ -270,10 +270,10 @@
           this.autosave();
         }
       } else {
-        this.fade = Math.max(0, 1 - tr.t / 0.18);
-        this.player.update(dt * 0.5, this);
+        this.fade = Math.max(0, 1 - tr.t / 0.12);
+        this.player.update(dt, this);
         G.cameraFollow(this.player.cx + (this.camLook || 0), this.player.cy - 20, dt);
-        if (tr.t >= 0.18) { this.transition = null; this.fade = 0; }
+        if (tr.t >= 0.12) { this.transition = null; this.fade = 0; }
       }
     }
 
@@ -483,7 +483,8 @@
       G.drawParticles(ctx, 1);
       VS.Tiles.drawRoom(ctx, room, R, cam, this.time);
       G.drawParticles(ctx, 0);
-      for (const e of list) if ((e.z || 0) >= 0 && (e.z || 0) < 10 && G.inView(e.x, e.y, e.w, e.h, 160)) e.draw(ctx, this);
+      // os chefes desenham-se sempre: os avisos deles (auréolas, colunas, muros de fogo) podem estar longe do corpo
+      for (const e of list) if ((e.z || 0) >= 0 && (e.z || 0) < 10 && (e.isBoss || G.inView(e.x, e.y, e.w, e.h, 160))) e.draw(ctx, this);
       this.player.draw(ctx, this);
       for (const e of list) if ((e.z || 0) >= 10 && G.inView(e.x, e.y, e.w, e.h, 160)) e.draw(ctx, this);
       VS.Tiles.drawLiquids(ctx, room, R, cam, this.time);
@@ -514,6 +515,7 @@
       G.screenTransform(ctx);
       G.vignette(0.55, R.tint);
       this.drawBossPointer(ctx);
+      G.drawDread(dt);
       G.drawFlash(dt);
       VS.UI.drawHUD(ctx, this);
       G.screenTransform(ctx);

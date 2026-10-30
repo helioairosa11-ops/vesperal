@@ -57,12 +57,14 @@
     ins_i44_t: "Partition déchirée, épinglée à la colonne",
     ins_i44: "Le ménestrel ne descend pour personne. Il joue depuis les balcons des cloches et sa musique repousse l'acier qui monte. Qui veut le faire taire doit grimper : les murs, la colonne, les corbeaux où l'on reprend son souffle. Et frapper en mesure — il l'a enseigné lui-même.",
     tip_caedmon_volley: "« Boucliers en l'air ! » — les archers morts décochent. Abrite-toi sous son pavois !",
-    tip_matilheira_wall: "La Mère de Meute s'est fracassée contre le mur et est étourdie — frappe ! (Grimper au mur ou sur les plateformes te protège de sa charge.)",
+    tip_matilheira_wall: "La Vieille Mère de Meute est à bout de souffle après sa charge : frappe maintenant ! (Grimpe au mur ou sur les plateformes pour fuir la ruée.)",
     inv_hint_use: "Valider : utiliser / équiper",
     inv_hint_unequip: "Valider : déséquiper",
     tip_vael_stuck: "La boule du fléau s'est plantée dans le sol ! Frappe pendant que Vael l'arrache.",
     tip_gemeos_friendly: "Le Marteau ne distingue pas les frères : place la Lame entre toi et le coup.",
     gemeos_friendly: "Frère… ! Écarte-toi !",
     tip_ozias_orb: "L'orbe du calice peut être renvoyé : pare-le à son arrivée.",
+    tip_aldric_judgement: "Le Jugement du Roi tue en un coup : saute par-dessus la vague pourpre ou esquive à travers !",
+    tip_seraphine_wings: "Un mur de plumes de lumière arrive : glisse-toi dans l'ouverture quand il passe, ou traverse-le en esquivant.",
   });
 })(window.VS);

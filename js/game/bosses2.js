@@ -19,6 +19,19 @@
     e.colXs = a.t < warn ? xs : null; e.colWarnCol = opts.warnCol;
   }
 
+  // AURÉOLA: um círculo de luz desenha-se à volta de um ponto e, ao fechar-se, fere quem estiver dentro — sai dele
+  function haloCast(e, xs, y, opts) { e.halos = xs.map((x) => ({ x, y, r: opts.r || 46, t: 0, warn: opts.warn || 0.9, dmg: opts.dmg || 20, id: VS.Entity.newAttackId(), col: opts.col || '#ffe8a0' })); }
+  function haloTick(e, g, dt) {
+    if (!e.halos) return;
+    for (const h of e.halos) {
+      h.t += dt;
+      if (h.t >= h.warn && !h.fired) { h.fired = true; A.sfx('light'); G.flash('#fff6e0', 0.12); VS.FX.flare(h.x, h.y, h.r * 1.4, [255, 240, 200], 0.35); }
+      if (h.fired && h.t < h.warn + 0.22) { const r = h.r * 0.86; e.attackHBs.push({ x: h.x - r, y: h.y - r, w: r * 2, h: r * 2, dmg: h.dmg, id: h.id, unblockable: true, parryable: false, src: { cx: h.x } }); }
+      else if (!h.fired && Math.random() < 0.5) { const a = Math.random() * U.TAU; G.emit({ x: h.x + Math.cos(a) * h.r, y: h.y + Math.sin(a) * h.r, vx: -Math.cos(a) * 30, vy: -Math.sin(a) * 30, life: 0.4, size: 1.2, color: h.col, add: true, shrink: true, layer: 2 }); }
+    }
+    e.halos = e.halos.filter((h) => h.t < h.warn + 0.4); if (!e.halos.length) e.halos = null;
+  }
+
   // ======================================================================
   // MESTRA HILDE, A FERREIRA
   // ======================================================================
@@ -29,7 +42,15 @@
     attacks: {
       hammer: { wind: 0.7, act: 0.14, rec: 0.7, dmg: 24, tell: 'white', sfx: 'swing_heavy', hb: (e) => front(e, 12, 0, 44, 58), onAct(e, g) { G.addShake(0.45); A.sfx('crush'); VS.FX.impact(e.cx + e.facing * 40, e.bottom - 2, 'metal', e.facing, 1.3); firePool(g, e.cx + e.facing * 40, e.arena.floor, 40, 3.5); hildeHeat(e); } },
       sweep: { wind: 0.55, act: 0.2, rec: 0.55, dmg: 20, tell: 'white', sfx: 'swing_heavy', hb: (e) => front(e, -14, 0, 72, 32), lunge: 80, onAct(e) { hildeHeat(e); } },
-      ingots: { wind: 0.6, act: 0.12, rec: 0.6, tell: null, sfx: 'swing', onAct(e, g) { const p = g.player; const n = e.phase ? 4 : 3; const o = { x: e.cx + e.facing * 22, y: e.bottom - 70 }; for (let i = 0; i < n; i++) { const tx = p.cx + (i - (n - 1) / 2) * 50; g.spawn(P({ x: o.x, y: o.y, vx: (tx - o.x) / 1.0, vy: -300, g: 840, w: 12, h: 7, dmg: 14, kind: 'ingot', color: '#ff8030', life: 3, spin: 8, reflectable: false, onHitWall(g2) { firePool(g2, this.cx, this.cy + 4, 24, 2); } })); } G.burst(o.x, o.y, 14, { color: '#ffb040', speed: 160, life: 0.4, size: 1.6, add: true }); } },
+      // TENAZ: lança a tenaz em brasa presa a uma corrente, à altura da cabeça da protagonista; se a apanha, puxa-a para
+      // junto dela e segue-se a martelada. Salta-lhe por cima, agacha-te, ou apara-a (branco) para a fazer ressaltar.
+      ingots: { wind: 0.55, act: 0.12, rec: 0.75, tell: 'white', sfx: 'whip', onAct(e, g) {
+        const h = (VS.EnemyRender.point(e, e._f, 'handF')) || { x: e.cx + e.facing * 20, y: e.bottom - 40 }, dir = e.facing, owner = e;
+        const tg = P({ x: h.x - 6, y: e.bottom - 30, vx: dir * 430, w: 12, h: 10, dmg: 10, kind: 'tongs', color: '#ff8030', life: 1.6, solid: true, reflectable: false, persist: false, light: false, tongs: true, owner,
+          update2(dt) { this.age = (this.age || 0) + dt; if (this.age > 0.42 && !this.back) { this.back = true; this.vx = -this.vx * 1.15; } if (this.back && (this.cx - owner.cx) * Math.sign(this.vx) > -10) this.remove = true; },
+          onHitPlayer(p, gm) { p.vx = -dir * 520; p.vy = -150; owner.pullHammer = 0.35; A.sfx('hit_metal'); VS.FX.sparks(p.cx, p.cy, 10, -dir, { speed: 200 }); } });
+        g.spawn(tg); e.tongsProj = tg;
+      } },
       anvil: { wind: 0.4, act: 1.2, rec: 0.5, tell: null, sfx: 'chime', onAct(e, g) { e.anvilX = g.player.cx; },
         during(e, g) { const a = e.atk; if (a.t < 0.8) { e.anvilShadow = e.anvilX; } else if (!a.dropped) { a.dropped = true; e.anvilShadow = null; g.spawn(P({ x: e.anvilX, y: 10, vx: 0, vy: 500, g: 1400, w: 30, h: 20, dmg: 30, kind: 'ingot', color: '#ff7020', life: 2, parryable: false, reflectable: false, onHitWall(g2) { G.addShake(0.5); A.sfx('crush'); G.burst(this.cx, this.cy, 20, { color: '#ffb040', speed: 160, life: 0.5, size: 2, add: true }); } })); } } },
       eruption: { wind: 0.5, act: 2.4, rec: 0.7, tell: null, sfx: 'roar', onAct(e, g) { e.eruptX = 40; e.eruptDir = g.player.cx > g.room.pw / 2 ? 1 : -1; if (e.eruptDir < 0) e.eruptX = g.room.pw - 40; G.addShake(0.4); A.sfx('crush'); hildeHeat(e); },
@@ -41,6 +62,7 @@
     think(e, dt, g) {
       if (e.atk) return;
       e.face(); const d = Math.abs(e.dx());
+      if (e.pullHammer > 0) { e.pullHammer -= dt; if (e.pullHammer <= 0) { e.face(); e.attack('hammer'); } return; }
       if (e.mustCool) { e.attack('overheat'); return; }
       if (e.cool > 0) { e.walk(d > 80 ? e.facing : d < 40 ? -e.facing : 0, 50, dt); return; }
       const r = Math.random();
@@ -56,6 +78,13 @@
     smearCol: [255, 170, 90],
     // a cabeça do malho aquece a cada golpe: laranja → amarelo → branco (sinal do ponto fraco)
     drawOver(ctx, e) {
+      const tg = e.tongsProj;
+      if (tg && !tg.remove) {
+        const h = VS.EnemyRender.point(e, e._f, 'handF') || { x: e.cx + e.facing * 20, y: e.bottom - 40 }, n = 14, sag = Math.min(10, Math.abs(tg.cx - h.x) * 0.06);
+        ctx.save(); ctx.lineWidth = 1.3; ctx.strokeStyle = '#2a2420';
+        for (let i = 0; i < n; i++) { const k = (i + 0.5) / n, x = U.lerp(h.x, tg.cx, k), y = U.lerp(h.y, tg.cy, k) + Math.sin(k * Math.PI) * sag; ctx.beginPath(); ctx.ellipse(x, y, 1.8, 1.1, i % 2 ? 0 : Math.PI / 2, 0, U.TAU); ctx.stroke(); }
+        ctx.restore();
+      } else if (tg) e.tongsProj = null;
       const L = e._f && VS.EnemyRender.point(e, e._f, 'light'); if (!L) return;
       const hot = e.atk && e.atk.name === 'overheat', k = hot ? 1.2 : (e.heat || 0) / HEAT_MAX; if (k <= 0.05) return;
       const p = 0.85 + 0.15 * Math.sin((e.t || 0) * (8 + k * 10)), r = 10 + k * 8;
@@ -227,8 +256,11 @@
     cfg: { w: 30, h: 64, hp: 900, music: 'b_ozias', flying: true, phases: [0.6, 0.3], introTime: 1.8, heavy: true },
     sheetAnchor: 'center',
     attacks: {
-      pillars: { wind: 0.3, act: 1.3, rec: 0.4, tell: null, sfx: 'chime', onAct(e, g) { const p = g.player; const n = 3 + e.phase; e.plX = []; for (let i = 0; i < n; i++) e.plX.push(U.clamp(p.cx + (i - (n - 1) / 2) * 70, 30, g.room.pw - 30)); }, during(e, g) { columns(e, g, e.plX, { warn: 0.75, h: 300, w: 13, dmg: 20, sfx: 'light', warnCol: '#ffe8a0', cols: ['#fff8e0', '#ffe0a0'] }); } },
-      shards: { wind: 0.5, act: 0.1, rec: 0.7, tell: null, sfx: 'glass', onAct(e, g) { const n = 7 + e.phase * 3; for (let i = 0; i < n; i++) g.spawn(P({ x: U.rand(30, g.room.pw - 30), y: U.rand(-60, 0), vx: U.rand(-20, 20), vy: U.rand(160, 230), w: 7, h: 7, dmg: 11, kind: 'glass', color: U.pick(['#ff6080', '#6080ff', '#ffd060', '#a060ff']), life: 4, solid: true })); } },
+      // AURÉOLAS: desenha um círculo de luz à volta da protagonista (e, nas fases seguintes, outro onde ela fugiria); ao fechar-se, queima quem lá estiver
+      pillars: { wind: 0.3, act: 1.35, rec: 0.4, tell: null, sfx: 'chime', onAct(e, g) { const p = g.player, d = p.vx ? Math.sign(p.vx) : (p.cx < g.room.pw / 2 ? 1 : -1); const xs = [p.cx]; if (e.phase >= 1) xs.push(U.clamp(p.cx + d * 104, 40, g.room.pw - 40)); if (e.phase >= 2) xs.push(U.clamp(p.cx - d * 104, 40, g.room.pw - 40)); haloCast(e, xs, p.cy - 4, { r: 46, warn: 0.85, dmg: 20 }); },
+        during(e, g, dt) { haloTick(e, g, dt); }, onEnd(e) { e.halos = null; } },
+      // vitral estilhaçado: um leque de cacos coloridos apontado à protagonista
+      shards: { wind: 0.5, act: 0.1, rec: 0.7, tell: null, sfx: 'glass', onAct(e, g) { const p = g.player, n = 5 + e.phase * 2, a0 = Math.atan2(p.cy - e.cy, p.cx - e.cx), sp = 0.16; for (let i = 0; i < n; i++) { const a = a0 + (i - (n - 1) / 2) * sp; g.spawn(P({ x: e.cx, y: e.cy, vx: Math.cos(a) * 215, vy: Math.sin(a) * 215, w: 7, h: 7, dmg: 11, kind: 'glass', color: U.pick(['#ff6080', '#6080ff', '#ffd060', '#a060ff']), life: 4, solid: true })); } G.burst(e.cx, e.cy, 16, { color: '#c0d0ff', speed: 140, life: 0.4, size: 1.4, add: true }); } },
       orb: { wind: 0.7, act: 0.1, rec: 0.6, tell: 'white', sfx: 'light', onAct(e, g) { if (!e.orbHint) { e.orbHint = true; VS.UI.toast(VS.t('tip_ozias_orb'), 5); } const p = g.player; const a = Math.atan2(p.cy - e.cy, p.cx - e.cx); g.spawn(P({ x: e.cx, y: e.cy, vx: Math.cos(a) * 140, vy: Math.sin(a) * 140, w: 18, h: 18, dmg: 18, kind: 'holy', color: '#ffe8a0', life: 6, solid: false, homing: 0.9, reflectable: true, isChaliceOrb: true })); } },
       sweep: { wind: 0.9, act: 0.9, rec: 0.6, tell: null, sfx: 'light', onWind(e, g) { e.sweepLow = Math.random() < 0.5; VS.UI.toast(VS.t(e.sweepLow ? 'tip_jump' : 'tip_crouch'), 1.4); }, during(e, g) { const a = e.atk; const k = a.t / 0.9; const fromLeft = e.cx > g.room.pw / 2; const x = fromLeft ? k * g.room.pw : g.room.pw * (1 - k); const y = e.sweepLow ? e.arena.floor - 14 : e.arena.floor - 34; e.sweepLine = { y, x }; e.attackHBs.push({ x: x - 30, y: y - 6, w: 60, h: 12, dmg: 20, id: a.id, unblockable: true, parryable: false, src: { cx: x } }); }, onEnd(e) { e.sweepLine = null; } },
       blink: { wind: 0.3, act: 0.3, rec: 0.2, tell: null, sfx: 'light', onAct(e, g) { G.burst(e.cx, e.cy, 20, { color: '#fff0c0', speed: 120, life: 0.5, size: 1.6, add: true }); const spots = [g.room.pw * 0.2, g.room.pw * 0.5, g.room.pw * 0.8]; let best = spots[0], bd = 0; spots.forEach((s) => { const d = Math.abs(s - g.player.cx); if (d > bd) { bd = d; best = s; } }); e.x = best - e.w / 2; e.y = e.arena.floor - 120; G.burst(e.cx, e.cy, 20, { color: '#fff0c0', speed: 120, life: 0.5, size: 1.6, add: true }); } },
@@ -258,8 +290,33 @@
   // ======================================================================
   const ECHO_COL = { caedmon: '#a0c8ff', hilde: '#ff8030', elowen: '#9fffd0', corvin: '#ffe0a0', ozias: '#fff0c0' };
   const tipOf = (e) => (e._f && VS.EnemyRender.point(e, e._f, 'tip')) || { x: e.cx + e.facing * 50, y: e.bottom - 4 };
-  function aldricShock(e, g, x, n) {
-    for (const s of [-1, 1]) g.spawn(P({ x: x - 10, y: e.arena.floor - 16, vx: s * (e.phase ? 250 : 220), w: 20, h: 16, dmg: e.phase ? 16 : 14, kind: e.phase ? 'fire' : 'shockwave', color: e.phase ? '#ff5010' : '#c0a080', life: n || 1.5, solid: false, parryable: false, reflectable: false }));
+  // as ondas do Juízo: uma parede baixa de chama carmesim que corre rente ao chão, para os dois lados, até às paredes da arena
+  // (fase final: cada onda bate na parede e volta para trás, mais devagar — vê-se a chegar de longe)
+  // (o Projectile guarda x/y tal como os recebe: aqui são o canto superior esquerdo da parede de chama)
+  function aldricJudgeWave(e, g, x, back) {
+    const x0 = e.arena.x0, x1 = e.arena.x1;
+    for (const s of [-1, 1]) {
+      g.spawn(P({ x: x + s * 14 - 11, y: e.arena.floor - 34, vx: s * 500, w: 22, h: 34, dmg: 9999, kind: 'judgement', color: '#ff2030', life: 3, solid: false, light: false,
+        parryable: false, reflectable: false, unblockable: true, persist: true, judge: true, back: back || 0,
+        update2(dt, gm) {
+          if ((this.cx < x0 + 6 && this.vx < 0) || (this.cx > x1 - 6 && this.vx > 0)) {
+            VS.FX.impact(U.clamp(this.cx, x0, x1), this.bottom - 2, 'stone', -Math.sign(this.vx), 1.2);
+            if (this.back > 0) { this.back--; this.vx = -Math.sign(this.vx) * 400; this.id = VS.Entity.newAttackId(); this.life = 3.5; G.addShake(0.35); VS.Audio.sfx('judgement_slam', { vol: 0.45 }); VS.FX.flare(this.cx, this.cy, 50, [255, 30, 40], 0.4); }
+            else { this.remove = true; return; }
+          }
+          if (Math.random() < 0.9) G.emit({ x: this.x + Math.random() * this.w, y: this.bottom - Math.random() * 8, vx: -this.vx * 0.12 + U.rand(-20, 20), vy: U.rand(-160, -60), life: U.rand(0.3, 0.6), size: U.rand(1, 2.4), color: U.pick(['#ff2030', '#ff6040', '#ffd0c0']), add: true, shrink: true, layer: 2 });
+        },
+        emitLight() { G.light(this.cx, this.bottom - 14, 120, '#ff2030', 0.9, 2); } }));
+    }
+  }
+
+  // o montante cravado rebenta em chamas no ponto do impacto (curto alcance) e deixa o chão a arder
+  function aldricBurst(e, g, x) {
+    const id = VS.Entity.newAttackId(); let t = 0;
+    e.burstFx = { x, t: 0 };
+    VS.FX.flare(x, e.arena.floor - 16, 50, [255, 130, 50], 0.4); G.burst(x, e.arena.floor - 6, 26, { color: '#ff7020', speed: 200, angle: -Math.PI / 2, spread: 1.3, life: 0.5, size: 2.2, add: true });
+    g.spawn(P({ x: x - 26, y: e.arena.floor - 54, w: 52, h: 54, dmg: e.phase ? 18 : 15, kind: 'blast', color: '#ff6020', life: 0.22, solid: false, parryable: false, reflectable: false, unblockable: true, persist: true, light: false }));
+    if (e.phase) firePool(g, x, e.arena.floor, 40, 1.8);
   }
   function aldricKnock(e, g) {
     e.atk = null; e.attackHBs = []; e.vx = -e.facing * 140; e.knock = { t: 0, ph: 'fall' };
@@ -276,13 +333,13 @@
       sweep2: { wind: 0.42, act: 0.2, rec: 0.6, dmg: 24, tell: 'white', sfx: 'swing_royal', hb: (e) => front(e, 0, 8, 64, 92), lunge: 120 },
       // golpe de cima (vermelho, com armadura): crava o montante e solta ondas de choque/fogo
       overhead: { wind: 0.95, act: 0.16, rec: 0.85, dmg: 32, tell: 'red', sfx: 'swing_heavy', armor: true, hb: (e) => front(e, 6, 0, 58, 100),
-        onAct(e, g) { G.addShake(0.7); A.sfx('crush'); const x = e.cx + e.facing * 56; VS.FX.impact(x, e.arena.floor - 2, 'stone', e.facing, 1.6); aldricShock(e, g, x); } },
+        onAct(e, g) { G.addShake(0.7); A.sfx('crush'); const x = e.cx + e.facing * 56; VS.FX.impact(x, e.arena.floor - 2, 'stone', e.facing, 1.6); aldricBurst(e, g, x); } },
       // agarrar (vermelho): investe com a manopla aberta
       grab: { wind: 0.6, act: 0.25, rec: 0.8, dmg: 34, tell: 'red', hb: (e) => front(e, 0, 26, 50, 40), lunge: 250, sfx: 'whip' },
       // salto (vermelho): cai a cravar o montante
       leap: { wind: 0.55, act: 1.0, rec: 0.7, dmg: 28, tell: 'red', sfx: 'wind',
         onAct(e, g) { const p = g.player; e.vx = (p.cx - e.cx) / 0.8; e.vy = -580; },
-        during(e, g) { e.attackHBs.push({ x: e.x - 6, y: e.y, w: e.w + 12, h: e.h, dmg: 28, id: e.atk.id, unblockable: true, parryable: false, src: e }); if (e.onGround && e.atk.t > 0.25) { e.atk.t = 99; e.vx = 0; G.addShake(0.7); A.sfx('crush'); const x = e.cx + e.facing * 56; VS.FX.impact(x, e.arena.floor - 2, 'stone', e.facing, 1.6); aldricShock(e, g, x, 1.2); } } },
+        during(e, g) { e.attackHBs.push({ x: e.x - 6, y: e.y, w: e.w + 12, h: e.h, dmg: 28, id: e.atk.id, unblockable: true, parryable: false, src: e }); if (e.onGround && e.atk.t > 0.25) { e.atk.t = 99; e.vx = 0; G.addShake(0.7); A.sfx('crush'); const x = e.cx + e.facing * 56; VS.FX.impact(x, e.arena.floor - 2, 'stone', e.facing, 1.6); firePool(g, e.cx - 46, e.arena.floor, 34, 2.2); firePool(g, e.cx + 46, e.arena.floor, 34, 2.2); } } },
       // INVESTIDA (vermelho): prepara-se (o montante raspa o chão, faíscas), acelera e não sabe parar
       charge: { wind: 1.05, act: 2.6, rec: 0.7, dmg: 30, tell: 'red', sfx: 'roar',
         onWind(e) { e.chargeHit = false; },
@@ -301,14 +358,32 @@
           if (e.chargeHit) { a.hitT = (a.hitT || 0) + dt; if (a.hitT > 0.14) a.t = a.s.act; return; }
           if ((e.cx - e.chargeTarget) * e.facing > 0) a.t = a.s.act;
         } },
+      // O JUÍZO DO REI (fase 1+): ergue o montante e reúne a chama roubada (1,7 s, com o ecrã a tingir-se de carmesim);
+      // ao cravá-lo, ondas carmesim correm rente ao chão e MATAM DE UM GOLPE. Não se aparam nem se bloqueiam:
+      // salta por cima delas ou esquiva-te através delas. Na última fase as ondas batem nas paredes e voltam para trás.
+      judgement: { wind: 1.7, act: 1.0, rec: 1.0, tell: 'red', sfx: 'judgement_slam', armor: true,
+        onWind(e, g) { A.sfx('judgement'); e.judgeCd = e.phase >= 2 ? 13 : 17; if (!e.judgeTip) { e.judgeTip = true; VS.UI.toast(VS.t('tip_aldric_judgement'), 4.5); } },
+        windTick(e, g, dt) {
+          const k = Math.min(1, e.atk.t / e.atk.s.wind), T2 = tipOf(e); G.dread = Math.max(G.dread, 0.25 + 0.75 * k);
+          for (let i = 0; i < 3; i++) { const an = Math.random() * U.TAU, rr = U.rand(50, 110) * (1.1 - k * 0.5), life = U.rand(0.35, 0.55); G.emit({ x: T2.x + Math.cos(an) * rr, y: T2.y + Math.sin(an) * rr, vx: -Math.cos(an) * rr / life, vy: -Math.sin(an) * rr / life, life, size: U.rand(0.8, 1.8), color: U.pick(['#ff2030', '#ff5040', '#ffc0b0']), add: true, shrink: true, layer: 2 }); }
+          if (k > 0.5 && Math.random() < 0.25) G.addShake(0.05);
+        },
+        onAct(e, g) {
+          G.addShake(1); G.flash('#ff1020', 0.45); G.dread = 1;
+          const x = e.cx + e.facing * 30; VS.FX.impact(x, e.arena.floor - 2, 'stone', e.facing, 2.2); VS.FX.flare(x, e.arena.floor - 10, 90, [255, 30, 40], 0.6);
+          aldricJudgeWave(e, g, x, e.phase >= 2 ? 1 : 0);
+        } },
       // ecos dos guardiões caídos (fase 2+): ergue a mão livre; a sombra do guardião surge atrás dele
       echo_caedmon: { wind: 0.7, act: 0.22, rec: 0.7, dmg: 24, tell: 'white', hb: (e) => front(e, 6, 36, 80, 20), lunge: 440, onWind(e) { e.echo = 'caedmon'; }, onEnd(e) { e.echo = null; } },
-      echo_hilde: { wind: 0.6, act: 0.1, rec: 0.6, tell: null, sfx: 'swing', onWind(e) { e.echo = 'hilde'; }, onAct(e, g) { const p = g.player; const h = VS.EnemyRender.point(e, e._f, 'hand') || { x: e.cx, y: e.y }; for (let i = 0; i < 4; i++) { const tx = p.cx + (i - 1.5) * 55; g.spawn(P({ x: h.x, y: h.y, vx: (tx - h.x), vy: -440, g: 880, w: 12, h: 7, dmg: 15, kind: 'ingot', color: '#ff8030', life: 3, spin: 8, reflectable: false })); } }, onEnd(e) { e.echo = null; } },
+      echo_hilde: { wind: 0.6, act: 0.9, rec: 0.5, tell: null, sfx: 'chime', onWind(e) { e.echo = 'hilde'; }, onAct(e, g) { e.anvilX = g.player.cx; },
+        during(e, g) { const a = e.atk; if (a.t < 0.7) e.anvilShadow = e.anvilX; else if (!a.dropped) { a.dropped = true; e.anvilShadow = null; g.spawn(P({ x: e.anvilX - 15, y: G.cam.y - 30, vx: 0, vy: 520, g: 1400, w: 30, h: 20, dmg: 26, kind: 'ingot', color: '#ff7020', life: 2, parryable: false, reflectable: false, onHitWall(g2) { G.addShake(0.5); A.sfx('crush'); firePool(g2, this.cx, e.arena.floor, 40, 2); } })); } },
+        onEnd(e) { e.echo = null; e.anvilShadow = null; } },
       echo_elowen: { wind: 0.5, act: 1.1, rec: 0.5, tell: null, sfx: 'whip', onWind(e) { e.echo = 'elowen'; }, onAct(e, g) { const p = g.player; e.thX = [p.cx - 50, p.cx, p.cx + 50]; }, during(e, g) { columns(e, g, e.thX, { warn: 0.65, h: 60, w: 14, dmg: 18, sfx: 'whip', warnCol: '#8aa050', cols: ['#4a5a2a', '#6a7a3a'] }); }, onEnd(e) { e.echo = null; } },
       echo_corvin: { wind: 0.6, act: 0.1, rec: 0.6, tell: null, sfx: 'note', onWind(e) { e.echo = 'corvin'; }, onAct(e, g) { const h = VS.EnemyRender.point(e, e._f, 'hand') || { x: e.cx, y: e.cy - 20 }; for (let i = 0; i < 10; i++) { const a = i / 10 * U.TAU; g.spawn(P({ x: h.x, y: h.y, vx: Math.cos(a) * 150, vy: Math.sin(a) * 150, w: 10, h: 10, dmg: 13, kind: 'note', color: '#ffd070', life: 4, solid: false })); } }, onEnd(e) { e.echo = null; } },
-      echo_ozias: { wind: 0.5, act: 1.2, rec: 0.5, tell: null, sfx: 'chime', onWind(e) { e.echo = 'ozias'; }, onAct(e, g) { const p = g.player; e.plX = [p.cx - 80, p.cx, p.cx + 80, p.cx + 160 * (Math.random() < 0.5 ? -1 : 1)]; }, during(e, g) { columns(e, g, e.plX, { warn: 0.7, h: 300, w: 13, dmg: 20, sfx: 'light', warnCol: '#ffe8a0', cols: ['#fff8e0', '#ffe0a0'] }); }, onEnd(e) { e.echo = null; } },
+      echo_ozias: { wind: 0.5, act: 1.2, rec: 0.5, tell: null, sfx: 'chime', onWind(e) { e.echo = 'ozias'; }, onAct(e, g) { const p = g.player; haloCast(e, [p.cx, U.clamp(p.cx + (Math.random() < 0.5 ? -1 : 1) * 100, 40, g.room.pw - 40)], p.cy - 4, { r: 44, warn: 0.8, dmg: 20 }); }, during(e, g, dt) { haloTick(e, g, dt); }, onEnd(e) { e.echo = null; e.halos = null; } },
     },
     think(e, dt, g) {
+      e.judgeCd = Math.max(0, (e.judgeCd === undefined ? 4 : e.judgeCd) - dt);
       // derrubado: cai, fica estendido (exposto) e levanta-se apoiado no montante
       const kn = e.knock;
       if (kn) {
@@ -327,6 +402,7 @@
       e.face(); const d = Math.abs(e.dx());
       if (e.cool > 0) { e.walk(d > 100 ? e.facing : d < 50 ? -e.facing : 0, e.phase >= 2 ? 80 : 55, dt); return; }
       const r = Math.random();
+      if (e.phase >= 1 && e.judgeCd <= 0 && Math.random() < 0.5) { e.attack('judgement'); return; }
       if (e.phase >= 1 && r < 0.3) { e.attack(U.pick(['echo_caedmon', 'echo_hilde', 'echo_elowen', 'echo_corvin', 'echo_ozias'])); return; }
       // a investida aparece mais quando a protagonista se afasta (ou está encostada a uma parede)
       if (d > 150 && r < (e.phase ? 0.6 : 0.45)) { e.attack('charge'); return; }
@@ -344,10 +420,23 @@
       const kn = e.knock;
       if (kn) return kn.ph === 'fall' ? { anim: 'knock_fall', idx: Math.min(6, kn.t / 0.7 * 7) } : kn.ph === 'down' ? { anim: 'knock_down' } : { anim: 'knock_getup', idx: Math.min(7, kn.t / 0.9 * 8) };
       const a = e.atk; if (!a) return null;
+      if (a.name === 'judgement') { const tr = a.phase === 'wind' ? Math.min(1, a.t / 0.75) : Math.min(1, a.t / (a.phase === 'act' ? 0.16 : a.s.rec)); return { anim: 'atk_overhead', phase: a.phase === 'act' && a.t > 0.16 ? 'rec' : a.phase, k: a.phase === 'act' && a.t > 0.16 ? 0 : tr }; }
       if (a.name === 'charge' && a.phase === 'act') { const st = sh.meta.anims.charge_run.stride || 38; return { anim: 'charge_run', idx: ((e._r.dist / st) % 1) * 6 }; }
       if (a.name.startsWith('echo_') && a.name !== 'echo_caedmon') { const d = a.phase === 'wind' ? a.s.wind : a.phase === 'act' ? a.s.act : a.s.rec; return { anim: 'atk_echo', phase: a.phase, k: a.t / d }; }
       if (a.name === 'echo_caedmon') { const d = a.phase === 'wind' ? a.s.wind : a.phase === 'act' ? a.s.act : a.s.rec; return { anim: 'atk_thrust', phase: a.phase, k: a.t / d }; }
       return null;
+    },
+    drawFront(ctx, e) {
+      const a = e.atk; if (!a || a.name !== 'judgement' || a.phase !== 'wind') return;
+      const k = Math.min(1, a.t / a.s.wind), T2 = tipOf(e), fl = 0.85 + 0.15 * Math.sin(e.t * 40);
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      const r = 10 + 26 * k, gr = ctx.createRadialGradient(T2.x, T2.y, 0, T2.x, T2.y, r);
+      gr.addColorStop(0, `rgba(255,240,235,${0.95 * fl})`); gr.addColorStop(0.25, `rgba(255,60,60,${0.75 * fl})`); gr.addColorStop(1, 'rgba(160,0,10,0)');
+      ctx.fillStyle = gr; ctx.fillRect(T2.x - r, T2.y - r, r * 2, r * 2);
+      // o chão por onde as ondas vão correr: brasa que se acende a partir dos pés do rei
+      const fy = e.arena.floor, reach = (e.arena.x1 - e.arena.x0) * Math.min(1, k * 1.3);
+      for (const s of [-1, 1]) { const lg = ctx.createLinearGradient(e.cx, 0, e.cx + s * reach, 0); lg.addColorStop(0, `rgba(255,40,40,${0.55 * k})`); lg.addColorStop(1, 'rgba(255,0,0,0)'); ctx.fillStyle = lg; ctx.fillRect(s > 0 ? e.cx : e.cx - reach, fy - 3, reach, 3); }
+      ctx.restore();
     },
     // a sombra do guardião evocado: a silhueta do próprio rei tingida com a cor do eco, atrás dele
     drawBehind(ctx, e) {
@@ -381,7 +470,12 @@
       burst: { wind: 0.8, act: 0.1, rec: 0.7, tell: null, sfx: 'light', onAct(e, g) { const n = 10 + e.phase * 4; const off = Math.random(); for (let i = 0; i < n; i++) { const a = (i + off) / n * U.TAU; g.spawn(P({ x: e.cx, y: e.cy, vx: Math.cos(a) * 120, vy: Math.sin(a) * 120, w: 12, h: 12, dmg: 14, kind: 'light', color: '#fff0c0', life: 5, solid: false, reflectable: true, isLight: true })); } e.count++; } },
       lance: { wind: 0.6, act: 0.6, rec: 0.5, tell: 'white', sfx: 'light', during(e, g) { const a = e.atk; const k = Math.floor(a.t / 0.2); if (k !== a.k && k < 3) { a.k = k; const p = g.player; const ang = Math.atan2(p.cy - e.cy, p.cx - e.cx); g.spawn(P({ x: e.cx, y: e.cy, vx: Math.cos(ang) * 230, vy: Math.sin(ang) * 230, w: 14, h: 14, dmg: 16, kind: 'light', color: '#fff8e0', life: 4, solid: false, reflectable: true, isLight: true })); A.sfx('chime'); } }, onEnd(e) { e.count++; } },
       embrace: { wind: 0.8, act: 0.9, rec: 0.6, tell: 'red', sfx: 'wind', onAct(e, g) { const p = g.player; const a = Math.atan2(p.cy - e.cy, p.cx - e.cx); e.vx = Math.cos(a) * 360; e.vy = Math.sin(a) * 360; }, during(e) { e.attackHBs.push({ x: e.x, y: e.y, w: e.w, h: e.h, dmg: 26, id: e.atk.id, unblockable: true, parryable: false, src: e }); }, onEnd(e) { e.vx *= 0.2; e.vy *= 0.2; e.count++; } },
-      beams: { wind: 0.3, act: 1.3, rec: 0.5, tell: null, sfx: 'chime', onAct(e, g) { const p = g.player; e.plX = [p.cx, p.cx - 90, p.cx + 90]; }, during(e, g) { columns(e, g, e.plX, { warn: 0.8, h: 300, w: 12, dmg: 18, sfx: 'light', warnCol: '#ffffff', cols: ['#ffffff', '#fff0c0'] }); }, onEnd(e) { e.count++; } },
+      // ASAS: bate as asas e solta uma parede de penas de luz que atravessa a sala com uma abertura (no chão ou à
+      // altura de um salto) — mete-te na abertura quando a parede passar, ou atravessa-a com a esquiva
+      beams: { wind: 0.6, act: 0.1, rec: 0.6, tell: null, sfx: 'wind', onAct(e, g) {
+        const W = g.room.pw, fl = e.arena.floor, fromL = g.player.cx > W / 2, low = Math.random() < 0.5, gap0 = low ? fl - 50 : fl - 104, gap1 = low ? fl : fl - 50;
+        for (let y = fl - 6; y > fl - 190; y -= 13) { if (y > gap0 - 4 && y < gap1 + 4) continue; g.spawn(P({ x: fromL ? 18 : W - 28, y: y - 5, vx: (fromL ? 1 : -1) * 165, w: 10, h: 10, dmg: 16, kind: 'plume', color: '#fff4d8', life: W / 165 + 0.4, solid: false, reflectable: false, parryable: false, light: false })); }
+        A.sfx('choir_hit', { vol: 0.5 }); e.count++; if (!e.wingHint) { e.wingHint = true; VS.UI.toast(VS.t('tip_seraphine_wings'), 4); } } },
     },
     sheetAnchor: 'center',
     // apagada: animação própria (encolhida, cinzenta) enquanto dura a janela para lhe bater

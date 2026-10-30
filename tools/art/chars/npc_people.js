@@ -52,6 +52,31 @@
       const f = K.blob(c, pts, m, { depth: S * 0.5, hlw: S * 0.28, light: [0.6, -1] });
       return f; // o chamador faz c.restore()
     }
+    // olho de perfil (a olhar para +x): branco, íris, pálpebra superior marcada, pestanas e um brilho
+    function eyeP(c, x, y, o = {}) {
+      const w = o.w || 0.62, h = o.h || 0.34, iris = o.iris || '#2a1c16', look = o.look || 0;
+      const al = A.path((q) => { q.M(x - w * 0.55, y + 0.02); q.Q(x, y - h * 1.15, x + w * 0.55, y - 0.04); q.Q(x + w * 0.1, y + h * 0.75, x - w * 0.55, y + 0.02); q.Z(); }, S);
+      c.fillStyle = o.white || '#efe6da'; c.fill(al);
+      c.save(); c.clip(al);
+      c.fillStyle = iris; c.beginPath(); c.arc((x + w * 0.18 + look * 0.08) * S, (y - h * 0.05) * S, h * 0.78 * S, 0, A.TAU); c.fill();
+      c.fillStyle = '#0a0606'; c.beginPath(); c.arc((x + w * 0.22 + look * 0.08) * S, (y - h * 0.05) * S, h * 0.36 * S, 0, A.TAU); c.fill();
+      c.fillStyle = 'rgba(0,0,0,0.35)'; c.fillRect((x - w) * S, (y - h * 1.2) * S, w * 2 * S, h * 0.6 * S);
+      c.restore();
+      K.dot(c, x + w * 0.3 + look * 0.08, y - h * 0.32, h * 0.2, 'rgba(255,255,255,0.9)');
+      K.line(c, [[x - w * 0.6, y + 0.04], [x, y - h * 1.12], [x + w * 0.62, y - 0.06]], o.lid || 0.14, o.lidCol || '#1c1210');
+      if (o.lash) K.line(c, [[x + w * 0.5, y - h * 0.4], [x + w * 0.85, y - h * 0.75]], 0.08, '#1c1210');
+      if (o.bag) K.line(c, [[x - w * 0.3, y + h * 0.75], [x + w * 0.35, y + h * 0.7]], 0.08, A.rgba('#5a3a3a', 0.6));
+    }
+    function ear(c, x, y, m) {
+      K.blob(c, [[x - 0.35, y - 0.7], [x + 0.25, y - 0.75], [x + 0.45, y - 0.1], [x + 0.2, y + 0.65], [x - 0.3, y + 0.55]], m, { depth: S * 0.15 });
+      K.line(c, [[x - 0.05, y - 0.4], [x + 0.15, y], [x - 0.05, y + 0.35]], 0.08, m.shadow);
+    }
+    // sombra por baixo do maxilar e na face (dá volume ao perfil)
+    function jawShade(c, f, x, y, r, a = 0.35) {
+      c.save(); c.clip(f);
+      const g = c.createRadialGradient(x * S, y * S, 0, x * S, y * S, r * S); g.addColorStop(0, A.rgba('#3a2018', a)); g.addColorStop(1, 'rgba(58,32,24,0)');
+      c.fillStyle = g; c.fillRect((x - r) * S, (y - r) * S, r * 2 * S, r * 2 * S); c.restore();
+    }
     // vela de cera (apagada ou acesa) na mão
     function candle(c, at, len, lit) {
       const [x, y] = at;
@@ -88,6 +113,13 @@
         const body = H.torsoPath(W, [['spine', 0.15, 2.6, 2.6], ['spine', 0.7, 2.2, 2.3], ['chest', 0.5, 2.4, 2.5], ['chest', 1, 1.8, 2.0]], S);
         K.paint(c, body, M.dress, { depth: S * 0.7, hlw: S * 0.3 });
         K.line(c, [pt(W.spine, 0.25, -2.5), pt(W.spine, 0.25, 2.6)], 0.4, M.shawl.base); // faixa à cintura
+        // bordado dourado: barra na bainha e pequenas chamas ao longo dela
+        c.save(); c.clip(sk);
+        K.line(c, [[px - 4.6 + sw * 0.6, -0.9], [px + 0.8, -0.5], [px + 5.4 + sw * 0.4, -1.0]], 0.42, M.brass.shadow);
+        K.line(c, [[px - 4.6 + sw * 0.6, -1.0], [px + 0.8, -0.6], [px + 5.4 + sw * 0.4, -1.1]], 0.14, M.brass.light);
+        for (let i = 0; i < 5; i++) { const fx = px - 3.6 + i * 2.1 + sw * 0.5; K.blob(c, [[fx - 0.25, -1.3], [fx, -2.1], [fx + 0.25, -1.3]], M.brass, { depth: 0 }); }
+        c.restore();
+        K.line(c, [pt(W.chest, 1.0, -1.6), pt(W.chest, 0.82, 0.4), pt(W.chest, 1.0, 1.9)], 0.18, M.brass.base); // decote
       }
       function shawl(c, W, x) {
         const C = W.chest, sw = x.sway || 0;
@@ -107,17 +139,22 @@
         K.paint(c, back, M.hair, { depth: S * 0.35 });
         const f = K.blob(c, [[-1.4, 0.8], [-1.6, -2.4], [-0.6, -4.2], [1.2, -4.4], [2.3, -3.5], [2.5, -2.3], [3.0, -1.4], [2.5, -1.0], [2.5, -0.2], [2.0, 0.8], [0.6, 1.4]], M.skin, { depth: S * 0.5, hlw: S * 0.28, light: [0.6, -1] });
         void f;
-        // cabelo por cima: risca ao meio, a cair para trás da orelha
-        K.blob(c, [[-1.8, -0.6], [-1.8, -3.4], [-0.4, -4.8], [1.6, -4.7], [2.5, -3.6], [1.2, -3.8], [0, -3.0], [-0.6, -1.2]], M.hair, { depth: S * 0.3 });
+        jawShade(c, f, 1.0, 1.2, 1.6, 0.3);
+        ear(c, 0.0, -1.6, M.skin);
+        // cabelo por cima: risca ao meio, a cair para trás da orelha, com madeixas claras
+        const hairTop = K.blob(c, [[-1.8, -0.6], [-1.8, -3.4], [-0.4, -4.8], [1.6, -4.7], [2.5, -3.6], [1.2, -3.8], [0, -3.0], [-0.6, -1.2]], M.hair, { depth: S * 0.3 });
+        c.save(); c.clip(hairTop); for (const k of [0, 0.6, 1.2]) K.line(c, [[-1.2 + k, -4.2], [0.2 + k, -4.4], [1.6 + k * 0.3, -4.0]], 0.1, A.rgba(M.hair.light, 0.8)); c.restore();
         // venda de linho sobre os olhos, atada atrás com as pontas soltas (serena, sem sangue nem cicatrizes)
         const band = A.path((q) => { q.M(-1.9, -2.9); q.L(2.6, -3.1); q.Q(2.95, -2.6, 2.8, -2.0); q.L(-1.9, -1.9); q.Z(); }, S);
         K.paint(c, band, M.band, { depth: S * 0.2, hlw: S * 0.12 });
         K.line(c, [[-1.6, -2.4], [2.6, -2.5]], 0.08, A.rgba('#a89c88', 0.7));
         K.tube(c, [[-2.0, -2.4], [-3.0, -1.6 + sw * 0.2], [-3.8 + sw * 0.4, -0.2]], [0.32, 0.26, 0.18], M.band, { depth: S * 0.1, flat: true });
         K.tube(c, [[-2.0, -2.4], [-3.2, -2.2 + sw * 0.2], [-4.2 + sw * 0.4, -1.4]], [0.3, 0.24, 0.16], M.band, { depth: S * 0.1, flat: true });
-        // boca serena
+        // boca serena (lábios suaves) e face corada
         const sm = x.smile || 0;
-        K.line(c, [[1.7, -0.2], [2.3, -0.25 - sm * 0.15]], 0.14, '#8a5a50');
+        K.line(c, [[1.7, -0.2], [2.0, -0.18 - sm * 0.05], [2.3, -0.25 - sm * 0.15]], 0.14, '#8a4a48');
+        K.line(c, [[1.85, 0.05], [2.2, 0.0]], 0.1, A.rgba('#b06a64', 0.5));
+        K.dot(c, 1.5, -1.2, 0.45, A.rgba('#d88a7a', 0.25));
         K.line(c, [[2.7, -1.7], [3.05, -1.45], [2.7, -1.15]], 0.1, M.skin.shadow); // nariz
         c.restore();
         // trança à frente do ombro
@@ -194,8 +231,20 @@
         K.paint(c, bd, M.beard, { depth: S * 0.35, hlw: S * 0.2 });
         c.save(); c.clip(bd); for (let i = 0; i < 4; i++) K.line(c, [[0.4 + i * 0.6, -0.6], [0.2 + i * 0.6, 2.4]], 0.12, A.rgba(M.beard.deep, 0.5)); c.restore();
         K.line(c, [[1.6, -0.2], [2.8, -0.4]], 0.18 + (x.mouth || 0) * 0.2, '#3a1a10'); // boca
-        K.dot(c, 2.2, -2.5, 0.32, '#1a1010'); K.line(c, [[1.6, -3.2], [2.8, -3.1]], 0.26, M.beard.deep);
+        // tranças na ponta da barba, presas com argolas de ferro
+        for (const [bx, by, l] of [[1.0, 2.6, 1.6], [2.0, 2.3, 1.3]]) {
+          for (let i = 0; i < 3; i++) K.blob(c, [[bx - 0.32, by + i * l / 3], [bx + 0.32, by + i * l / 3], [bx + 0.22, by + (i + 1) * l / 3], [bx - 0.22, by + (i + 1) * l / 3]], M.beard, { depth: S * 0.1 });
+          K.poly(c, [[bx - 0.36, by + l * 0.45], [bx + 0.36, by + l * 0.45], [bx + 0.36, by + l * 0.62], [bx - 0.36, by + l * 0.62]], M.iron, { depth: 0 });
+        }
+        eyeP(c, 2.15, -2.45, { w: 0.6, h: 0.3, iris: '#3a5a6a', lid: 0.16 });
+        K.blob(c, [[1.3, -3.05], [2.9, -3.25], [3.0, -2.85], [1.4, -2.75]], M.beard, { depth: 0 }); // sobrolho farto
         K.line(c, [[2.9, -2.0], [3.4, -1.6], [2.9, -1.2]], 0.12, M.skin.shadow);
+        c.save(); c.clip(f); for (const [sx, sy, r] of [[2.4, -1.2, 0.5], [0.8, -2.9, 0.6]]) K.dot(c, sx, sy, r, A.rgba('#2a1a12', 0.18)); c.restore(); // fuligem
+        ear(c, -0.3, -2.0, M.skin);
+        // óculos de forja na testa: tira de couro e lente de latão
+        K.line(c, [[-2.3, -4.3], [0.4, -4.6], [2.4, -4.3]], 0.42, '#2a1c14');
+        K.blob(c, [[1.2, -4.95], [2.5, -4.95], [2.7, -4.2], [1.3, -4.1]], A.mat('#a8843e', { shadow: '#5e461c', light: '#e8c880' }), { depth: S * 0.1 });
+        K.dot(c, 1.95, -4.55, 0.3, '#6a8a9a'); K.dot(c, 2.05, -4.65, 0.1, 'rgba(255,255,255,0.8)');
         c.restore();
       }
       function draw(c, W, x) {
@@ -264,7 +313,11 @@
         // capa de viagem às costas, até à barriga da perna
         const cl = A.path((q) => { const a = pt(C, 1.0, -2.0), b = pt(C, 0.9, 1.4); q.M(b[0], b[1]); q.Q(a[0], a[1] - 0.8, a[0] - 1.2, a[1] + 0.6); q.Q(px - 4.6, py, px - 5.6 + sw, -4.4); q.L(px - 2.2 + sw * 0.6, -3.6); q.Q(px - 2.6, py + 2, ...pt(C, 0.4, -1.6)); q.Q(...pt(C, 0.8, 0), b[0], b[1]); q.Z(); }, S);
         K.paint(c, cl, M.cloak, { depth: S * 0.7, hlw: S * 0.3 });
-        c.save(); c.clip(cl); for (let i = 0; i < 3; i++) K.line(c, [pt(C, 0.8, -1.6 - i * 0.4), [px - 3.4 - i * 0.7 + sw, -4]], 0.18, A.rgba(M.cloak.deep, 0.45)); c.restore();
+        c.save(); c.clip(cl); for (let i = 0; i < 3; i++) K.line(c, [pt(C, 0.8, -1.6 - i * 0.4), [px - 3.4 - i * 0.7 + sw, -4]], 0.18, A.rgba(M.cloak.deep, 0.45));
+        // remendo cosido na capa
+        const rp = [px - 3.6 + sw * 0.7, -6.6]; K.poly(c, [[rp[0] - 0.9, rp[1] - 0.8], [rp[0] + 0.9, rp[1] - 0.9], [rp[0] + 1.0, rp[1] + 0.8], [rp[0] - 0.8, rp[1] + 0.9]], M.blanket, { depth: S * 0.1 });
+        for (let i = 0; i < 4; i++) K.line(c, [[rp[0] - 0.9 + i * 0.6, rp[1] - 1.1], [rp[0] - 0.9 + i * 0.6, rp[1] - 0.6]], 0.06, '#d8cfb8');
+        c.restore();
         // lenço ao pescoço
         K.blob(c, [pt(C, 1.05, -1.4), pt(C, 1.05, 1.8), pt(C, 0.7, 2.4), pt(C, 0.75, -1.2)], M.scarf, { depth: S * 0.25 });
         K.tube(c, [pt(C, 0.85, 2.0), pt(C, 0.55, 2.6), pt(C, 0.35, 2.2)], [0.5, 0.4, 0.25], M.scarf, { depth: 0, flat: true });
@@ -278,8 +331,11 @@
         // capuz caído para trás, aberto sobre a testa
         const hood = A.path((q) => { q.M(1.6, -4.4); q.Q(0.4, -6.0, -2.4, -4.8); q.Q(-3.6, -2.6, -2.8, 1.2); q.L(-1.2, 1.4); q.Q(-1.8, -1.6, -1.0, -3.4); q.Q(0.2, -4.6, 1.6, -4.4); q.Z(); }, S);
         K.paint(c, hood, M.cloak, { depth: S * 0.4, hlw: S * 0.2 });
-        K.dot(c, 2.0, -2.5, 0.3, '#1a1010'); K.line(c, [[1.5, -3.1], [2.4, -3.1]], 0.2, M.hair.deep);
-        const mo = x.mouth || 0; K.line(c, [[1.7, -0.2], [2.3, -0.2 - mo * 0.2]], 0.14 + mo * 0.1, '#7a3a30');
+        eyeP(c, 2.0, -2.45, { w: 0.6, h: 0.32, iris: '#4a6a3a', lash: 1 });
+        K.line(c, [[1.45, -3.0], [2.0, -3.2], [2.45, -3.05]], 0.17, M.hair.deep);
+        const mo = x.mouth || 0; K.line(c, [[1.7, -0.2], [2.0, -0.15], [2.3, -0.2 - mo * 0.2]], 0.14 + mo * 0.1, '#7a3a30');
+        // alfinete de latão a prender o capuz
+        K.dot(c, 1.1, -4.55, 0.32, '#a8843e'); K.dot(c, 1.05, -4.62, 0.12, '#f0d898');
         K.line(c, [[2.6, -1.8], [3.0, -1.45], [2.6, -1.1]], 0.1, M.skin.shadow);
         c.restore();
       }
@@ -333,6 +389,13 @@
         const C = W.chest; for (let i = 0; i < 5; i++) { const p = pt(i < 3 ? C : W.spine, i < 3 ? 0.9 - i * 0.3 : 1.0 - (i - 2) * 0.35, 2.3); K.dot(c, p[0], p[1], 0.18, '#6a6070'); }
         // colarinho branco
         K.blob(c, [pt(C, 1.04, -1.2), pt(C, 1.04, 1.6), pt(C, 0.92, 1.8), pt(C, 0.92, -1.2)], M.collar, { depth: S * 0.15 });
+        // estola cor de vinho a cair do pescoço, com cruzes douradas bordadas
+        const stole = A.path((q) => { const a = pt(C, 1.0, 0.6), b = pt(C, 1.0, 1.7); q.M(a[0], a[1]); q.L(b[0], b[1]); q.L(...pt(W.spine, 0.0, 1.9)); q.L(px + 1.6, py + 5.2); q.L(px + 0.4, py + 5.0); q.L(...pt(W.spine, 0.1, 0.8)); q.Z(); }, S);
+        K.paint(c, stole, A.mat('#6a1e2c', { shadow: '#3a0e16', light: '#9a3a48' }), { depth: S * 0.3, hlw: S * 0.15 });
+        for (const t of [0.75, 0.15]) { const q = pt(t > 0.5 ? C : W.spine, t, 1.25); K.line(c, [[q[0] - 0.35, q[1]], [q[0] + 0.35, q[1]]], 0.12, '#e0c070'); K.line(c, [[q[0], q[1] - 0.45], [q[0], q[1] + 0.45]], 0.12, '#e0c070'); }
+        // terço pendurado do cinto
+        const r0 = pt(W.spine, 0.12, -1.0); for (let i = 0; i < 6; i++) K.dot(c, r0[0] - 0.3 + Math.sin(i * 0.9) * 0.3, r0[1] + i * 0.5, 0.16, '#3a2a20');
+        K.line(c, [[r0[0] - 0.4, r0[1] + 3.2], [r0[0] + 0.2, r0[1] + 3.2]], 0.1, '#c0a060'); K.line(c, [[r0[0] - 0.1, r0[1] + 2.9], [r0[0] - 0.1, r0[1] + 3.7]], 0.1, '#c0a060');
       }
       function head(c, W, x) {
         c.save(); A.boneT(c, W.head, S); c.rotate(Math.PI / 2);
@@ -341,9 +404,9 @@
         K.blob(c, [[-1.8, -1.4], [-2.0, -3.6], [-0.8, -4.9], [1.0, -5.1], [2.4, -4.2], [2.0, -3.6], [1.2, -4.0], [0.4, -3.4], [-0.4, -3.8], [-1.0, -2.2]], M.hair, { depth: S * 0.3 });
         // olhos grandes e assustados, sobrolho erguido
         const look = x.look || 0;
-        K.blob(c, [[1.5, -2.6], [2.2, -2.7], [2.3, -2.1], [1.6, -2.0]], A.mat('#f4ece0', { light: '#ffffff' }), { depth: 0, hl: false });
-        K.dot(c, 1.95 + look * 0.1, -2.35 - look * 0.15, 0.24, '#1a1010');
-        K.line(c, [[1.4, -3.2], [2.3, -3.4]], 0.18, M.hair.deep);
+        eyeP(c, 1.95, -2.35, { w: 0.7, h: 0.42, iris: '#5a4a3a', look, bag: 1, lid: 0.12 });
+        K.line(c, [[1.35, -3.15], [1.9, -3.5], [2.4, -3.35]], 0.18, M.hair.deep); // sobrolho erguido (assustado)
+        ear(c, -0.2, -1.8, M.skin);
         K.line(c, [[1.7, -0.3], [2.2, -0.2]], 0.12, '#7a4a40');
         K.line(c, [[2.5, -1.8], [2.9, -1.5], [2.5, -1.2]], 0.1, M.skin.shadow);
         c.restore();

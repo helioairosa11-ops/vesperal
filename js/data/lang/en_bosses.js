@@ -57,12 +57,14 @@
     ins_i44_t: "Torn Score, Pinned to the Column",
     ins_i44: "The minstrel comes down for no one. He plays from the bell balconies and his music pushes away rising steel. Whoever would silence him must climb: the walls, the column, the corbels where breath returns. And strike on the beat — he taught that himself.",
     tip_caedmon_volley: "\"Shields up!\" — the dead archers loose their arrows. Shelter under his pavise!",
-    tip_matilheira_wall: "The Pack-Mother slammed into the wall and is stunned — strike! (Climbing the wall or the platforms gets you out of her charge.)",
+    tip_matilheira_wall: "The Old Pack-Mother is out of breath after her rampage: strike now! (Climb the wall or the platforms to escape the charge.)",
     inv_hint_use: "Confirm: use / equip",
     inv_hint_unequip: "Confirm: unequip",
     tip_vael_stuck: "The flail's ball is stuck in the floor! Strike while Vael wrenches it free.",
     tip_gemeos_friendly: "The Maul can't tell brothers apart: put the Blade between you and the blow.",
     gemeos_friendly: "Brother…! Out of the way!",
     tip_ozias_orb: "The chalice orb can be sent back: parry it as it arrives.",
+    tip_aldric_judgement: "The King's Judgement kills in one blow: jump over the crimson wave or dodge through it!",
+    tip_seraphine_wings: "A wall of light feathers is coming: slip into its gap as it passes, or dodge through it.",
   });
 })(window.VS);

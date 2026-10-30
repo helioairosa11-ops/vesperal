@@ -130,10 +130,13 @@
       K.tube(ctx, [at(-2.6), at(1.4)], [0.5, 0.5], M.leather, { flat: true, depth: S * 0.1 }); // punho
       K.blob(ctx, [at(-3.4, -0.7), at(-2.6, -0.8), at(-2.6, 0.8), at(-3.4, 0.7)], M.gold, { depth: 0 }); // pomo
       K.poly(ctx, [at(1.4, -2.6), at(2.2, -2.6), at(2.2, 2.6), at(1.4, 2.6)], M.gold, { depth: S * 0.1 }); // guarda
-      const bl = K.polyPath([at(2.2, -0.75), at(14.6, -0.5), at(16.0, 0), at(14.6, 0.5), at(2.2, 0.75)]);
+      // lâmina longa e estreita (a Lâmina vive do alcance)
+      const BL = 22.0;
+      const bl = K.polyPath([at(2.2, -0.75), at(BL - 1.8, -0.48), at(BL, 0), at(BL - 1.8, 0.48), at(2.2, 0.75)]);
       K.paint(ctx, bl, M.blade, { depth: S * 0.25, hlw: S * 0.12 });
-      K.line(ctx, [at(2.6), at(13.6)], 0.14, A.rgba('#40444e', 0.8)); // goteira
-      x._tip = at(16.0); x._grip = g;
+      K.line(ctx, [at(2.6), at(BL - 3.0)], 0.14, A.rgba('#40444e', 0.8)); // goteira
+      K.line(ctx, [at(2.8, -0.42), at(BL - 1.4, -0.26)], 0.1, A.rgba('#ffffff', 0.6)); // fio
+      x._tip = at(BL); x._grip = g;
     }
     function maul(ctx, x) {
       const g = x._g, d = x._d, n = [-d[1], d[0]];
