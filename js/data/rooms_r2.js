@@ -19,7 +19,8 @@
     b.carve(40, 15, 43, 17);
     b.solid(33, 13, 37, 14); b.solid(84, 13, 88, 14); b.solid(62, 12, 63, 14);
     b.carve(72, 15, 77, 16); b.spikes(72, 77, 16); b.crumble(72, 77, 15);
-    b.enemy('sentinel', 20, 14); b.enemy('crossbow', 35, 12); b.enemy('hound_big', 54, 14); b.enemy('sentinel', 68, 14); b.enemy('crossbow', 86, 12);
+    b.enemy('sentinel', 20, 14); b.enemy('crossbow', 35, 12); b.enemy('hound_big', 54, 14);
+    b.e('trap', 38, 13, { k: 'dart', dir: 1, period: 2.4, off: 0.6 }); b.enemy('sentinel', 68, 14); b.enemy('crossbow', 86, 12);
     b.e('trap', 61, 12, { k: 'dart', dir: -1, period: 2.2 });
     b.e('inscription', 47, 14, { id: 'i09' });
     b.e('urn', 10, 14); b.e('urn', 80, 14);
@@ -44,6 +45,7 @@
     b.plat(9, 12, 12); b.plat(14, 18, 10); b.item('ash_steel', 16, 9);
     b.item('r_raven_eye', 25, 14);
     b.enemy('sentinel', 12, 14); b.enemy('sentinel', 22, 14);
+    b.e('trap', 23, 4, { k: 'grate', len: 9.6, period: 3.4 });
     b.e('inscription', 6, 14, { id: 'i10' });
     b.prop('crate', 4, 14); b.prop('crate', 27, 14);
   });
@@ -57,7 +59,7 @@
     b.solid(44, 12, 47, 14); b.solid(76, 13, 79, 14);
     b.crumble(16, 19, 11); b.plat(8, 12, 9); b.item('incense', 10, 8);
     b.enemy('hound', 22, 14); b.enemy('crossbow', 45, 11); b.enemy('hound', 68, 14); b.enemy('sentinel', 86, 14); b.enemy('crossbow', 77, 12);
-    b.e('trap', 52, 12, { k: 'dart', dir: 1, period: 2.6, off: 1 });
+    b.e('trap', 48, 12, { k: 'dart', dir: 1, period: 2.6, off: 1 });
     b.e('inscription', 50, 14, { id: 'i11' });
   });
 

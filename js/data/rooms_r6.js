@@ -20,6 +20,7 @@
     b.plat(40, 46, 10); b.plat(60, 66, 10); b.plat(74, 78, 11); b.plat(80, 86, 8);
     b.e('trap', 50, 2, { k: 'beam', len: 13, period: 3.2 });
     b.e('trap', 72, 2, { k: 'beam', len: 13, period: 3.2, off: 1.6 });
+    b.e('trap', 20, 2, { k: 'censer', len: 11.5, period: 3.2 });
     b.enemy('penitent', 20, 14); b.enemy('vitrail', 44, 7); b.enemy('penitent_big', 56, 14); b.enemy('choir', 70, 6); b.enemy('vitrail', 88, 5);
     b.item('incense', 83, 7);
     b.e('inscription', 90, 14, { id: 'i28' });
@@ -67,6 +68,7 @@
     b.e('altar', 38, 14, { id: 'a_r6_choir', name: 'altar_r6_choir' });
     b.item('ash_steel', 62, 9); b.plat(59, 65, 10);
     b.e('trap', 24, 2, { k: 'beam', len: 13, period: 3 });
+    b.e('trap', 14, 3, { k: 'censer', len: 10.5, period: 2.9, off: 0.7 });
     b.enemy('vitrail', 20, 7); b.enemy('choir', 56, 5); b.enemy('penitent', 66, 14); b.enemy('penitent', 86, 14);
     b.e('inscription', 30, 14, { id: 'i30' });
     b.prop('pew', 12, 14); b.prop('pew', 26, 14);

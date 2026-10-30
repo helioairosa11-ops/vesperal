@@ -101,7 +101,7 @@
     b.carve(20, 15, 29, 16); b.spikes(20, 29, 16); b.crumble(20, 29, 15);
     b.e('altar', 40, 14, { id: 'a_cemetery', name: 'altar_cemetery' });
     b.enemy('crawler', 12, 14); b.enemy('crawler', 34, 14); b.enemy('wisp', 26, 8); b.enemy('husk', 46, 14);
-    b.e('trap', 15, 3, { k: 'blade', len: 10, period: 2.4 });
+    b.e('trap', 15, 3, { k: 'bell', len: 10, period: 2.4 });
     b.e('inscription', 8, 14, { id: 'i06' });
     b.e('urn', 58, 14); b.e('urn', 36, 14);
     b.prop('grave', 6, 14); b.prop('grave', 33, 14); b.prop('grave', 44, 14);
@@ -154,6 +154,7 @@
     b.crumble(22, 24, 12); b.plat(28, 34, 10); b.item('ash_heart', 31, 9);
     b.item('r_lantern', 22, 14);
     b.e('inscription', 50, 14, { id: 'i07' });
+    b.e('trap', 31, 14, { k: 'bones', period: 2.6 }); b.e('trap', 41, 14, { k: 'bones', period: 2.6, off: 1.3 });
     b.enemy('courtier', 40, 10); b.enemy('husk', 26, 14); b.enemy('husk_big', 46, 14); b.enemy('crawler', 36, 14);
     b.e('urn', 18, 14); b.e('urn', 56, 14);
   });

@@ -20,7 +20,7 @@ for (const id in VS.ROOMS) {
     if (['vent', 'thorns', 'bones'].includes(e.k) && !SOLID.has(at(e.x, e.y + 1))) { console.log(`${id.padEnd(14)} armadilha ${e.k} (${e.x},${e.y}) sem chão`); n++; }
     if (['crusher', 'grate', 'blade', 'bell', 'censer', 'beam'].includes(e.k) && !SOLID.has(at(e.x, e.y - 1)) && e.y > 0) { console.log(`${id.padEnd(14)} armadilha ${e.k} (${e.x},${e.y}) sem teto por cima (por cima: ${JSON.stringify(at(e.x, e.y - 1))})`); n++; }
     if ((e.k === 'spear' || e.k === 'dart') && !SOLID.has(at(e.x - (e.dir || 1), e.y))) { console.log(`${id.padEnd(14)} armadilha ${e.k} (${e.x},${e.y}) sem parede atrás`); n++; }
-    if (SOLID.has(at(e.x, e.y)) && at(e.x, e.y) !== '=') { console.log(`${id.padEnd(14)} armadilha ${e.k} (${e.x},${e.y}) dentro de parede`); n++; }
+    if (SOLID.has(at(e.x, e.y)) && at(e.x, e.y) !== '=' && !['crusher', 'grate', 'beam'].includes(e.k) /* prensas e raios nascem dentro do teto */) { console.log(`${id.padEnd(14)} armadilha ${e.k} (${e.x},${e.y}) dentro de parede`); n++; }
   }
 }
 console.log(n ? `${n} objetos sem chão` : 'nenhum objeto a flutuar');

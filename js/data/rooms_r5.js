@@ -21,7 +21,7 @@
     rows.forEach((r, i) => { if (r === 15) { b.plat(12, 18, r); return; } if (r === 3) return; /* o topo é a plataforma larga por baixo da saída */ const left = i % 2 === 0; b.plat(left ? 9 : 17, left ? 15 : 24, r); });
     b.plat(12, 19, 3);
     b.enemy('gargoyle', 26, 40); b.enemy('gargoyle', 4, 22); b.enemy('raven', 20, 30); b.enemy('raven', 12, 26); b.enemy('acolyte', 5, 32); b.enemy('raven', 18, 8);
-    b.e('trap', 20, 2, { k: 'blade', len: 9, period: 3 });
+    b.e('trap', 24, 2, { k: 'bell', len: 5, period: 2.6 });
     b.e('inscription', 25, 50, { id: 'i23' });
   });
 
@@ -33,7 +33,7 @@
     b.carve(36, 15, 39, 16); b.spikes(36, 39, 16); b.crumble(36, 39, 15);
     b.plat(22, 27, 11); b.plat(6, 10, 9);
     b.item('ash_steel', 8, 8);
-    b.e('trap', 46, 0, { k: 'blade', len: 13, period: 2.6 });
+    b.e('trap', 46, 0, { k: 'bell', len: 13, period: 2.6 });
     b.enemy('raven', 20, 6); b.enemy('raven', 30, 4); b.enemy('gargoyle_big', 25, 6);
     b.e('inscription', 54, 14, { id: 'i24' });
   });

@@ -16,6 +16,11 @@
     r7: { floor: [['candelabra', 0.035], ['chair', 0.02], ['rubble', 0.03]], ceil: [['chandelier', 0.015], ['chain', 0.02]], wall: [['sconce', 0.035], ['portrait', 0.02]] },
     crypt: { floor: [['skulls', 0.07], ['coffin', 0.02], ['candles', 0.03]], ceil: [['chain', 0.04], ['roots', 0.05]], wall: [['niche', 0.04]] },
   };
+  // construções grandes (atlas structs), assentes no chão, atrás da ação: o que cada região tem de edificado
+  const STRUCTS = {
+    r1: ['house', 'house', 'calvary', 'house'], crypt: ['tomb', 'bonearch', 'tomb'], r2: ['watchtower', 'trebuchet'], r3: ['furnace', 'crane'],
+    r4: ['fountain', 'pergola'], r5: ['bellframe', 'gears'], r6: ['retablo', 'organ'], r7: ['colonnade', 'kingstatue', 'colonnade'], sanct: [],
+  };
   const LIGHT = { lamppost: ['#ffa050', 90, -26], candles: ['#ffb060', 55, -6], window: ['#ff9040', 45, 0], sconce: ['#ffa050', 75, -2], brazier: ['#ff9040', 100, -12], crucible: ['#ff6010', 90, -8], vent: ['#ff5010', 60, 0], glowflower: ['#a0ffd0', 40, -6], lantern: ['#c8ffb0', 70, 14], candelabra: ['#ffd080', 75, -22], stained: ['#c080ff', 70, 0], chandelier: ['#ffb060', 120, 22] };
 
   function build(room) {
@@ -35,6 +40,7 @@
       else if ((solid(tx - 1, ty) || solid(tx + 1, ty)) && free(tx, ty + 1) && rnd() < 0.5) { const k = pickFrom(set.wall); if (k) { props.push({ k, x: tx * T + T / 2, y: ty * T + T / 2, s: rnd(), side: solid(tx - 1, ty) ? -1 : 1 }); taken[tx + ',' + ty] = 1; } }
     }
     (room.def.props || []).forEach((p) => props.push({ k: p.k, x: p.x * T + T / 2, y: (p.y + 1) * T, s: 0.5, big: true }));
+    const structs = placeStructs(room, R, rnd);
     // silhuetas de primeiro plano
     const front = [];
     const arena = (room.def.ents || []).some((e) => e.t === 'boss');
@@ -65,9 +71,54 @@
       }
       bays.push({ x, w: bw, rows, v: rnd() });
     }
-    return { props, front, bays };
+    return { props, structs, front, bays };
   }
   D.get = (room) => room.deco || (room.deco = build(room));
+  // escolhe onde ficam as construções da sala: só em chão firme e largo, com o espaço por cima todo livre
+  // (nada de plataformas, água, picos ou paredes à frente), longe das saídas e dos objetos com que se interage
+  function placeStructs(room, R, rnd) {
+    const list = STRUCTS[R.key], meta = VS.STRUCT_META;
+    const out = [];
+    if (!list || !list.length || !meta || room.def.noStructs) return out;
+    const ents = room.def.ents || [];
+    if (ents.some((e) => e.t === 'boss')) return out;
+    const busy = ents.filter((e) => ['altar', 'npc', 'door', 'lever', 'inscription', 'shrine'].includes(e.t));
+    const clear = (c) => c === ' ' || c === '.' || (c >= 'a' && c <= 'z') || c === 'P' || c === 'R';
+    const firm = (c) => c === '#' || c === 'F';
+    const order = list.filter((k) => meta.items[k]);
+    if (!order.length) return out;
+    for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+    let next = 0;
+    for (let ty = 2; ty < room.h; ty++) {
+      let tx = 2;
+      while (tx < room.w - 2) {
+        if (!(firm(room.tile(tx, ty + 1)) && clear(room.tile(tx, ty)))) { tx++; continue; }
+        const x0 = tx; while (tx < room.w - 2 && firm(room.tile(tx, ty + 1)) && clear(room.tile(tx, ty))) tx++;
+        const x1 = tx - 1; // trecho de chão [x0, x1] na linha ty
+        let cx = x0 + 1;
+        while (cx <= x1) {
+          let placed = false;
+          for (let tries = 0; tries < order.length * 2 && !placed; tries++) {
+            const k = order[(next + tries) % order.length], vars = meta.items[k];
+            // variedade: a mesma construção só se repete depois de todas as outras já estarem na sala
+            if (tries < order.length && out.some((o) => o.k === k) && order.some((kk) => !out.some((o) => o.k === kk))) continue;
+            let v = Math.floor(rnd() * vars.length); if (vars.length > 1 && out.some((o) => o.k === k && o.v === v)) v = (v + 1) % vars.length;
+            const e = vars[v], box = e[6];
+            const wt = Math.ceil((box[2] - box[0]) / T) + 1, ht = Math.ceil(-box[1] / T);
+            if (cx + wt - 1 > x1 - 1) continue;
+            let ok = true;
+            for (let x = cx; x < cx + wt && ok; x++) for (let y = ty; y > ty - ht && ok; y--) if (!clear(room.tile(x, y))) ok = false;
+            const midX = (cx + wt / 2) * T, by = (ty + 1) * T;
+            if (ok && busy.some((b) => b.x >= cx - 2 && b.x <= cx + wt + 1 && b.y <= ty + 1 && b.y >= ty - ht - 1)) ok = false;
+            if (ok && out.some((o) => Math.abs(o.x - midX) < 19 * T && Math.abs(o.y - by) < 8 * T)) ok = false;
+            if (ok && rnd() < 0.9) { out.push({ k, v, x: midX, y: by, flip: rnd() < 0.5 && k !== 'house' }); next += tries + 1; cx += wt + 4; placed = true; }
+          }
+          if (!placed) cx += 3;
+        }
+      }
+    }
+    return out;
+  }
 
   // estilo da parede de fundo por região
   const BACK_OF = { sanct: 'arch', r1: 'arch', r2: 'slit', r3: 'grate', r4: 'glass', r5: 'slit', r6: 'lancet', r7: 'lancet', crypt: 'niche' };
@@ -176,15 +227,50 @@
     ctx.fillStyle = g; ctx.fillRect(cam.x - 20, cam.y - 20, U.VIEW_W + 40, U.VIEW_H + 40);
   };
 
+  const veilCache = new Map();
+  function veiled(im, e, col) {
+    const key = e[0] + ',' + e[1] + col;
+    let c = veilCache.get(key);
+    if (c) return c;
+    c = document.createElement('canvas'); c.width = e[2]; c.height = e[3];
+    const x = c.getContext('2d'); x.drawImage(im, e[0], e[1], e[2], e[3], 0, 0, e[2], e[3]);
+    x.globalCompositeOperation = 'source-in'; x.fillStyle = col; x.fillRect(0, 0, e[2], e[3]);
+    veilCache.set(key, c); if (veilCache.size > 40) veilCache.delete(veilCache.keys().next().value);
+    return c;
+  }
+  D.drawStructs = function (ctx, room, R, time) {
+    const d = D.get(room), meta = VS.STRUCT_META;
+    if (!d.structs || !d.structs.length || !meta) return;
+    const im = VS.Assets.img('props/structs.png');
+    if (!VS.Assets.ok(im)) return;
+    const S = meta.S, fog = R.fog || R.haze || '#20202a';
+    for (const s of d.structs) {
+      const e = meta.items[s.k] && meta.items[s.k][s.v]; if (!e) continue;
+      const box = e[6];
+      if (!G.inView(s.x + box[0] - 10, s.y + box[1] - 10, box[2] - box[0] + 20, box[3] - box[1] + 20, 20)) continue;
+      ctx.save(); ctx.translate(s.x, s.y); if (s.flip) ctx.scale(-1, 1);
+      ctx.drawImage(im, e[0], e[1], e[2], e[3], -e[4] / S, -e[5] / S, e[2] / S, e[3] / S);
+      ctx.globalAlpha = 0.34; ctx.drawImage(veiled(im, e, U.mix(fog.length === 7 ? fog : '#20202a', '#000000', 0.3)), -e[4] / S, -e[5] / S, e[2] / S, e[3] / S);
+      ctx.globalAlpha = 1;
+      const f = e[7] || {};
+      if (f.flames) f.flames.forEach((q, i) => flame(ctx, q[0], q[1], q[2], time, s.x * 0.01 + i));
+      ctx.restore();
+    }
+  };
   D.drawBack = function (ctx, room, R, time) {
     const d = D.get(room);
+    D.drawStructs(ctx, room, R, time);
     for (const p of d.props) {
       if (!G.inView(p.x - 30, p.y - 60, 60, 120, 20)) continue;
       drawProp(ctx, p, R, time);
     }
   };
   D.lights = function (room, R, time) {
-    const d = D.get(room);
+    const d = D.get(room), meta = VS.STRUCT_META;
+    if (d.structs && meta) for (const s of d.structs) {
+      const e = meta.items[s.k] && meta.items[s.k][s.v], f = e && e[7];
+      if (f && f.lights) for (const L of f.lights) G.light(s.x + (s.flip ? -L[0] : L[0]), s.y + L[1], L[2], L[3], 0.8, 1);
+    }
     for (const p of d.props) {
       const L = LIGHT[p.k]; if (!L) continue;
       G.light(p.x, p.y + L[2], L[1], L[0], 0.85, 1);

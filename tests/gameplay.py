@@ -1218,8 +1218,70 @@ def t_giants(R, b):
     pg.close()
 
 
+TRAPS = [('r1_crypt', 'bones'), ('r4_roots', 'thorns'), ('r2_armory', 'grate'), ('r2_wall', 'dart'), ('r6_nave', 'censer'),
+         ('r5_stairs', 'bell'), ('r1_cemetery', 'bell'), ('r7_stair', 'spear'), ('r7_gallery', 'blade'), ('r3_foundry', 'vent')]
+
+
+def t_traps(R, b):
+    """armadilhas de cada zona: cada tipo fere quem está no sítio errado, no momento errado"""
+    pg = b.new_page(viewport={'width': 1280, 'height': 720}); errs = []; page_errors(pg, errs)
+    boot(pg); new_game(pg); pg.evaluate('VSDebug.allAbilities(); VSDebug.god(true)')
+    for room, kind in TRAPS:
+        warp(pg, room)
+        ok = pg.evaluate(f"""() => {{ const g = T.g(), t = g.ents.find((e) => e.k === '{kind}' && e.mech); if (!t) return false; T.TR = t;
+          g.ents.filter((e) => e.isEnemy).forEach((e) => e.remove = true); T.hits = []; T.wrapHits(); return true; }}""")
+        if not ok:
+            R.check(f'{kind} em {room}', False); continue
+        # a protagonista fica presa no ponto de perigo do tipo de armadilha, à espera que a armadilha dispare
+        pg.evaluate("""() => { const t = T.TR, TT = VS.U.TILE; T.hooks.push(() => { const p = T.p(); let x, y;
+            if (t.mech === 'swing') { x = t.px; y = t.py + t.len * TT; }
+            else if (t.mech === 'erupt') { x = t.cx; y = t.y + TT - 12; }
+            else if (t.mech === 'crush') { x = t.cx; y = t.d.y * TT + t.len * TT + 8; }
+            else if (t.mech === 'thrust') { x = t.dir > 0 ? t.x + t.len * TT * 0.5 : t.x + TT - t.len * TT * 0.5; y = t.cy; }
+            else { x = t.cx + t.dir * 70; y = t.cy; }
+            p.x = x - p.w / 2; p.y = y - p.h / 2; p.vx = 0; p.vy = 0; if (T.hits.length) return true; }); }""")
+        hit = wait(pg, 'T.hits.length > 0', 8)
+        if kind in ('censer', 'spear', 'bones', 'thorns', 'grate', 'bell'):
+            shot(pg, f'trap_{kind}_{room}')
+        R.check(f'{kind} ({room}) fere quem lá está', hit, {'hits': pg.evaluate('T.hits.length')})
+        pg.evaluate('T.hooks.length = 0'); frames(pg, 5)
+    R.check('armadilhas sem erros de JavaScript', not errs, errs[:3])
+    pg.close()
+
+
+def t_structs(R, b):
+    """construções no plano do meio: cada região tem as suas, assentes no chão e longe do que se usa"""
+    pg = b.new_page(viewport={'width': 1280, 'height': 720}); errs = []; page_errors(pg, errs)
+    boot(pg); new_game(pg); pg.evaluate('VSDebug.allAbilities(); VSDebug.god(true)')
+    rooms = pg.evaluate('Object.keys(VS.ROOMS)')
+    per, bad = {}, []
+    for r in rooms:
+        warp(pg, r)
+        info = pg.evaluate("""() => { const room = T.g().room, d = VS.Deco.get(room), TT = VS.U.TILE, meta = VS.STRUCT_META;
+          const use = (room.def.ents || []).filter((e) => ['altar', 'npc', 'door', 'lever', 'inscription', 'shrine'].includes(e.t));
+          const out = [];
+          for (const s of d.structs || []) { const box = meta.items[s.k][s.v][6];
+            const x0 = s.x + box[0], x1 = s.x + box[2], y0 = s.y + box[1];
+            const fl = room.isSolidTile(Math.floor(s.x / TT), Math.floor((s.y + 2) / TT));
+            const clash = use.filter((e) => (e.x + 0.5) * TT > x0 && (e.x + 0.5) * TT < x1 && (e.y + 1) * TT > y0 && e.y * TT < s.y).map((e) => e.t);
+            out.push({ k: s.k, floor: fl, clash }); }
+          return { region: room.R.key, list: out }; }""")
+        per.setdefault(info['region'], 0)
+        per[info['region']] += len(info['list'])
+        for it in info['list']:
+            if not it['floor'] or it['clash']:
+                bad.append((r, it))
+    loaded = pg.evaluate("VS.Assets.ok(VS.Assets.img('props/structs.png'))")
+    shot(pg, 'structs_last_room')
+    R.check('o atlas das construções carrega', loaded)
+    R.check('todas as regiões com construções têm algumas', all(per.get(k, 0) > 0 for k in ['r1', 'crypt', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7']), per)
+    R.check('construções assentes no chão e sem tapar altares, NPC, portas ou alavancas', not bad, bad[:4])
+    R.check('construções sem erros de JavaScript', not errs, errs[:3])
+    pg.close()
+
+
 TESTS = {'menus': t_menus, 'combat': t_movement_combat, 'world': t_world, 'bosses': t_bosses, 'caedmon': t_caedmon, 'aldric': t_aldric, 'corvin': t_corvin,
-         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach, 'giants': t_giants}
+         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach, 'giants': t_giants, 'traps': t_traps, 'structs': t_structs}
 
 
 def main(filters):

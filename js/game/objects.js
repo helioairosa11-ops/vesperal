@@ -228,11 +228,15 @@
     draw(ctx, game) { VS.SpritesObj.platform(ctx, this, game.room.R, game.room); }
   }
   // ---------- Armadilhas ----------
+  // cada região tem as suas armadilhas, mas partilham poucas mecânicas: pêndulo (lâmina, sino, incensário),
+  // erupção do chão (fogo, espinhos, ossos), esmagador (prensa, grade levadiça), dardo, raio de luz e lanças da parede
+  const MECH = { blade: 'swing', bell: 'swing', censer: 'swing', vent: 'erupt', thorns: 'erupt', bones: 'erupt', crusher: 'crush', grate: 'crush', dart: 'dart', beam: 'beam', spear: 'thrust' };
   class Trap extends VS.Entity {
     constructor(d) {
-      super(d.x * T, d.y * T, T, T); this.k = d.k; this.d = d; this.period = d.period || 2.4; this.off = d.off || 0; this.z = 2; this.attackHBs = [];
-      this.dir = d.dir || 1; this.len = d.len || 4;
-      if (this.k === 'blade') { this.px = d.x * T + T / 2; this.py = d.y * T; }
+      super(d.x * T, d.y * T, T, T); this.k = d.k; this.mech = MECH[d.k] || d.k; this.d = d; this.period = d.period || 2.4; this.off = d.off || 0; this.z = 2; this.attackHBs = [];
+      this.dir = d.dir || 1; this.len = d.len || (d.k === 'thorns' || d.k === 'bones' ? 2 : 4); this.ext = 0;
+      if (this.mech === 'swing') { this.px = d.x * T + T / 2; this.py = d.y * T; }
+      if (this.mech === 'thrust') this.drawAlways = true;
     }
     update(dt, game) {
       super.update(dt, game);
@@ -240,14 +244,32 @@
       const ph = ((this.t + this.off) % this.period) / this.period;
       const p = game.player;
       const near = Math.abs(p.cx - this.cx) < 400 && Math.abs(p.cy - this.cy) < 260;
-      if (this.k === 'blade') {
+      if (this.mech === 'swing') {
         const ang = Math.sin((this.t + this.off) / this.period * U.TAU) * 1.1;
         this.ang = ang;
         const L = this.len * T;
         const bx = this.px + Math.sin(ang) * L, by = this.py + Math.cos(ang) * L;
         this.bx = bx; this.by = by;
-        this.attackHBs.push({ x: bx - 14, y: by - 6, w: 28, h: 12, dmg: 22, id: 'tb' + this.d.x + '_' + Math.floor((this.t + this.off) / (this.period / 2)), unblockable: true, parryable: false, src: { cx: bx } });
+        const hb = this.k === 'bell' ? [32, 26, -2, 26] : this.k === 'censer' ? [16, 18, 2, 18] : [28, 12, 0, 22];
+        this.attackHBs.push({ x: bx - hb[0] / 2, y: by - hb[1] / 2 + hb[2], w: hb[0], h: hb[1], dmg: hb[3], id: 'tb' + this.d.x + '_' + Math.floor((this.t + this.off) / (this.period / 2)), unblockable: true, parryable: false, src: { cx: bx } });
         if (near && Math.abs(ang) < 0.08 && !this.swish) { this.swish = true; A.sfx('swing_heavy', { vol: 0.35 }); } if (Math.abs(ang) > 0.5) this.swish = false;
+        if (this.k === 'bell' && near && Math.abs(ang) > 1.06 && !this.tolled) { this.tolled = true; A.sfx('bell_small', { vol: 0.25 }); } if (Math.abs(ang) < 0.6) this.tolled = false;
+        if (this.k === 'censer' && Math.random() < 0.35) G.emit({ x: bx + U.rand(-3, 3), y: by + 2, vx: U.rand(-8, 8), vy: U.rand(-30, -12), life: U.rand(0.8, 1.6), size: U.rand(1.5, 3), color: U.pick(['rgba(200,190,180,0.35)', 'rgba(170,160,150,0.3)', '#ffb050']), shrink: true });
+      } else if (this.mech === 'erupt' && this.k !== 'vent') {
+        // espinhos de vinha (Jardins) ou ossos (Ossário) que rompem do chão: aviso, golpe rápido, recolhem devagar
+        this.state = ph < 0.55 ? 'idle' : ph < 0.72 ? 'warn' : ph < 0.9 ? 'fire' : 'back';
+        this.ext = this.state === 'fire' ? Math.min(1, this.ext + dt * 14) : this.state === 'back' ? Math.max(0, this.ext - dt * 5) : 0;
+        if (this.ext > 0.4) { const h = this.len * T * this.ext; this.attackHBs.push({ x: this.x + 2, y: this.y + T - h, w: T - 4, h, dmg: 16, id: 'te' + this.d.x + '_' + Math.floor((this.t + this.off) / this.period), unblockable: true, parryable: false, src: this }); }
+        if (this.state === 'fire' && !this.firing) { this.firing = true; if (near) A.sfx(this.k === 'bones' ? 'hit_stone' : 'whip', { vol: 0.5 }); G.burst(this.cx, this.y + T, 6, { color: this.k === 'bones' ? '#a89a80' : '#4a6a3a', speed: 70, angle: -Math.PI / 2, spread: 1.6, g: 400, life: 0.5, size: 1.4 }); }
+        if (this.state !== 'fire') this.firing = false;
+        if (this.state === 'warn' && Math.random() < 0.3) G.emit({ x: this.cx + U.rand(-6, 6), y: this.y + T - 1, vy: -20, life: 0.4, size: 1.2, color: this.k === 'bones' ? '#8a7e6a' : '#6a8a4a' });
+      } else if (this.mech === 'thrust') {
+        // lanças que saem da parede (Palácio): à altura da cabeça agacha-te, à altura dos pés salta
+        this.state = ph < 0.55 ? 'idle' : ph < 0.72 ? 'warn' : ph < 0.88 ? 'fire' : 'back';
+        this.ext = this.state === 'fire' ? Math.min(1, this.ext + dt * 16) : this.state === 'back' ? Math.max(0, this.ext - dt * 4) : 0;
+        if (this.ext > 0.3) { const L = this.len * T * this.ext; this.attackHBs.push({ x: this.dir > 0 ? this.x : this.x + T - L, y: this.cy - 4, w: L, h: 8, dmg: 20, id: 'ts' + this.d.x + '_' + this.d.y + '_' + Math.floor((this.t + this.off) / this.period), unblockable: true, parryable: false, src: this }); }
+        if (this.state === 'fire' && !this.firing) { this.firing = true; if (near) A.sfx('whip', { vol: 0.55 }); }
+        if (this.state !== 'fire') this.firing = false;
       } else if (this.k === 'vent') {
         this.state = ph < 0.55 ? 'idle' : ph < 0.72 ? 'warn' : 'fire';
         if (this.state === 'fire') {
@@ -257,7 +279,7 @@
           if (near && !this.firing) { this.firing = true; A.sfx('fire', { vol: 0.5 }); }
         } else this.firing = false;
         if (this.state === 'warn' && Math.random() < 0.5) G.emit({ x: this.cx + U.rand(-5, 5), y: this.y + T - 2, vy: -40, life: 0.4, size: 1.5, color: '#ff8030', add: true });
-      } else if (this.k === 'crusher') {
+      } else if (this.mech === 'crush') {
         // cai rápido, sobe devagar
         const drop = this.len * T;
         let k;
@@ -280,6 +302,7 @@
       }
     }
     emitLight() {
+      if (this.k === 'censer' && this.bx !== undefined) G.light(this.bx, this.by, 34, '#ffb060', 0.5, 2);
       if (this.k === 'vent' && this.state !== 'idle') G.light(this.cx, this.y, this.state === 'fire' ? 120 : 50, '#ff6020', 0.9, 2);
       if (this.k === 'beam' && this.state !== 'idle') G.light(this.cx, this.y + this.len * T / 2, this.state === 'fire' ? 110 : 40, '#ffe8a0', 0.9);
     }

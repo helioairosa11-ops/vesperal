@@ -74,6 +74,7 @@
     b.plat(6, 11, 12); b.plat(16, 21, 9); b.plat(8, 13, 6); b.plat(12, 15, 3);
     b.enemy('torch', 22, 15);
     b.e('inscription', 25, 15, { id: 'i36' });
+    b.e('trap', 2, 11, { k: 'spear', dir: 1, len: 5, period: 2.6 }); b.e('trap', 29, 8, { k: 'spear', dir: -1, len: 9, period: 2.8, off: 1.1 });
   });
 
   // O Trono de Cinza — Rei Aldric

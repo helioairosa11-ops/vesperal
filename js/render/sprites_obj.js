@@ -240,30 +240,123 @@
       ctx.fillStyle = 'rgba(255,110,40,0.3)'; ctx.fillRect(x + 1, y + 8, w - 2, 1.2);
     } else { ctx.fillStyle = R.stone; ctx.fillRect(x, y, w, 8); ctx.fillStyle = R.topAccent; ctx.fillRect(x, y, w, 1.5); ctx.fillStyle = R.stoneDark; ctx.fillRect(x, y + 6.5, w, 1.5); }
   };
+  // ---------- armadilhas: cada região com o seu desenho ----------
+  function chainLinks(ctx, x0, y0, x1, y1, col) {
+    const L = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.floor(L / 4)), a = Math.atan2(y1 - y0, x1 - x0) + Math.PI / 2;
+    ctx.lineWidth = 1; ctx.strokeStyle = col;
+    for (let i = 0; i < n; i++) { const u = (i + 0.5) / n; ctx.beginPath(); ctx.ellipse(x0 + (x1 - x0) * u, y0 + (y1 - y0) * u, i % 2 ? 0.55 : 1.5, 2.3, a, 0, U.TAU); ctx.stroke(); }
+  }
+  function mount(ctx, x, y, col) { ctx.fillStyle = col; ctx.fillRect(x - 6, y - 1, 12, 4); ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(x - 6, y - 1, 12, 0.8); }
   SO.trap = function (ctx, t, R) {
-    if (t.k === 'blade') {
-      ctx.strokeStyle = '#1a1416'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(t.px, t.py); ctx.lineTo(t.bx, t.by); ctx.stroke();
-      ctx.fillStyle = '#1a1416'; ctx.fillRect(t.px - 5, t.py - 3, 10, 5);
+    const k = t.k, rk = R.key;
+    if (t.mech === 'swing') {
+      const gold = rk === 'r7' || k === 'censer';
+      // suspensão: corrente (sino, incensário, lâmina do palácio) ou haste de ferro (lâmina)
+      if (k === 'blade' && !gold) { ctx.strokeStyle = '#1a1416'; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(t.px, t.py); ctx.lineTo(t.bx, t.by); ctx.stroke(); ctx.strokeStyle = 'rgba(160,150,160,0.35)'; ctx.lineWidth = 0.5; ctx.stroke(); }
+      else { const r = k === 'bell' ? 15 : 7; chainLinks(ctx, t.px, t.py, t.bx - Math.sin(t.ang) * r, t.by - Math.cos(t.ang) * r, gold ? '#8a6a30' : '#3a3440'); }
+      mount(ctx, t.px, t.py, gold ? '#5a4220' : '#1a1416');
       ctx.save(); ctx.translate(t.bx, t.by); ctx.rotate(-t.ang);
-      ctx.fillStyle = '#b8b0b8'; ctx.beginPath(); ctx.moveTo(-15, -2); ctx.quadraticCurveTo(0, 10, 15, -2); ctx.lineTo(0, -4); ctx.closePath(); ctx.fill();
-      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 0.5; ctx.beginPath(); ctx.moveTo(-14, 0); ctx.quadraticCurveTo(0, 10, 14, 0); ctx.stroke();
+      if (k === 'bell') {
+        // sino de bronze, boca para baixo; o badalo balança com atraso
+        const g = ctx.createLinearGradient(-14, 0, 14, 0); g.addColorStop(0, '#5a3e1a'); g.addColorStop(0.35, '#c09048'); g.addColorStop(0.6, '#8a6428'); g.addColorStop(1, '#3a2810');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(-5, -14); ctx.quadraticCurveTo(-7, -6, -10, 2); ctx.quadraticCurveTo(-13, 9, -17, 11); ctx.lineTo(17, 11); ctx.quadraticCurveTo(13, 9, 10, 2); ctx.quadraticCurveTo(7, -6, 5, -14); ctx.quadraticCurveTo(0, -17, -5, -14); ctx.fill();
+        ctx.strokeStyle = '#1a1008'; ctx.lineWidth = 0.8; ctx.stroke();
+        ctx.fillStyle = 'rgba(30,18,6,0.6)'; ctx.fillRect(-16, 8, 32, 1.2); ctx.fillRect(-9, -2, 18, 0.8);
+        ctx.fillStyle = '#2a1c0a'; ctx.beginPath(); ctx.ellipse(0, 11, 16, 2.2, 0, 0, U.TAU); ctx.fill();
+        ctx.fillStyle = '#6a4a20'; ctx.beginPath(); ctx.arc(Math.sin(t.ang) * 6, 12.5, 2.6, 0, U.TAU); ctx.fill();
+      } else if (k === 'censer') {
+        // incensário de ouro com tampa rendilhada; as brasas brilham pelos furos
+        const g = ctx.createRadialGradient(-2, -1, 1, 0, 2, 8); g.addColorStop(0, '#f0d080'); g.addColorStop(0.5, '#b08a40'); g.addColorStop(1, '#5a4018');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 1, 7, 6, 0, 0, U.TAU); ctx.fill(); ctx.strokeStyle = '#2a1c08'; ctx.lineWidth = 0.7; ctx.stroke();
+        ctx.fillStyle = '#ffb050'; for (const [hx, hy] of [[-3, 1], [0, 2.5], [3, 1], [-1.5, -1.5], [1.5, -1.5]]) { ctx.beginPath(); ctx.arc(hx, hy, 0.9, 0, U.TAU); ctx.fill(); }
+        ctx.fillStyle = '#8a6a30'; ctx.beginPath(); ctx.moveTo(-4, -4.6); ctx.lineTo(0, -10); ctx.lineTo(4, -4.6); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#5a4018'; ctx.fillRect(-2.4, 6.4, 4.8, 2.4);
+      } else if (gold) {
+        // lâmina do palácio: meia-lua dourada com gume de aço e um rubi no centro
+        ctx.fillStyle = '#8a6a30'; ctx.beginPath(); ctx.moveTo(-17, -3); ctx.quadraticCurveTo(0, 13, 17, -3); ctx.lineTo(11, -5); ctx.quadraticCurveTo(0, 5, -11, -5); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#d8d4dc'; ctx.beginPath(); ctx.moveTo(-17, -3); ctx.quadraticCurveTo(0, 13, 17, -3); ctx.quadraticCurveTo(0, 10, -17, -3); ctx.fill();
+        ctx.fillStyle = '#e0c070'; ctx.beginPath(); ctx.arc(0, -3, 3, 0, U.TAU); ctx.fill(); ctx.fillStyle = '#7a1018'; ctx.beginPath(); ctx.arc(0, -3, 1.4, 0, U.TAU); ctx.fill();
+      } else {
+        // lâmina de ferro escuro com gume claro
+        const g = ctx.createLinearGradient(0, -4, 0, 9); g.addColorStop(0, '#4a444c'); g.addColorStop(1, '#a8a0a8');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(-15, -2); ctx.quadraticCurveTo(0, 10, 15, -2); ctx.lineTo(0, -4); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 0.5; ctx.beginPath(); ctx.moveTo(-14, 0); ctx.quadraticCurveTo(0, 10, 14, 0); ctx.stroke();
+      }
       ctx.restore();
-      glow(ctx, t.bx, t.by, 14, '#ff3030', 0.15);
-    } else if (t.k === 'vent') {
-      ctx.fillStyle = '#1a1210'; ctx.fillRect(t.x + 1, t.y + T - 5, T - 2, 5);
-      ctx.fillStyle = t.state === 'idle' ? '#3a1a10' : t.state === 'warn' ? '#ff6020' : '#ffd060';
-      for (let i = 0; i < 3; i++) ctx.fillRect(t.x + 4 + i * 5, t.y + T - 4, 2.4, 2);
-    } else if (t.k === 'crusher') {
+      if (k === 'blade') glow(ctx, t.bx, t.by, 14, '#ff3030', 0.12);
+    } else if (k === 'vent') {
+      if (rk === 'r7') { // braseiro dourado embutido no chão
+        ctx.fillStyle = '#5a4220'; ctx.fillRect(t.x - 1, t.y + T - 6, T + 2, 6); ctx.fillStyle = '#c8a050'; ctx.fillRect(t.x - 1, t.y + T - 6, T + 2, 1);
+        ctx.fillStyle = t.state === 'idle' ? '#3a1a10' : t.state === 'warn' ? '#ff6020' : '#ffd060';
+        for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.arc(t.x + 3 + i * 4.7, t.y + T - 3, 1.3, 0, U.TAU); ctx.fill(); }
+      } else {
+        ctx.fillStyle = '#1a1210'; ctx.fillRect(t.x + 1, t.y + T - 5, T - 2, 5); ctx.fillStyle = '#4a3a30'; ctx.fillRect(t.x + 1, t.y + T - 5, T - 2, 0.8);
+        ctx.fillStyle = t.state === 'idle' ? '#3a1a10' : t.state === 'warn' ? '#ff6020' : '#ffd060';
+        for (let i = 0; i < 3; i++) ctx.fillRect(t.x + 4 + i * 5, t.y + T - 4, 2.4, 2);
+      }
+    } else if (k === 'thorns' || k === 'bones') {
+      const base = t.y + T, e = t.ext, h = t.len * T * e;
+      // a base fica sempre à vista (raízes / laje rachada): lê-se que ali há perigo
+      if (k === 'thorns') {
+        ctx.fillStyle = '#2a2014'; ctx.beginPath(); ctx.ellipse(t.cx, base, 11, 3, 0, Math.PI, 0); ctx.fill();
+        ctx.strokeStyle = '#3a4a2a'; ctx.lineWidth = 1; for (const dx of [-7, -2, 4, 8]) { ctx.beginPath(); ctx.moveTo(t.cx + dx, base); ctx.quadraticCurveTo(t.cx + dx * 1.3, base - 3, t.cx + dx * 1.6, base - 1); ctx.stroke(); }
+      } else {
+        ctx.strokeStyle = 'rgba(10,8,8,0.8)'; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(t.x + 1, base - 0.5); ctx.lineTo(t.cx - 2, base - 2); ctx.lineTo(t.cx + 3, base - 0.6); ctx.lineTo(t.x + T - 1, base - 1.8); ctx.stroke();
+        ctx.fillStyle = '#c8bca0'; ctx.beginPath(); ctx.arc(t.cx - 5, base - 1, 1.6, Math.PI, 0); ctx.fill();
+      }
+      if (t.state === 'warn') { const w = Math.sin(t.t * 40) * 1.2; ctx.fillStyle = k === 'thorns' ? '#4e7a3e' : '#c8bca0'; for (const dx of [-5, 0, 5]) { ctx.beginPath(); ctx.moveTo(t.cx + dx - 1.4, base); ctx.lineTo(t.cx + dx + w, base - 4); ctx.lineTo(t.cx + dx + 1.4, base); ctx.fill(); } }
+      if (e > 0.02) for (const [dx, hk] of [[-7, 0.75], [-2.5, 1], [2.5, 0.9], [7, 0.7]]) {
+        const hh = h * hk, x = t.cx + dx, lean = dx * 0.25;
+        if (k === 'thorns') {
+          const g = ctx.createLinearGradient(0, base, 0, base - hh); g.addColorStop(0, '#1e2a14'); g.addColorStop(1, '#6a8a42');
+          ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x - 2.4, base); ctx.quadraticCurveTo(x - 1.2 + lean, base - hh * 0.6, x + lean, base - hh); ctx.quadraticCurveTo(x + 1.2 + lean, base - hh * 0.6, x + 2.4, base); ctx.fill();
+          ctx.fillStyle = '#d8c8a0';
+          for (let y = base - 6, i = 0; y > base - hh + 4; y -= 6, i++) { const s = i % 2 ? 1 : -1, xx = x + lean * (base - y) / Math.max(1, hh); ctx.beginPath(); ctx.moveTo(xx, y); ctx.lineTo(xx + s * 3, y - 1.6); ctx.lineTo(xx, y - 1.6); ctx.fill(); }
+        } else {
+          const g = ctx.createLinearGradient(x - 2, 0, x + 2, 0); g.addColorStop(0, '#8a7e66'); g.addColorStop(0.5, '#e8dec8'); g.addColorStop(1, '#a89a80');
+          ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(x - 2, base); ctx.quadraticCurveTo(x - 2.4 + lean, base - hh * 0.5, x + lean * 1.6, base - hh); ctx.quadraticCurveTo(x + 1.6 + lean, base - hh * 0.5, x + 2, base); ctx.fill();
+          ctx.strokeStyle = 'rgba(40,32,24,0.6)'; ctx.lineWidth = 0.5; ctx.stroke();
+        }
+      }
+    } else if (t.mech === 'crush') {
       const hy = t.headY;
-      ctx.fillStyle = '#1e1816'; ctx.fillRect(t.cx - 3, t.d.y * T - 400, 6, hy - t.d.y * T + 400);
-      ctx.fillStyle = '#2e2622'; ctx.fillRect(t.x - 8, hy, T + 16, 16);
-      ctx.fillStyle = '#5a4a40'; ctx.fillRect(t.x - 8, hy, T + 16, 2);
-      ctx.fillStyle = '#1a1210'; for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.moveTo(t.x - 8 + i * 7.2, hy + 16); ctx.lineTo(t.x - 4.4 + i * 7.2, hy + 21); ctx.lineTo(t.x - 0.8 + i * 7.2, hy + 16); ctx.fill(); }
+      if (k === 'grate') {
+        // grade levadiça do Bastião: barras de ferro presas a um caixilho no teto, com pontas em baixo
+        const top = t.d.y * T;
+        ctx.fillStyle = '#22202a'; ctx.fillRect(t.x - 12, top - 4, T + 24, 6);
+        ctx.fillStyle = '#2e2c34'; for (let i = 0; i < 6; i++) ctx.fillRect(t.x - 10 + i * 7.6, top, 2.6, hy + 14 - top);
+        for (let y = hy + 10; y > top; y -= 14) ctx.fillRect(t.x - 11, y, T + 22, 2.4);
+        ctx.fillStyle = '#5a5664'; for (let i = 0; i < 6; i++) ctx.fillRect(t.x - 10 + i * 7.6, top, 0.6, hy + 14 - top);
+        ctx.fillStyle = '#1a181e'; for (let i = 0; i < 6; i++) { const bx = t.x - 10 + i * 7.6; ctx.beginPath(); ctx.moveTo(bx - 1, hy + 14); ctx.lineTo(bx + 1.3, hy + 21); ctx.lineTo(bx + 3.6, hy + 14); ctx.fill(); }
+      } else {
+        ctx.fillStyle = '#1e1816'; ctx.fillRect(t.cx - 3, t.d.y * T - 400, 6, hy - t.d.y * T + 400);
+        ctx.fillStyle = '#2e2622'; ctx.fillRect(t.x - 8, hy, T + 16, 16);
+        ctx.fillStyle = '#5a4a40'; ctx.fillRect(t.x - 8, hy, T + 16, 2);
+        ctx.fillStyle = '#1a1210'; for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.moveTo(t.x - 8 + i * 7.2, hy + 16); ctx.lineTo(t.x - 4.4 + i * 7.2, hy + 21); ctx.lineTo(t.x - 0.8 + i * 7.2, hy + 16); ctx.fill(); }
+      }
       if (t.k2 === 0) glow(ctx, t.cx, hy + 18, 12, '#ff3020', 0.15);
-    } else if (t.k === 'dart') {
-      ctx.fillStyle = '#2a2426'; ctx.fillRect(t.x + (t.dir > 0 ? 10 : 0), t.y + 4, 10, 12);
-      ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(t.cx + t.dir * 8, t.cy, 2, 0, U.TAU); ctx.fill();
-    } else if (t.k === 'beam') {
+    } else if (k === 'dart') {
+      if (rk === 'r2') { // seteira: bloco de pedra com a fresta escura e a ponta da seta à espreita
+        ctx.fillStyle = '#4a4650'; ctx.fillRect(t.x + 2, t.y + 1, 16, 18); ctx.fillStyle = '#6e6a76'; ctx.fillRect(t.x + 2, t.y + 1, 16, 1);
+        ctx.fillStyle = '#0a090c'; ctx.fillRect(t.cx - 1.6, t.y + 4, 3.2, 12); ctx.fillRect(t.cx - 4, t.cy - 1, 8, 2);
+        ctx.fillStyle = '#b8b0a0'; ctx.beginPath(); ctx.moveTo(t.cx + t.dir * 3, t.cy - 1.4); ctx.lineTo(t.cx + t.dir * 6, t.cy); ctx.lineTo(t.cx + t.dir * 3, t.cy + 1.4); ctx.fill();
+      } else {
+        ctx.fillStyle = '#2a2426'; ctx.fillRect(t.x + (t.dir > 0 ? 10 : 0), t.y + 4, 10, 12);
+        ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(t.cx + t.dir * 8, t.cy, 2, 0, U.TAU); ctx.fill();
+      }
+    } else if (k === 'spear') {
+      // lanças do Palácio: chapa dourada na parede e três hastes que saltam, com pontas de aço
+      const wx = t.dir > 0 ? t.x : t.x + T, L = t.len * T * t.ext;
+      ctx.fillStyle = '#4a3418'; ctx.fillRect(wx - (t.dir > 0 ? 2 : 6), t.cy - 9, 8, 18); ctx.fillStyle = '#c8a050'; ctx.fillRect(wx - (t.dir > 0 ? 2 : 6), t.cy - 9, 8, 1.2);
+      for (const dy of [-5, 0, 5]) { ctx.fillStyle = '#0a080a'; ctx.beginPath(); ctx.arc(wx + t.dir * 2, t.cy + dy, 1.2, 0, U.TAU); ctx.fill(); }
+      if (t.state === 'warn') { ctx.fillStyle = 'rgba(255,230,180,' + (0.4 + 0.4 * Math.sin(t.t * 30)).toFixed(2) + ')'; for (const dy of [-5, 0, 5]) { ctx.beginPath(); ctx.arc(wx + t.dir * 3, t.cy + dy, 1.4, 0, U.TAU); ctx.fill(); } }
+      if (L > 1) for (const dy of [-5, 0, 5]) {
+        const y = t.cy + dy, tip = wx + t.dir * L;
+        ctx.fillStyle = '#5a3e22'; ctx.fillRect(Math.min(wx, tip - t.dir * 5), y - 0.8, Math.max(0, L - 5), 1.6);
+        ctx.fillStyle = '#d8d4dc'; ctx.beginPath(); ctx.moveTo(tip, y); ctx.lineTo(tip - t.dir * 7, y - 2.2); ctx.lineTo(tip - t.dir * 7, y + 2.2); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#c8a050'; ctx.fillRect(tip - t.dir * 8.5 - 0.8, y - 1.6, 1.6, 3.2);
+      }
+    } else if (k === 'beam') {
       const h = t.len * T;
       ctx.fillStyle = '#3a2a40'; ctx.fillRect(t.x, t.y - 4, T, 6);
       if (t.state === 'warn') { ctx.strokeStyle = 'rgba(255,230,160,0.5)'; ctx.setLineDash([3, 4]); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(t.cx, t.y); ctx.lineTo(t.cx, t.y + h); ctx.stroke(); ctx.setLineDash([]); }

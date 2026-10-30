@@ -14,6 +14,7 @@
     b.e('altar', 52, 14, { id: 'a_r4_green', name: 'altar_r4_green' });
     b.e('npc', 16, 14, { id: 'teodoro', cond: (s) => s.quests.teodoro < 3 });
     b.enemy('thornmaid', 37, 10); b.enemy('moth', 30, 7);
+    b.e('trap', 40, 14, { k: 'thorns', period: 2.8 });
     b.e('inscription', 58, 14, { id: 'i18' });
     b.item('salt', 46, 7);
     b.prop('glowflower', 26, 14); b.prop('glowflower', 42, 14);
@@ -67,7 +68,8 @@
     b.plat(13, 17, 11);
     b.carve(0, 3, 1, 7);
     b.water(40, 13, 60, 14);
-    b.enemy('drowned', 46, 14); b.enemy('drowned_big', 56, 14); b.enemy('crawler', 66, 14); b.enemy('thornmaid', 84, 14); b.enemy('moth', 20, 6);
+    b.enemy('drowned', 46, 14); b.enemy('drowned_big', 56, 14);
+    b.e('trap', 25, 14, { k: 'thorns', period: 2.4 }); b.e('trap', 71, 14, { k: 'thorns', period: 2.4, off: 1.2 }); b.enemy('crawler', 66, 14); b.enemy('thornmaid', 84, 14); b.enemy('moth', 20, 6);
     b.item('ash_steel', 88, 14);
     b.e('lever', 79, 14, { id: 'r4', door: 'h_r4' });
     b.e('trigger', 18, 9, { w: 2, h: 6, hint: 'hint_too_high' });

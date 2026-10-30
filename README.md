@@ -11,6 +11,8 @@ Metroidvania 2D de fantasia sombria para o navegador. O Desperto acorda numa cov
 - Missões dos NPC e 3 finais
 - Todo o mapa percorre-se a saltar (com o salto duplo e a investida quando os ganhas); trepar paredes é um atalho opcional
 - Plataformas sempre presas a alguma coisa (mísulas, correntes, cordas ou prumos), com estilos diferentes em cada região
+- Construções de cada região atrás da ação (casas, calvário, túmulos, torre de vigia, trabuquete, fornalha, grua, fonte, pérgula, sinos, engrenagens, retábulo, órgão, arcada, estátua do rei)
+- Armadilhas a combinar com a zona: sinos e incensários a balançar, ossos e espinhos que rompem do chão, seteiras, grade levadiça, prensas, lanças nas paredes
 - Esquiva, parry e guarda, armas com ritmos diferentes
 - Português, English, Español e Français
 - Música e sons sintetizados em tempo real (Web Audio), sem ficheiros de áudio
