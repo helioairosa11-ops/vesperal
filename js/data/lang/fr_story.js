@@ -6,6 +6,7 @@
     hint_parry_bolts: 'Les carreaux brillent avant de partir. Une parade au bon instant les renvoie.', hint_wall: 'Les parois de la cheminée sont très proches. Quelqu\'un avec des griffes pourrait y grimper.', hint_veil: 'Un voile spectral scelle le passage. Il vibre comme une corde de luth.',
     boss_coveiro: 'Le Fossoyeur', boss_matilheira: 'La Vieille Mère de Meute', boss_caedmon: 'Sire Caedmon, Bouclier de la Reine', boss_automato: 'L\'Automate du Soufflet', boss_hilde: 'Maître Hilde, la Forgeronne', boss_mariposa: 'La Mère Phalène', boss_elowen: 'La Nourrice Elowen', boss_sineiro: 'Le Sonneur', boss_corvin: 'Corvin, le Ménestrel', boss_vael: 'L\'Inquisitrice Vael', boss_ozias: 'L\'Évêque Ozias', boss_gemeos: 'Les Jumeaux de la Garde', boss_aldric: 'Le Roi Aldric', boss_seraphine: 'L\'Écho de Seraphine',
     boss_carpideira: 'La Pleureuse',
+    boss_custodio: 'L\'Ostensoir d\'Or', reg_dome: 'Le Dôme',
     npc_ione: 'Ione', npc_hrolf: 'Hrolf', npc_maren: 'Maren', npc_teodoro: 'Teodoro',
     intro_1: 'Le Lume choisissait un réceptacle à chaque génération. À la dernière, il choisit la reine Seraphine — et la flamme se mit à la consumer de l\'intérieur.',
     intro_2: 'Par une nuit sans lune, on tenta de le lui arracher. Le Lume se brisa en six braises, qui s\'enfuirent vers ceux que la reine aimait. Vesperal fut ensevelie sous la cendre, et les morts s\'éveillèrent.',

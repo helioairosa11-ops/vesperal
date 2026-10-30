@@ -6,6 +6,7 @@
     hint_parry_bolts: 'Crossbow bolts gleam before they fly. A parry at the right instant sends them back.', hint_wall: 'The chimney walls stand close together. Someone with claws could climb them.', hint_veil: 'A spectral veil seals the passage. It hums like a lute string.',
     boss_coveiro: 'The Gravedigger', boss_matilheira: 'The Old Pack-Mother', boss_caedmon: 'Sir Caedmon, the Queen\'s Shield', boss_automato: 'The Bellows Automaton', boss_hilde: 'Master Hilde, the Smith', boss_mariposa: 'The Moth Mother', boss_elowen: 'Nurse Elowen', boss_sineiro: 'The Bellringer', boss_corvin: 'Corvin, the Minstrel', boss_vael: 'Inquisitor Vael', boss_ozias: 'Bishop Ozias', boss_gemeos: 'The Twin Guards', boss_aldric: 'King Aldric', boss_seraphine: 'The Echo of Seraphine',
     boss_carpideira: 'The Wailing Mourner',
+    boss_custodio: 'The Golden Monstrance', reg_dome: 'The Dome',
     npc_ione: 'Ione', npc_hrolf: 'Hrolf', npc_maren: 'Maren', npc_teodoro: 'Teodoro',
     intro_1: 'The Lume chose a vessel in every generation. In the last, it chose Queen Seraphine — and the flame began to burn her from within.',
     intro_2: 'On a moonless night, they tried to tear it from her. The Lume shattered into six embers, which fled to those the queen loved. Vesperal was buried in ash, and the dead awoke.',

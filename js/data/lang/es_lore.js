@@ -130,5 +130,6 @@
     bossj_aldric: 'Aldric, rey de Vesperal. Aceptó el plan del obispo porque no soportaba verla arder.',
     bossj_seraphine: 'El Eco de Seraphine: lo que de la reina quedó dentro del Lume. No te pidió que vencieras; te pidió que soltaras.',
     bossj_carpideira: 'Lloraba a los muertos de la ciudad por oficio, a tanto por funeral. Cuando murió la ciudad entera ya no quedó nadie que le pagara, y los lloró a todos gratis hasta que se le rompió la voz. Aún vaga de sala en sala buscando a quién llorar.',
+    bossj_custodio: 'La custodia donde se mostraba la luz al pueblo en las grandes fiestas. Cuando la luz se apagó, solo quedó el oro, y el oro abrió un ojo. No conoce el miedo, ni el cansancio, ni el dolor: solo el brillo.',
   });
 })(window.VS);

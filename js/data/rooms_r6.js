@@ -23,6 +23,8 @@
     b.e('trap', 20, 2, { k: 'censer', len: 11.5, period: 3.2 });
     b.enemy('penitent', 20, 14); b.enemy('vitrail', 44, 7); b.enemy('penitent_big', 56, 14); b.enemy('choir', 70, 6); b.enemy('vitrail', 88, 5);
     b.item('incense', 83, 7);
+    // o teto abre-se por cima da galeria: um poço sobe até à Cúpula (é preciso o salto duplo)
+    b.carve(82, 0, 84, 1); b.plat(81, 85, 4);
     b.e('inscription', 90, 14, { id: 'i28' });
     b.prop('pew', 36, 14); b.prop('pew', 54, 14); b.prop('pew', 66, 14);
   });
@@ -60,6 +62,14 @@
   });
 
   // Coro
+  // A Cúpula — por cima da nave, onde se mostrava a custódia nas grandes festas: chefe opcional, o Custódio de Ouro
+  R('r6_dome', { region: 'r6', x: 6, y: -5, w: 2, area: 'reg_dome', dark: 0.42 }, (b) => {
+    b.fill(); b.carve(2, 2, 61, 14);
+    b.carve(50, 15, 52, 17); b.plat(50, 52, 15);
+    b.e('boss', 24, 8, { boss: 'custodio', trigger: 46, fromRight: true, floor: 15 });
+    b.prop('candelabra', 6, 14); b.prop('candelabra', 58, 14); b.prop('statue', 36, 14);
+  });
+
   R('r6_choir', { region: 'r6', x: 5, y: -2, w: 3 }, (b) => {
     b.fill(); b.carve(2, 3, 93, 14);
     b.exitL(10, 14);

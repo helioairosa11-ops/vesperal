@@ -130,5 +130,6 @@
     bossj_aldric: 'Aldric, roi de Vesperal. Il a accepté le plan de l\'évêque parce qu\'il ne supportait pas de la voir brûler.',
     bossj_seraphine: 'L\'Écho de Seraphine : ce qui restait de la reine dans le Lume. Elle ne t\'a pas demandé de vaincre ; elle t\'a demandé de lâcher prise.',
     bossj_carpideira: 'Elle pleurait les morts de la ville par métier, tant par enterrement. Quand toute la ville mourut, il ne resta personne pour la payer — et elle les pleura tous, pour rien, jusqu\'à ce que sa voix se brise. Elle erre encore de salle en salle, cherchant qui pleurer.',
+    bossj_custodio: 'L\'ostensoir où l\'on montrait la lumière au peuple les jours de fête. Quand la lumière s\'éteignit, il ne resta que l\'or — et l\'or ouvrit un œil. Il ne connaît ni peur, ni fatigue, ni douleur : seulement l\'éclat.',
   });
 })(window.VS);

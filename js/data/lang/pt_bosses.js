@@ -28,6 +28,7 @@
     ins_i40: "Três pancadas e o ferro pede água. Quem segura o malho em brasa larga-o, nem que seja a mestra. Conta as pancadas; espera o branco.",
     tip_mariposa_rest: "Depois de largar o pó, a Mãe-Mariposa pousa exausta, de asas fechadas. Fere-a no chão!",
     tip_carpideira_scream: 'O grito não se apara nem se salta: atravessa as ondas com a esquiva.', tip_carpideira_tired: 'Depois do grito duplo cai de joelhos, exausta. Agora!',
+    tip_custodio_rays: 'Não tem fraquezas: os raios rodam — corre à frente deles ou atravessa-os com a esquiva.', tip_custodio_blades: 'As lâminas de ouro devolvem-se com um parry.',
     msg_wail_far: 'Ao longe, alguém chora.', msg_wail_near: 'O choro está aqui.',
     ins_i41_t: "Nota de um jardineiro, presa a um espinho",
     ins_i41: "Não lhe subas ao encontro. Ela sacode o pó das asas e o pó pesa-lhe; depois desce ao chão, fecha as asas como um telhado e dorme um pouco. É nesse sono curto que se poda.",

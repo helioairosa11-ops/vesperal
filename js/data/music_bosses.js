@@ -133,6 +133,24 @@
       { inst: 'choir', vol: 0.35, minInt: 1, notes: pad(P, 4, 4) },
     ] };
   }
+  // ---------------- O Custódio de Ouro — "Glória" (ré maior: órgão, coro e metais, sinos; tambores nas fases 2 e 3) ----------------
+  {
+    const P = ['D', 'G', 'D', 'A', 'Bm', 'G', 'D', 'A', 'G', 'D', 'Em', 'A', 'D', 'G', 'A', 'D'];
+    M.b_custodio = { bpm: 92, fadeIn: 0.8, parts: [
+      { inst: 'organ', vol: 0.42, notes: pad(P, 3, 4) },
+      { inst: 'choir', vol: 0.4, notes: pad(P, 4, 4) },
+      { inst: 'brass', vol: 0.5, notes: bars(
+        'D5:2 F#5:1 A5:1', 'B5:2 A5:2', 'F#5:1 E5:1 D5:1 F#5:1', 'E5:4',
+        'D5:1 F#5:1 B5:2', 'A5:1 G5:1 B4:2', 'D5:2 A4:2', 'C#5:4',
+        'B4:2 D5:1 G5:1', 'F#5:2 A5:2', 'G5:1 F#5:1 E5:1 B4:1', 'C#5:2 E5:2',
+        'F#5:2 A5:2', 'B5:1 A5:1 G5:1 D5:1', 'E5:1 F#5:1 G5:1 C#5:1', 'D5:4') },
+      { inst: 'harp', vol: 0.32, notes: arp(P, 4, [0, 1, 2, 3, 4, 5, 4, 3], 0.5) },
+      { inst: 'bigbell', vol: 0.3, notes: R('D4:4 r:12', 4) },
+      { inst: 'strings', vol: 0.3, minInt: 1, notes: arp(P, 4, [0, 2, 4, 2], 1) },
+      { inst: 'timp', vol: 0.5, minInt: 1, notes: R('D2:1 D2:0.5 D2:0.5 A1:2', 16) },
+      { inst: 'taiko', vol: 0.4, minInt: 2, notes: R('C2:1 r:1 C2:1 C2:1', 16) },
+    ] };
+  }
   // ---------------- A Carpideira — "Pranto" (ré menor, 3/4 lento: coro, lamento, sino de finados e um coração) ----------------
   {
     const P = ['Dm', 'Dm', 'Eb', 'Dm', 'Gm', 'Gm', 'A', 'A', 'Dm', 'Bb', 'Gm', 'Eb', 'Dm', 'Eb', 'A', 'Dm'];

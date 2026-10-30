@@ -1337,8 +1337,60 @@ def t_wanderer(R, b):
     R.check('Carpideira sem erros de JavaScript', not errs, errs[:3])
     pg.close()
 
+def t_custodio(R, b):
+    """O Custódio de Ouro (opcional, na Cúpula por cima da nave): sem pontos fracos e cheio de luz"""
+    pg = b.new_page(viewport={'width': 1280, 'height': 720}); errs = []; page_errors(pg, errs)
+    boot(pg); new_game(pg); pg.evaluate('VSDebug.allAbilities(); VSDebug.god(true)')
+    # chega-se à Cúpula pelo poço no teto da nave
+    warp(pg, 'r6_nave', 83, 3)
+    pg.evaluate("(() => { T.g().ents.filter((e) => e.isEnemy).forEach((e) => e.remove = true); const p = T.p(); p.x = 83 * 20 + 10 - p.w / 2; p.y = 4 * 20 - p.h; p.vx = 0; p.vy = 0; })()")
+    wait(pg, 'T.p().onGround', 2)
+    pg.evaluate("T.tap('Space', 16)"); frames(pg, 20); pg.evaluate("T.tap('Space', 16)")
+    up = wait(pg, "T.g().room.id === 'r6_dome'", 4)
+    R.check('o poço no teto da nave sobe até à Cúpula', up, pg.evaluate('T.g().room.id'))
+    if not up:
+        warp(pg, 'r6_dome', 54, 13)
+    # anda para a esquerda: ele acorda
+    pg.evaluate("(() => { const p = T.p(); p.x = 54 * 20; p.y = 14 * 20 - p.h + 20 - 1; })()"); frames(pg, 20)
+    pg.evaluate('T.key("KeyA", true)'); frames(pg, 60); pg.evaluate('T.key("KeyA", false)')
+    woke = wait(pg, "T.bossEnts().some((e) => e.bossId === 'custodio')", 6)
+    wait(pg, '!T.bossEnts()[0].intro', 10)
+    info = pg.evaluate("(() => { const e = T.bossEnts()[0]; return { sheet: VS.EnemyRender.has(e), bar: !!T.g().boss, flying: e.flying }; })()")
+    R.check('o Custódio acorda na Cúpula (folha própria, barra de chefe, voa)', woke and info['sheet'] and info['bar'] and info['flying'], info)
+    pg.evaluate("(() => { const e = T.bossEnts()[0]; T.C = e; e.K = Object.assign({}, e.K, { think() {} }); e.atk = null; e.cool = 99; })()")
+    def run_atk(name, n):
+        pg.evaluate(f"(() => {{ T.C.atk = null; T.C.attack('{name}'); }})()"); frames(pg, n)
+    run_atk('rays', 110)
+    beams = pg.evaluate("T.g().ents.filter((x) => x instanceof VS.SunBeam).length")
+    shot(pg, 'custodio_rays')
+    run_atk('pillars', 70)
+    pills = pg.evaluate("T.g().ents.filter((x) => x instanceof VS.LightPillar).length")
+    shot(pg, 'custodio_pillars')
+    run_atk('blades', 70)
+    blades = pg.evaluate("T.g().ents.filter((x) => x.kind === 'goldblade').length")
+    run_atk('burst', 85)
+    orbs = pg.evaluate("T.g().ents.filter((x) => x.kind === 'light').length")
+    shot(pg, 'custodio_burst')
+    pos0 = pg.evaluate('[Math.round(T.C.cx), Math.round(T.C.cy)]')
+    run_atk('blink', 70)
+    pos1 = pg.evaluate('[Math.round(T.C.cx), Math.round(T.C.cy)]')
+    R.check('raios a girar, colunas de luz, lâminas de ouro, erupção de esferas e piscar para outro sítio',
+            beams >= 4 and pills >= 3 and blades >= 3 and orbs >= 12 and pos0 != pos1, {'beams': beams, 'pillars': pills, 'blades': blades, 'orbs': orbs, 'moved': pos0 != pos1})
+    # sem pontos fracos: o parry não o atordoa e nada lhe faz dano a mais
+    nw = pg.evaluate("(() => { const e = T.C; e.atk = null; e.stagger = 0; e.onParried(T.g()); return { stag: e.stagger, mult: e.K.damageMult(e) }; })()")
+    R.check('sem pontos fracos: não fica atordoado com o parry e não leva dano a mais', nw['stag'] <= 0 and nw['mult'] == 1, nw)
+    # vencido: fica no diário e dá a recompensa
+    ash0 = pg.evaluate('VS.state.ash')
+    pg.evaluate('T.autoDlg = true; T.C.die(T.g())')
+    won = wait(pg, 'VS.state.bosses.custodio === true', 8)
+    frames(pg, 60)
+    R.check('vencido, fica no diário e dá a recompensa', won and pg.evaluate('VS.state.ash') >= ash0 + 2500, {'won': won})
+    R.check('nomes do Custódio nas línguas', pg.evaluate("['boss_custodio', 'bossj_custodio', 'tip_custodio_rays', 'reg_dome'].every((k) => VS.t(k) && VS.t(k) !== k)"))
+    R.check('Custódio sem erros de JavaScript', not errs, errs[:3])
+    pg.close()
+
 TESTS = {'menus': t_menus, 'combat': t_movement_combat, 'world': t_world, 'bosses': t_bosses, 'caedmon': t_caedmon, 'aldric': t_aldric, 'corvin': t_corvin,
-         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach, 'giants': t_giants, 'traps': t_traps, 'structs': t_structs, 'wanderer': t_wanderer}
+         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach, 'giants': t_giants, 'traps': t_traps, 'structs': t_structs, 'wanderer': t_wanderer, 'custodio': t_custodio}
 
 
 def main(filters):

@@ -202,6 +202,13 @@
       ctx.fillStyle = '#fffaf0'; ctx.beginPath(); ctx.ellipse(x - 1.2, y + 0.6, 1, 2, 0, 0, U.TAU); ctx.fill();
       return;
     }
+    if (k === 'goldblade') { // lâmina de ouro: um raio do sol solto, a apontar para onde voa (azulada quando devolvida)
+      ctx.save(); ctx.translate(x, y); ctx.rotate(Math.atan2(pr.vy, pr.vx));
+      S.glow(ctx, 0, 0, 13, pr.team === 'player' ? '#a0d0ff' : '#ffd870', 0.5);
+      ctx.fillStyle = '#c8a050'; ctx.beginPath(); ctx.moveTo(11, 0); ctx.lineTo(-8, -3.4); ctx.lineTo(-4.5, 0); ctx.lineTo(-8, 3.4); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#fff4c8'; ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(-4, -1.1); ctx.lineTo(-4, 1.1); ctx.closePath(); ctx.fill();
+      ctx.restore(); return;
+    }
     if (k === 'waxpool') { // poça de cera derretida, ainda quente
       const k2 = Math.min(1, pr.life / 0.6);
       ctx.globalAlpha = k2; S.glow(ctx, x, y, 16, '#ff9a50', 0.25);

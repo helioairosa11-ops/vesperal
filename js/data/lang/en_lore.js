@@ -130,5 +130,6 @@
     bossj_aldric: 'Aldric, king of Vesperal. He accepted the bishop\'s plan because he could not bear to watch her burn.',
     bossj_seraphine: 'The Echo of Seraphine: what remained of the queen inside the Lume. She did not ask you to win; she asked you to let go.',
     bossj_carpideira: 'She wept for the city\'s dead as a trade, so much per funeral. When the whole city died there was no one left to pay her — and she wept for them all, for nothing, until her voice broke. She still drifts from room to room, looking for someone to mourn.',
+    bossj_custodio: 'The monstrance where the light was shown to the people on feast days. When the light went out, only the gold remained — and the gold opened an eye. It knows no fear, no weariness, no pain: only radiance.',
   });
 })(window.VS);

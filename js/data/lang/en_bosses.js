@@ -28,6 +28,7 @@
     ins_i40: "Three blows and the iron begs for water. Whoever holds a white-hot hammer lets it go, even the master. Count the blows; wait for the white.",
     tip_mariposa_rest: "After shedding her dust, the Moth Mother lands exhausted, wings folded. Strike her on the ground!",
     tip_carpideira_scream: 'The scream can\'t be parried or jumped: dodge through the waves.', tip_carpideira_tired: 'After the double scream she falls to her knees, exhausted. Now!',
+    tip_custodio_rays: 'It has no weakness: the rays turn — outrun them or dodge through.', tip_custodio_blades: 'Parry the golden blades to send them back.',
     msg_wail_far: 'Somewhere far off, someone is weeping.', msg_wail_near: 'The weeping is here.',
     ins_i41_t: "A Gardener's Note, Pinned to a Thorn",
     ins_i41: "Don't climb to meet her. She shakes the dust from her wings and the dust weighs on her; then she comes down, folds her wings like a roof and sleeps a little. It is in that short sleep that one prunes.",

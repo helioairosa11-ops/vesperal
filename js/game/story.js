@@ -20,6 +20,7 @@
     aldric: { items: [['ember_6', 1], ['w_montante', 1]] },
     seraphine: {},
     carpideira: { items: [['ash_heart', 1], ['candle_fragment', 1]], ash: 1600 },
+    custodio: { items: [['ash_heart', 1]], ash: 2500 },
   };
 
   // ---------- introdução (curta: a história revela-se aos poucos) ----------

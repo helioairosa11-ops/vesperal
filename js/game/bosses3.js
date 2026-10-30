@@ -95,8 +95,148 @@
     onPhase(e, g) { A.sfx('wail', { vol: 1 }); G.addShake(0.6); e.screamCd = 1.2; },
   });
 
+
+  // ======================================================================
+  // O CUSTÓDIO DE OURO — chefe opcional da Cúpula (por cima da nave): sem pontos fracos, todo ele luz.
+  // Nunca fica atordoado nem leva dano a mais; o parry só serve para devolver as lâminas de ouro.
+  // ======================================================================
+  // raio de sol a girar à volta do Custódio (aviso fino primeiro, depois a luz que fere)
+  class SunBeam extends VS.Entity {
+    constructor(boss, ang, speed, warn, life) {
+      super(boss.cx, boss.cy, 2, 2); this.b = boss; this.ang = ang; this.speed = speed; this.warn = warn; this.life = life; this.t0 = 0;
+      this.z = 6; this.attackHBs = []; this.aid = VS.Entity.newAttackId(); this.drawAlways = true;
+    }
+    update(dt, game) {
+      super.update(dt, game);
+      this.t0 += dt; this.attackHBs = [];
+      if (this.b.remove || this.b.defeated || this.t0 > this.warn + this.life) { this.remove = true; return; }
+      this.x = this.b.cx; this.y = this.b.cy;
+      if (this.t0 < this.warn) return;
+      this.ang += this.speed * dt;
+      const c = Math.cos(this.ang), s = Math.sin(this.ang);
+      for (let d = 26; d < 640; d += 12) {
+        const x = this.x + c * d, y = this.y + s * d;
+        if (game.room.solidAtPoint(x, y)) break;
+        this.attackHBs.push({ x: x - 6, y: y - 6, w: 12, h: 12, dmg: 20, id: this.aid, unblockable: true, parryable: false, src: { cx: this.x } });
+      }
+      if (Math.random() < 0.5) { const d = U.rand(30, 400); G.emit({ x: this.x + c * d, y: this.y + s * d, vx: U.rand(-20, 20), vy: U.rand(-30, 10), life: 0.5, size: U.rand(1, 2), color: '#fff0c0', add: true }); }
+    }
+    draw(ctx) {
+      const c = Math.cos(this.ang), s = Math.sin(this.ang), L = 640;
+      ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.ang); ctx.globalCompositeOperation = 'lighter';
+      if (this.t0 < this.warn) {
+        const k = this.t0 / this.warn;
+        ctx.strokeStyle = `rgba(255,236,170,${(0.2 + k * 0.4).toFixed(3)})`; ctx.lineWidth = 1; ctx.setLineDash([6, 6]); ctx.beginPath(); ctx.moveTo(26, 0); ctx.lineTo(L, 0); ctx.stroke(); ctx.setLineDash([]);
+      } else {
+        const k = Math.min(1, (this.t0 - this.warn) / 0.12) * Math.min(1, (this.warn + this.life - this.t0) / 0.2);
+        const g = ctx.createLinearGradient(0, -10, 0, 10); g.addColorStop(0, 'rgba(255,200,90,0)'); g.addColorStop(0.5, `rgba(255,248,220,${(0.95 * k).toFixed(3)})`); g.addColorStop(1, 'rgba(255,200,90,0)');
+        ctx.fillStyle = g; ctx.fillRect(22, -10, L, 20);
+        ctx.fillStyle = `rgba(255,255,255,${(0.9 * k).toFixed(3)})`; ctx.fillRect(22, -1.5, L, 3);
+      }
+      ctx.restore(); void c; void s;
+    }
+  }
+  // coluna de luz que desce do teto: um círculo no chão avisa onde cai
+  class LightPillar extends VS.Entity {
+    constructor(x, floor, delay) {
+      super(x - 16, 0, 32, floor); this.fx = x; this.floor = floor; this.delay = delay; this.t0 = 0; this.z = 6; this.attackHBs = []; this.aid = VS.Entity.newAttackId(); this.drawAlways = true;
+    }
+    update(dt, game) {
+      super.update(dt, game);
+      this.t0 += dt; this.attackHBs = [];
+      const w = this.delay, f = w + 0.45;
+      if (this.t0 > f + 0.4) { this.remove = true; return; }
+      if (this.t0 >= w && this.t0 < f) {
+        if (!this.boom) { this.boom = true; A.sfx('light', { vol: 0.8 }); G.addShake(0.25); G.burst(this.fx, this.floor - 2, 18, { color: '#fff0c0', speed: 160, angle: -Math.PI / 2, spread: 1.4, g: 300, life: 0.6, size: 1.8, add: true }); }
+        this.attackHBs.push({ x: this.fx - 15, y: 0, w: 30, h: this.floor, dmg: 22, id: this.aid, unblockable: true, parryable: false, src: { cx: this.fx } });
+      }
+    }
+    emitLight() { if (this.t0 >= this.delay) G.light(this.fx, this.floor - 60, 120, '#ffe8a0', 0.9); }
+    draw(ctx) {
+      const w = this.delay, t = this.t0;
+      ctx.save(); ctx.globalCompositeOperation = 'lighter';
+      if (t < w) {
+        const k = t / w;
+        ctx.strokeStyle = `rgba(255,230,160,${(0.3 + 0.5 * k).toFixed(3)})`; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.ellipse(this.fx, this.floor - 1, 16 * (1.4 - k * 0.4), 3.4, 0, 0, U.TAU); ctx.stroke();
+        ctx.fillStyle = `rgba(255,240,200,${(0.08 + 0.12 * k).toFixed(3)})`; ctx.fillRect(this.fx - 12, 0, 24, this.floor);
+      } else {
+        const k = t < w + 0.45 ? 1 : Math.max(0, 1 - (t - w - 0.45) / 0.4);
+        const g = ctx.createLinearGradient(this.fx - 18, 0, this.fx + 18, 0); g.addColorStop(0, 'rgba(255,210,110,0)'); g.addColorStop(0.5, `rgba(255,250,230,${(0.95 * k).toFixed(3)})`); g.addColorStop(1, 'rgba(255,210,110,0)');
+        ctx.fillStyle = g; ctx.fillRect(this.fx - 18, 0, 36, this.floor);
+      }
+      ctx.restore();
+    }
+  }
+  VS.SunBeam = SunBeam; VS.LightPillar = LightPillar;
+
+  function custBlades(e, g, n, spread) {
+    const p = g.player, base = Math.atan2(p.cy - e.cy, p.cx - e.cx);
+    for (let i = 0; i < n; i++) {
+      const a = base + (i - (n - 1) / 2) * (spread || 0.16), sp = 210 + i % 2 * 30;
+      g.spawn(P({ x: e.cx + Math.cos(a) * 30 - 6, y: e.cy + Math.sin(a) * 30 - 6, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, w: 12, h: 12, dmg: 16, kind: 'goldblade', color: '#ffd870', life: 4, solid: false, reflectable: true, homing: 0.6 }));
+    }
+    A.sfx('chime', { vol: 0.5 });
+  }
+  function custHome(e, g) { // um ponto no alto da cúpula, longe da protagonista
+    const p = g.player, x0 = e.arena.x0 + 60, x1 = e.arena.x1 - 60;
+    let x = U.rand(x0, x1); if (Math.abs(x - p.cx) < 140) x = p.cx < (x0 + x1) / 2 ? x1 - U.rand(0, 80) : x0 + U.rand(0, 80);
+    return { x, y: e.arena.floor - U.rand(120, 170) };
+  }
+
+  Bs.def('custodio', {
+    cfg: { w: 44, h: 44, hp: 1300, music: 'b_custodio', flying: true, heavy: true, phases: [0.66, 0.33], introTime: 3.0, ash: 0, ashCol: '#ffe0a0', parryStagger: 0 },
+    sheetAnchor: 'center',
+    light(e) { if (!e.dead) G.light(e.cx, e.cy, 150 + (e.glowK || 0) * 80, '#ffe4a0', 0.85, 2); },
+    attacks: {
+      // RAIOS DE SOL (vermelho): linhas finas avisam, depois os raios rodam à volta dele — corre à frente deles ou esquiva-te através
+      rays: { wind: 0.5, act: 3.2, rec: 0.8, tell: 'red', sfx: false,
+        onAct(e, g) { const n = 4 + e.phase * 2, dir = Math.random() < 0.5 ? 1 : -1, sp = (0.55 + e.phase * 0.12) * dir, off = Math.random() * U.TAU;
+          for (let i = 0; i < n; i++) g.spawn(new SunBeam(e, off + i / n * U.TAU, sp, 0.9, 2.2)); A.sfx('choir_hit', { vol: 0.6 }); e.vx = 0; e.vy = 0;
+          if (!e.rayHint) { e.rayHint = true; VS.UI.toast(VS.t('tip_custodio_rays'), 4); } },
+        during(e) { e.vx *= 0.9; e.vy *= 0.9; e.glowK = 1; }, onEnd(e) { e.glowK = 0; } },
+      // LÂMINAS DE OURO (branco): os raios soltam-se e voam para ti — apara para as devolver
+      blades: { wind: 0.7, act: 0.9, rec: 0.6, tell: 'white', sfx: false,
+        during(e, g) { const a = e.atk, k = Math.floor(a.t / 0.3); if (k !== a.k && k < 3) { a.k = k; custBlades(e, g, 3 + e.phase, 0.18); } },
+        onEnd(e) { if (!e.bladeHint) { e.bladeHint = true; VS.UI.toast(VS.t('tip_custodio_blades'), 4); } } },
+      // COLUNAS DE LUZ (sem sinal): círculos no chão marcam onde a luz cai, uma atrás da outra, a seguir-te
+      pillars: { wind: 0.6, act: 1.6, rec: 0.7, tell: null, sfx: 'light',
+        onAct(e, g) { const p = g.player, n = 3 + e.phase; for (let i = 0; i < n; i++) { const x = U.clamp(p.cx + (i - 0.5) * p.dir * 46 + U.rand(-10, 10), e.arena.x0 + 20, e.arena.x1 - 20); g.spawn(new LightPillar(x, e.arena.floor, 0.75 + i * 0.32)); } } },
+      // ERUPÇÃO (vermelho): enche-se de luz e rebenta num anel de esferas
+      burst: { wind: 1.1, act: 0.3, rec: 0.9, tell: 'red', sfx: false,
+        windTick(e) { e.glowK = Math.min(2, (e.glowK || 0) + 0.03); if (Math.random() < 0.6) G.emit({ x: e.cx + U.rand(-60, 60), y: e.cy + U.rand(-60, 60), vx: 0, vy: 0, life: 0.4, size: U.rand(1, 2), color: '#fff0c0', add: true }); },
+        onAct(e, g) { const n = 18 + e.phase * 6, off = Math.random(); for (let i = 0; i < n; i++) { const a = (i + off) / n * U.TAU; g.spawn(P({ x: e.cx - 6, y: e.cy - 6, vx: Math.cos(a) * 150, vy: Math.sin(a) * 150, w: 12, h: 12, dmg: 15, kind: 'light', color: '#fff0c0', life: 5, solid: true, reflectable: true, isLight: true })); }
+          A.sfx('choir_hit', { vol: 0.8 }); G.flash('#fff4d0', 0.25); G.addShake(0.4); VS.FX.flare(e.cx, e.cy, 70, [255, 236, 190], 0.6); e.glowK = 0; } },
+      // PISCAR: fecha o olho, apaga-se e reaparece noutro sítio da cúpula
+      blink: { wind: 0.4, act: 0.5, rec: 0.3, tell: null, sfx: false,
+        onAct(e, g) { const h = custHome(e, g); G.burst(e.cx, e.cy, 24, { color: '#ffe8a0', speed: 120, life: 0.5, size: 1.8, add: true }); e.x = h.x - e.w / 2; e.y = h.y - e.h / 2; e.vx = 0; e.vy = 0; e.blinkT = 0.5; A.sfx('chime', { vol: 0.6 }); G.burst(e.cx, e.cy, 24, { color: '#ffe8a0', speed: 120, life: 0.5, size: 1.8, add: true }); } },
+    },
+    animMap: { rays: 'atk_charge', burst: 'atk_charge', blink: 'atk_blink', blades: 'atk_cast', pillars: 'atk_cast' },
+    alpha: (e) => (e.blinkT > 0 ? Math.max(0, 1 - e.blinkT * 1.6) : 1),
+    // sem pontos fracos: o parry não o atordoa e nada lhe faz dano a mais
+    onParried(e) { A.sfx('shield', { vol: 0.6 }); },
+    damageMult: () => 1,
+    introStart(e, g) { e.glowK = 2; A.sfx('choir_hit', { vol: 0.9 }); G.flash('#fff4d0', 0.35); },
+    introUpdate(e, g) { e.glowK = Math.max(0, (e.glowK || 0) - 0.01); if (Math.random() < 0.7) G.emit({ x: e.cx + U.rand(-50, 50), y: e.cy + U.rand(-50, 50), vx: U.rand(-20, 20), vy: U.rand(-40, -10), life: 1, size: U.rand(1, 2.4), color: U.pick(['#fff0c0', '#ffd870', '#ffffff']), add: true }); },
+    onPhase(e, g) { A.sfx('choir_hit', { vol: 1 }); G.flash('#fff4d0', 0.3); e.attack('burst'); },
+    think(e, dt, g) {
+      if (e.blinkT > 0) e.blinkT -= dt;
+      if (e.atk) return;
+      const p = g.player;
+      e.face();
+      // paira no alto, a seguir a protagonista de longe, com um balanço lento
+      const tx = U.clamp(p.cx + Math.sin(e.anim * 0.7) * 90, e.arena.x0 + 40, e.arena.x1 - 40), ty = e.arena.floor - 140 + Math.sin(e.anim * 1.3) * 18;
+      e.fly(tx, ty, 90, dt, 0.05);
+      if (Math.random() < 0.6) G.emit({ x: e.cx + U.rand(-24, 24), y: e.cy + U.rand(-24, 24), vx: U.rand(-10, 10), vy: U.rand(-20, 0), life: 0.8, size: U.rand(0.8, 1.6), color: '#ffe8a0', add: true });
+      if (e.cool > 0) return;
+      const seq = e.seq || (e.seq = []);
+      if (!seq.length) { const a = ['rays', 'blades', 'pillars', 'blades', 'burst', 'blink']; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } seq.push(...a); }
+      e.attack(seq.shift());
+    },
+  });
+
   // enquanto a folha de sprites ainda não carregou, não se desenha nada (aparece envolta em fumo)
   VS.SpritesBoss = VS.SpritesBoss || {};
   if (!VS.SpritesBoss.carpideira) VS.SpritesBoss.carpideira = function () {};
+  if (!VS.SpritesBoss.custodio) VS.SpritesBoss.custodio = function () {};
   VS.Carpideira = { wail, WailRing };
 })(window.VS);

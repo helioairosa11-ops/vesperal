@@ -103,7 +103,7 @@
     royalguard: { mat: 'armor', armored: true }, courtier: { mat: 'spirit', spectral: true, flying: true }, torch: { mat: 'wax' },
     b_coveiro: { mat: 'flesh' }, b_matilheira: { mat: 'ash', agile: true }, b_caedmon: { mat: 'armor', armored: true },
     b_automato: { mat: 'armor', armored: true }, b_hilde: { mat: 'flesh' }, b_mariposa: { mat: 'flesh', flying: true, agile: true },
-    b_elowen: { mat: 'plant', spectral: true }, b_sineiro: { mat: 'wood' }, b_carpideira: { mat: 'wax' }, b_corvin: { mat: 'flesh', agile: true },
+    b_elowen: { mat: 'plant', spectral: true }, b_sineiro: { mat: 'wood' }, b_carpideira: { mat: 'wax' }, b_custodio: { mat: 'armor' }, b_corvin: { mat: 'flesh', agile: true },
     b_vael: { mat: 'spirit', spectral: true }, b_ozias: { mat: 'flesh', flying: true }, b_gemeo_a: { mat: 'armor', armored: true },
     b_gemeo_b: { mat: 'armor', armored: true }, b_aldric: { mat: 'armor', armored: true }, b_seraphine: { mat: 'spirit', spectral: true, flying: true },
   };

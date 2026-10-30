@@ -6,6 +6,7 @@
     hint_parry_bolts: 'Los virotes brillan antes de partir. Un parry en el instante justo los devuelve.', hint_wall: 'Las paredes de la chimenea están muy juntas. Alguien con garras podría trepar por ellas.', hint_veil: 'Un velo espectral sella el paso. Vibra como una cuerda de laúd.',
     boss_coveiro: 'El Sepulturero', boss_matilheira: 'La Vieja Madre de la Jauría', boss_caedmon: 'Sir Caedmon, Escudo de la Reina', boss_automato: 'El Autómata del Fuelle', boss_hilde: 'Maestra Hilde, la Herrera', boss_mariposa: 'La Madre Polilla', boss_elowen: 'El Ama Elowen', boss_sineiro: 'El Campanero', boss_corvin: 'Corvin, el Juglar', boss_vael: 'La Inquisidora Vael', boss_ozias: 'El Obispo Ozias', boss_gemeos: 'Los Gemelos de la Guardia', boss_aldric: 'El Rey Aldric', boss_seraphine: 'El Eco de Seraphine',
     boss_carpideira: 'La Plañidera',
+    boss_custodio: 'La Custodia de Oro', reg_dome: 'La Cúpula',
     npc_ione: 'Ione', npc_hrolf: 'Hrolf', npc_maren: 'Maren', npc_teodoro: 'Teodoro',
     intro_1: 'El Lume elegía un receptáculo en cada generación. En la última eligió a la reina Seraphine, y la llama empezó a consumirla por dentro.',
     intro_2: 'En una noche sin luna intentaron arrancárselo. El Lume se partió en seis brasas que huyeron hacia quienes la reina amaba. Vesperal quedó sepultada en ceniza, y los muertos despertaron.',

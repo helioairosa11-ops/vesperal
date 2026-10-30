@@ -8,6 +8,7 @@
     // ---------- nomes ----------
     boss_coveiro: 'O Coveiro', boss_matilheira: 'A Velha Matilheira', boss_caedmon: 'Sir Caedmon, o Escudo da Rainha', boss_automato: 'O Autómato do Fole', boss_hilde: 'Mestra Hilde, a Ferreira', boss_mariposa: 'A Mãe-Mariposa', boss_elowen: 'Ama Elowen', boss_sineiro: 'O Sineiro', boss_corvin: 'Corvin, o Menestrel', boss_vael: 'Inquisidora Vael', boss_ozias: 'Bispo Ozias', boss_gemeos: 'Os Gémeos da Guarda', boss_aldric: 'Rei Aldric', boss_seraphine: 'O Eco de Seraphine',
     boss_carpideira: 'A Carpideira',
+    boss_custodio: 'O Custódio de Ouro', reg_dome: 'A Cúpula',
     npc_ione: 'Ione', npc_hrolf: 'Hrolf', npc_maren: 'Maren', npc_teodoro: 'Teodoro',
     // ---------- introdução ----------
     intro_1: 'O Lume escolhia um receptáculo em cada geração. Na última, escolheu a rainha Seraphine — e a chama começou a queimá-la por dentro.',
