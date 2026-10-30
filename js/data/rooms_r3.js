@@ -27,7 +27,7 @@
     b.e('trap', 44, 14, { k: 'vent', len: 5, period: 2.6 });
     b.e('trap', 56, 3, { k: 'crusher', len: 10.4, period: 3.2 });
     b.e('trap', 84, 3, { k: 'crusher', len: 10.4, period: 3.2, off: 1.6 });
-    b.enemy('thrall', 20, 14); b.enemy('smelter', 49, 10); b.enemy('slag', 38, 14); b.enemy('thrall', 82, 14); b.enemy('slag', 68, 14);
+    b.enemy('thrall', 20, 14); b.enemy('smelter', 49, 10); b.enemy('slag', 38, 14); b.enemy('thrall_big', 86, 14); b.enemy('slag', 68, 14);
     b.e('npc', 89, 14, { id: 'hrolf_body', cond: (s) => s.quests.hrolf === 60 && !s.flags.hrolf_body_found });
     b.e('inscription', 10, 14, { id: 'i13' });
     b.item('oil', 38, 7);

@@ -154,7 +154,7 @@
     b.crumble(22, 24, 12); b.plat(28, 34, 10); b.item('ash_heart', 31, 9);
     b.item('r_lantern', 22, 14);
     b.e('inscription', 50, 14, { id: 'i07' });
-    b.enemy('courtier', 40, 10); b.enemy('husk', 26, 14); b.enemy('husk', 45, 14); b.enemy('crawler', 36, 14);
+    b.enemy('courtier', 40, 10); b.enemy('husk', 26, 14); b.enemy('husk_big', 46, 14); b.enemy('crawler', 36, 14);
     b.e('urn', 18, 14); b.e('urn', 56, 14);
   });
 })(window.VS);

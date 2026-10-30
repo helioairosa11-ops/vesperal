@@ -107,6 +107,13 @@
     en_royalguard: 'Royal Guard', enj_royalguard: 'The king\'s personal guard. They change their strike midway — read the glow.',
     en_courtier: 'Courtier', enj_courtier: 'Ghosts of the court. They appear behind you, as in life. They can only be hurt while visible.',
     en_torch: 'Living Torch', enj_torch: 'Servants who have burned since the moonless night. When they flare red, back away.',
+    en_husk_big: 'Ash Colossus', enj_husk_big: 'A Husk that never stopped growing beneath the ash. Slow to raise its arm — and when it brings it down, the street shakes.',
+    en_hound_big: 'Bastion Mastiff', enj_hound_big: 'The captain\'s dog, as big as a horse. The collar still bears its name, but no one gets close enough to read it.',
+    en_thrall_big: 'Forge Titan', enj_thrall_big: 'They gave it more chains than any other, and it carried them all. The red hammer blow splits the floor — dodge far away.',
+    en_drowned_big: 'Ancient Drowned', enj_drowned_big: 'The first to lie down in the pond, when the garden still had flowers. Its claws grew along with the roots.',
+    en_gargoyle_big: 'Colossal Gargoyle', enj_gargoyle_big: 'It guarded the great bell. When it dives, the wind of its wings arrives first.',
+    en_penitent_big: 'Great Penitent', enj_penitent_big: 'It carried the heaviest yoke in the procession until the yoke grew into its shoulders. Every blow weighs like a bell; the third one gleams.',
+    en_royalguard_big: 'King\'s Champion', enj_royalguard_big: 'It won every tourney in the realm and was set to guard the throne room door. The halberd reaches farther than you think.',
     // ---------- guardians ----------
     bossj_coveiro: 'The city\'s gravedigger kept digging after he died. Without knowing, he kept the Ash Step.',
     bossj_matilheira: 'The oldest bitch in the Bastion kennels. She called her pups whenever she was wounded.',

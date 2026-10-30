@@ -107,6 +107,13 @@
     en_royalguard: 'Guarda Real', enj_royalguard: 'A guarda pessoal do rei. Mudam de golpe a meio — lê o brilho.',
     en_courtier: 'Cortesão', enj_courtier: 'Fantasmas da corte. Aparecem nas costas, como em vida. Só se ferem quando estão visíveis.',
     en_torch: 'Archote Vivo', enj_torch: 'Criados que ardem desde a noite sem lua. Quando se acendem de vermelho, afasta-te.',
+    en_husk_big: 'Colosso de Cinza', enj_husk_big: 'Um Cinzento que nunca parou de crescer debaixo das cinzas. Demora a erguer o braço — e quando o baixa, a rua treme.',
+    en_hound_big: 'Mastim do Bastião', enj_hound_big: 'O cão do capitão, do tamanho de um cavalo. A coleira ainda tem o nome dele, mas ninguém se chega perto para o ler.',
+    en_thrall_big: 'Titã da Forja', enj_thrall_big: 'Puseram-lhe mais correntes do que a qualquer outro, e ele carregou-as todas. A martelada vermelha racha o chão — esquiva-te para longe.',
+    en_drowned_big: 'Afogado Antigo', enj_drowned_big: 'O primeiro a deitar-se no lago, quando o jardim ainda tinha flores. As garras cresceram com as raízes.',
+    en_gargoyle_big: 'Gárgula Colossal', enj_gargoyle_big: 'Guardava o sino maior. Quando mergulha, o vento das asas chega antes dela.',
+    en_penitent_big: 'Grande Penitente', enj_penitent_big: 'Carregou a canga mais pesada da procissão até a canga lhe crescer nos ombros. Cada golpe pesa como um sino; o terceiro brilha.',
+    en_royalguard_big: 'Campeão do Rei', enj_royalguard_big: 'Venceu todos os torneios do reino e ficou de guarda à porta do trono. A alabarda chega mais longe do que pensas.',
     // ---------- guardiões ----------
     bossj_coveiro: 'O coveiro da cidade continuou a cavar depois de morrer. Guardava, sem o saber, o Passo de Cinza.',
     bossj_matilheira: 'A cadela mais velha dos canis do Bastião. Chamava as crias quando se via ferida.',

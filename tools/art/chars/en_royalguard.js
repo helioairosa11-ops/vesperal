@@ -3,7 +3,10 @@
 // (aparáveis) e estoca a fundo (esquivar). → assets/sprites/en_royalguard.png
 'use strict';
 (function (A) {
-  const S = 4, K = A.kit(S), D2R = A.D2R;
+  // V.big: variante grande (folha a 6× para ficar nítida quando o jogo a desenha maior)
+  function make(S, V) {
+  const K = A.kit(S), D2R = A.D2R;
+  const BIG = V.big ? A.bigParts(K, S) : null;
   const H = A.humanoid({ spine: 5.0, chest: 5.2, neck: 1.2, head: 4.4, thigh: 7.0, shin: 6.9, foot: 3.0, uarm: 5.2, farm: 4.8, hand: 1.8 });
   const rig = H.rig;
   const M = {
@@ -14,6 +17,12 @@
     ruff: A.mat('#dcd6c8', { shadow: '#98917e', light: '#fbf6ea' }),
     wood: A.mat('#3a2a1e', { shadow: '#20160f', light: '#5e4634' }),
   };
+  // Campeão: armadura de aço enegrecido com orlas de ouro, capa e penacho carmesim
+  if (V.big) Object.assign(M, {
+    gold: A.mat('#3c3a44', { shadow: '#1c1b22', light: '#7e7c8a', deep: '#0c0b10' }),
+    goldB: A.mat('#2c2a32', { shadow: '#141318', light: '#5c5a66', deep: '#08070a' }),
+    wine: A.mat('#8a1a26', { shadow: '#4a0c14', light: '#c03a48', deep: '#200408' }),
+  });
   const BACK = 0.66;
   function solve(pose) {
     const x = pose.extra, r = pose.root;
@@ -103,11 +112,13 @@
     ctx.restore();
   }
   function draw(ctx, W, x) {
+    if (BIG) BIG.cape(ctx, W, M.wine, x.sway);
     arm(ctx, W, 'B', true);
     leg(ctx, W, 'B', true);
     torso(ctx, W, x);
     leg(ctx, W, 'F', false);
     head(ctx, W, x);
+    if (BIG) BIG.plume(ctx, W.head, M.wine, x.sway);
     glaive(ctx, x);
     arm(ctx, W, 'F', false);
   }
@@ -142,6 +153,10 @@
     R.death = { n: 7, fps: 9, keys: [[0, P({ spine: -14, chest: -10 }, base({ g: [1, 4], wa: -90, eye: 1.6 }), [-1, -14.2])], [0.45, P({ spine: 30, chest: 16, neck: 14 }, base({ g: [4, 9], wa: 70, fF: [3.6, 0], fB: [-1.6, 0], eye: 0.4 }), [0.8, -9.0])], [1, P({ spine: 82, chest: 6, neck: 8 }, base({ g: [7, 4], wa: 10, fF: [4.0, 0], fB: [-1.8, 0], eye: 0 }), [1.2, -5.0])]] };
     return R;
   }
-  A.register('en_royalguard', () => A.creature({ name: 'en_royalguard', S, box: [70, 60], anchor: [30, 54], rig, solve, draw, points, anims: anims(), post: K.post('#ffe0a0', 0.25, 0.04) }));
+  return A.creature({ name: V.name, S, box: [70, 60], anchor: [30, 54], rig, solve, draw, points, anims: anims(), post: K.post('#ffe0a0', 0.25, 0.04) });
+  }
+  A.register('en_royalguard', () => make(4, { name: 'en_royalguard' }));
+  A.register('en_royalguard_big', () => make(6, { name: 'en_royalguard_big', big: true }));
   (A.previewCell = A.previewCell || {}).en_royalguard = [62, 56];
+  A.previewCell.en_royalguard_big = [62, 56];
 })(window.ART);

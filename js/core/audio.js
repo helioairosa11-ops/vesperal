@@ -451,6 +451,8 @@
   SFX.step_metal = (d, t) => { tone(d, t, 'square', 900 + Math.random() * 300, 700, 0.03, 0.08); nburst(d, t, 'bandpass', 3000, 6, 0.1, 0.06); };
   SFX.step_water = (d, t) => { const f = nburst(d, t, 'bandpass', 800, 1.5, 0.25, 0.14); f.frequency.exponentialRampToValueAtTime(2400, t + 0.12); tone(d, t + 0.02, 'sine', 600, 1100, 0.05, 0.06); };
   SFX.step_soft = (d, t) => { nburst(d, t, 'lowpass', 900, 0.7, 0.18, 0.07); };
+  // passada de um bicho enorme: baque surdo e pó
+  SFX.step_heavy = (d, t) => { tone(d, t, 'sine', 72, 36, 0.34, 0.18); nburst(d, t, 'lowpass', 420, 0.8, 0.24, 0.14); };
   SFX.enemy_hurt = (d, t) => { tone(d, t, 'sawtooth', 260, 140, 0.1, 0.12); nburst(d, t, 'lowpass', 2000, 1, 0.25, 0.08); };
   SFX.enemy_die = (d, t) => { const g = gainNode(0); percEnv(g, t, 0.25, 0.6, 0.02); const o = osc('sawtooth', 160, t, t + 0.7); o.frequency.exponentialRampToValueAtTime(50, t + 0.6); const lp = filt('lowpass', 700); o.connect(lp); lp.connect(g); g.connect(d); const f = nburst(d, t + 0.05, 'highpass', 2000, 0.5, 0.18, 0.9, 0.2); f.frequency.exponentialRampToValueAtTime(7000, t + 0.9); };
   SFX.boss_hit = (d, t) => { SFX.hit(d, t); tone(d, t, 'sine', 70, 40, 0.4, 0.2); };

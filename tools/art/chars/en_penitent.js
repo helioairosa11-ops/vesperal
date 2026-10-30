@@ -3,7 +3,10 @@
 // Fustiga com as correntes (duas vezes) e remata com o jugo inteiro (aparável). → assets/sprites/en_penitent.png
 'use strict';
 (function (A) {
-  const S = 4, K = A.kit(S), D2R = A.D2R;
+  // V.big: variante grande (folha a 6× para ficar nítida quando o jogo a desenha maior)
+  function make(S, V) {
+  const K = A.kit(S), D2R = A.D2R;
+  const BIG = V.big ? A.bigParts(K, S) : null;
   const H = A.humanoid({ spine: 4.8, chest: 4.6, neck: 1.2, head: 4.0, thigh: 6.5, shin: 6.4, foot: 2.7, uarm: 4.8, farm: 4.5, hand: 1.7 });
   const rig = H.rig;
   const M = {
@@ -13,6 +16,11 @@
     iron: A.mat('#4c4a52', { shadow: '#24232a', light: '#8e8a96', deep: '#121116' }),
     blood: '#4a1414', hair: '#1c1618',
   };
+  // Grande: saco cor de sangue velho, canga mais escura e uma coroa de espinhos
+  if (V.big) Object.assign(M, {
+    sack: A.mat('#5e1c26', { shadow: '#320e14', light: '#8a2e3a', deep: '#14060a' }),
+    wood: A.mat('#3e2e22', { shadow: '#221810', light: '#6a5038', deep: '#100a06' }),
+  });
   const BACK = 0.66;
   function solve(pose) {
     const x = pose.extra, r = pose.root;
@@ -113,6 +121,7 @@
     leg(ctx, W, 'F', false);
     yoke(ctx, x);
     head(ctx, W, x);
+    if (BIG) BIG.thorns(ctx, W.head, A.mat('#2e2018', { shadow: '#160e0a', light: '#5a4430', deep: '#0a0604' }));
     arm(ctx, W, 'F', false);
   }
   function points(W, x) { const Hh = W.head, ca = Math.cos(Hh.a * D2R), sa = Math.sin(Hh.a * D2R); return { tip: x._tip, eye: [Hh.x + ca * 1.45 - sa * 1.5, Hh.y + sa * 1.45 + ca * 1.5] }; }
@@ -145,6 +154,10 @@
     R.death = { n: 7, fps: 9, keys: [[0, P({ spine: -14, chest: -10 }, base({ ya: -20, cF: 40, cB: 40, eye: 2 }), [-0.8, -12.6])], [0.45, P({ spine: 34, chest: 18, neck: 20 }, base({ ya: 40, yo: [2, 4], cF: 10, cB: -10, fF: [3.4, 0], fB: [-1.4, 0], eye: 1 }), [0.6, -7.4])], [1, P({ spine: 82, chest: 8, neck: 8 }, base({ ya: 80, yo: [3, 6], cF: 0, cB: 0, fF: [3.8, 0], fB: [-1.6, 0], eye: 1 }), [1.2, -4.6])]] };
     return R;
   }
-  A.register('en_penitent', () => A.creature({ name: 'en_penitent', S, box: [56, 50], anchor: [26, 46], rig, solve, draw, points, anims: anims(), post: K.post('#b8a0c8', 0.3, 0.04) }));
+  return A.creature({ name: V.name, S, box: [56, 50], anchor: [26, 46], rig, solve, draw, points, anims: anims(), post: K.post('#b8a0c8', 0.3, 0.04) });
+  }
+  A.register('en_penitent', () => make(4, { name: 'en_penitent' }));
+  A.register('en_penitent_big', () => make(6, { name: 'en_penitent_big', big: true }));
   (A.previewCell = A.previewCell || {}).en_penitent = [50, 48];
+  A.previewCell.en_penitent_big = [50, 48];
 })(window.ART);

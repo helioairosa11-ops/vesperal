@@ -107,6 +107,13 @@
     en_royalguard: 'Guardia Real', enj_royalguard: 'La guardia personal del rey. Cambian de golpe a mitad: lee el brillo.',
     en_courtier: 'Cortesano', enj_courtier: 'Fantasmas de la corte. Aparecen a tu espalda, como en vida. Solo se les hiere cuando son visibles.',
     en_torch: 'Antorcha Viva', enj_torch: 'Criados que arden desde la noche sin luna. Cuando se encienden de rojo, apártate.',
+    en_husk_big: 'Coloso de Ceniza', enj_husk_big: 'Un Ceniciento que nunca dejó de crecer bajo la ceniza. Tarda en alzar el brazo; cuando lo baja, la calle tiembla.',
+    en_hound_big: 'Mastín del Bastión', enj_hound_big: 'El perro del capitán, grande como un caballo. El collar aún lleva su nombre, pero nadie se acerca lo bastante para leerlo.',
+    en_thrall_big: 'Titán de la Forja', enj_thrall_big: 'Le pusieron más cadenas que a ningún otro, y las cargó todas. El martillazo rojo parte el suelo: esquiva lejos.',
+    en_drowned_big: 'Ahogado Antiguo', enj_drowned_big: 'El primero en tumbarse en el estanque, cuando el jardín aún tenía flores. Sus garras crecieron con las raíces.',
+    en_gargoyle_big: 'Gárgola Colosal', enj_gargoyle_big: 'Guardaba la campana mayor. Cuando se lanza en picado, el viento de sus alas llega antes que ella.',
+    en_penitent_big: 'Gran Penitente', enj_penitent_big: 'Cargó el yugo más pesado de la procesión hasta que el yugo le creció en los hombros. Cada golpe pesa como una campana; el tercero brilla.',
+    en_royalguard_big: 'Campeón del Rey', enj_royalguard_big: 'Ganó todos los torneos del reino y quedó de guardia ante la puerta del trono. La alabarda llega más lejos de lo que crees.',
     // ---------- guardianes ----------
     bossj_coveiro: 'El sepulturero de la ciudad siguió cavando después de morir. Guardaba, sin saberlo, el Paso de Ceniza.',
     bossj_matilheira: 'La perra más vieja de las perreras del Bastión. Llamaba a sus crías cuando se veía herida.',

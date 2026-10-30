@@ -19,7 +19,7 @@
     b.carve(40, 15, 43, 17);
     b.solid(33, 13, 37, 14); b.solid(84, 13, 88, 14); b.solid(62, 12, 63, 14);
     b.carve(72, 15, 77, 16); b.spikes(72, 77, 16); b.crumble(72, 77, 15);
-    b.enemy('sentinel', 20, 14); b.enemy('crossbow', 35, 12); b.enemy('hound', 55, 14); b.enemy('sentinel', 68, 14); b.enemy('crossbow', 86, 12);
+    b.enemy('sentinel', 20, 14); b.enemy('crossbow', 35, 12); b.enemy('hound_big', 54, 14); b.enemy('sentinel', 68, 14); b.enemy('crossbow', 86, 12);
     b.e('trap', 61, 12, { k: 'dart', dir: -1, period: 2.2 });
     b.e('inscription', 47, 14, { id: 'i09' });
     b.e('urn', 10, 14); b.e('urn', 80, 14);

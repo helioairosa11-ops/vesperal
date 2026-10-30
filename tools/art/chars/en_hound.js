@@ -2,7 +2,10 @@
 // em gaiola e coleira partida com elos a balouçar. Corre a galope, rodeia e salta à presa. → assets/sprites/en_hound.png
 'use strict';
 (function (A) {
-  const S = 4, K = A.kit(S), D2R = A.D2R;
+  // V.big: variante grande (folha a 6× para ficar nítida quando o jogo a desenha maior)
+  function make(S, V) {
+  const K = A.kit(S), D2R = A.D2R;
+  const BIG = V.big ? A.bigParts(K, S) : null;
   const M = {
     skin: A.mat('#6d6466', { shadow: '#3a3336', light: '#9f9592', deep: '#1c171a' }),
     skinB: A.mat('#4e4749', { shadow: '#2a2427', light: '#716868', deep: '#141012' }),
@@ -10,6 +13,25 @@
     leather: A.mat('#3e2b22', { shadow: '#22160f', light: '#6a4a38' }),
     bone: A.mat('#d4c8ae', { shadow: '#8a7e66', light: '#f0e6d0' }),
   };
+  // Mastim: pelo tigrado escuro, ferro enferrujado e uma couraça com espigões no dorso
+  if (V.big) Object.assign(M, {
+    skin: A.mat('#5c4c44', { shadow: '#2e2420', light: '#8c7264', deep: '#140e0c' }),
+    skinB: A.mat('#40342e', { shadow: '#1f1815', light: '#604e44', deep: '#0e0a08' }),
+    iron: A.mat('#5a4a44', { shadow: '#2a201c', light: '#a08070', deep: '#140e0c' }),
+  });
+  function barding(ctx, W) {
+    const h = W.hips, c = W.chest;
+    const P = (t, o) => [A.lerp(h.x, c.ex, t), A.lerp(h.y, c.ey, t) + o];
+    const top = [], bot = [];
+    for (let i = 0; i <= 6; i++) { const t = 0.2 + i * 0.1, arch = Math.sin((i / 6) * Math.PI) * 0.5; top.push(P(t, -2.8 - arch)); bot.push(P(t + 0.02, 0.2 - arch * 0.3)); }
+    const path = A.path((q) => { q.M(top[0][0], top[0][1]); top.forEach((p) => q.L(p[0], p[1])); for (let i = bot.length - 1; i >= 0; i--) q.L(bot[i][0], bot[i][1]); q.Z(); }, S);
+    K.paint(ctx, path, M.iron, { depth: S * 0.5, hlw: S * 0.3, light: [0.3, -1] });
+    ctx.save(); ctx.clip(path);
+    for (let i = 1; i < 6; i += 2) K.line(ctx, [top[i], bot[i]], 0.16, A.rgba(M.iron.deep, 0.75));
+    ctx.restore();
+    for (let i = 1; i <= 5; i++) { const [px, py] = top[i]; K.poly(ctx, [[px - 0.45, py + 0.25], [px - 0.5, py - 1.6], [px + 0.45, py + 0.25]], M.iron, { depth: S * 0.1 }); }
+    for (let i = 0; i <= 6; i += 2) K.dot(ctx, bot[i][0], bot[i][1] - 0.6, 0.2, M.iron.light);
+  }
   const rig = new A.Rig([
     { n: 'hips', len: 2.0, a: 0 },
     { n: 'spine', p: 'hips', len: 5.4, a: -4 },
@@ -118,6 +140,7 @@
     hindLeg(ctx, W, 'B', true);
     tail(ctx, W, x);
     body(ctx, W, x);
+    if (BIG) barding(ctx, W);
     hindLeg(ctx, W, 'F', false);
     collar(ctx, W, x);
     head(ctx, W, x);
@@ -162,6 +185,10 @@
     R.death = { n: 7, fps: 10, keys: [[0, P({ spine: -6, neck: -24, head: -10, jaw: 40 }, st({ tailA: 30, chainSw: 40, eye: 2 }), [-5.6, -11])], [0.4, P({ spine: 10, chest: 6, neck: 26, head: 16, jaw: 30 }, st({ pF: [12.6, 0], pB: [7.4, 0], qF: [1.4, 0], qB: [-1.4, 0], tailA: -20, chainSw: -20, eye: 0.6 }), [-5.4, -6.4], 4)], [1, P({ spine: 6, chest: 4, neck: 40, head: 24, jaw: 34 }, st({ pF: [13.6, 0], pB: [8.6, 0], qF: [3.4, 0], qB: [-2.6, 0], tailA: -40, chainSw: 0, eye: 0 }), [-5.2, -3.4], 2)]] };
     return R;
   }
-  A.register('en_hound', () => A.creature({ name: 'en_hound', S, box: [48, 30], anchor: [22, 27], rig, solve, draw, points, anims: anims(), post: K.post('#a39ab8', 0.3, 0.045) }));
+  return A.creature({ name: V.name, S, box: [48, 30], anchor: [22, 27], rig, solve, draw, points, anims: anims(), post: K.post('#a39ab8', 0.3, 0.045) });
+  }
+  A.register('en_hound', () => make(4, { name: 'en_hound' }));
+  A.register('en_hound_big', () => make(6, { name: 'en_hound_big', big: true }));
   (A.previewCell = A.previewCell || {}).en_hound = [44, 30];
+  A.previewCell.en_hound_big = [44, 30];
 })(window.ART);

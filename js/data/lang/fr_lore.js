@@ -107,6 +107,13 @@
     en_royalguard: 'Garde Royal', enj_royalguard: 'La garde personnelle du roi. Ils changent de coup en plein élan — lis la lueur.',
     en_courtier: 'Courtisan', enj_courtier: 'Des fantômes de la cour. Ils apparaissent dans ton dos, comme de leur vivant. On ne peut les blesser que lorsqu\'ils sont visibles.',
     en_torch: 'Torche Vivante', enj_torch: 'Des serviteurs qui brûlent depuis la nuit sans lune. Quand ils s\'embrasent de rouge, recule.',
+    en_husk_big: 'Colosse de Cendre', enj_husk_big: 'Un Cendreux qui n\'a jamais cessé de grandir sous la cendre. Lent à lever le bras — et quand il l\'abat, la rue tremble.',
+    en_hound_big: 'Mâtin du Bastion', enj_hound_big: 'Le chien du capitaine, grand comme un cheval. Le collier porte encore son nom, mais personne ne s\'approche assez pour le lire.',
+    en_thrall_big: 'Titan de la Forge', enj_thrall_big: 'On lui a mis plus de chaînes qu\'à tout autre, et il les a toutes portées. Le coup de marteau rouge fend le sol — esquive loin.',
+    en_drowned_big: 'Noyé Ancien', enj_drowned_big: 'Le premier à s\'allonger dans l\'étang, quand le jardin avait encore des fleurs. Ses griffes ont poussé avec les racines.',
+    en_gargoyle_big: 'Gargouille Colossale', enj_gargoyle_big: 'Elle gardait la grande cloche. Quand elle plonge, le vent de ses ailes arrive avant elle.',
+    en_penitent_big: 'Grand Pénitent', enj_penitent_big: 'Il a porté le joug le plus lourd de la procession jusqu\'à ce que le joug lui pousse dans les épaules. Chaque coup pèse comme une cloche ; le troisième brille.',
+    en_royalguard_big: 'Champion du Roi', enj_royalguard_big: 'Il a remporté tous les tournois du royaume et garde la porte de la salle du trône. La hallebarde porte plus loin que tu ne crois.',
     // ---------- gardiens ----------
     bossj_coveiro: 'Le fossoyeur de la ville a continué de creuser après sa mort. Il gardait, sans le savoir, le Pas de Cendre.',
     bossj_matilheira: 'La plus vieille chienne des chenils du Bastion. Elle appelait ses petits dès qu\'elle était blessée.',

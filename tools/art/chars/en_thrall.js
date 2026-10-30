@@ -3,7 +3,10 @@
 // de fogo (esquivar). → assets/sprites/en_thrall.png
 'use strict';
 (function (A) {
-  const S = 4, K = A.kit(S), D2R = A.D2R;
+  // V.big: variante grande (folha a 6× para ficar nítida quando o jogo a desenha maior)
+  function make(S, V) {
+  const K = A.kit(S), D2R = A.D2R;
+  const BIG = V.big ? A.bigParts(K, S) : null;
   const H = A.humanoid({ pelvis: 2.4, spine: 5.4, chest: 5.6, neck: 1.2, head: 4.0, thigh: 6.6, shin: 6.4, foot: 3.2, uarm: 5.6, farm: 5.4, hand: 2.2, shoulder: 0.78 });
   const rig = H.rig;
   const M = {
@@ -14,6 +17,12 @@
     leather: A.mat('#3a2a22', { shadow: '#1e1511', light: '#5e4636' }),
     wood: A.mat('#4a3424', { shadow: '#2a1d14', light: '#7a5a40' }),
   };
+  // Titã: ferro enegrecido, brasas mais vivas, cornos no elmo e grilhetas em ambos os pulsos
+  if (V.big) Object.assign(M, {
+    skin: A.mat('#4e3a36', { shadow: '#281c1a', light: '#7a5c52', deep: '#120c0b' }),
+    iron: A.mat('#3a3840', { shadow: '#1c1b20', light: '#78747e', deep: '#0c0b0e' }),
+    hot: A.mat('#8a4a2a', { shadow: '#542a16', light: '#ffb060' }),
+  });
   const BACK = 0.64;
 
   function solve(pose) {
@@ -123,12 +132,15 @@
   function draw(ctx, W, x) {
     cracks.length = 0;
     arm(ctx, W, 'B', true, x);
+    if (BIG) BIG.shackle(ctx, W.farmB, K.dim(M.iron, 0.7), x.sway);
     leg(ctx, W, 'B', true);
     torso(ctx, W, x);
     leg(ctx, W, 'F', false);
     head(ctx, W, x);
+    if (BIG) BIG.horns(ctx, W.head, A.mat('#cfc6b0', { shadow: '#8a8270', light: '#efe6d0', deep: '#2a2620' }), 1.15);
     maul(ctx, x);
     arm(ctx, W, 'F', false, x);
+    if (BIG) BIG.shackle(ctx, W.farmF, M.iron, x.sway);
     x._cracks = cracks.slice();
   }
   // brasa por baixo da pele e nos olhos: por cima do contorno, com mistura aditiva
@@ -174,6 +186,10 @@
     R.death = { n: 8, fps: 9, keys: [[0, P({ spine: -10, chest: -10 }, base({ g: [1, 4], wa: -20, glow: 2 }), [-0.6, -12.6])], [0.4, P({ spine: 30, chest: 20, neck: 14 }, base({ g: [5, 10], wa: 80, tgK: 1, fF: [3.6, 0], fB: [-1.4, 0], glow: 1 }), [0.8, -7.6])], [1, P({ spine: 80, chest: 10, neck: 8 }, base({ g: [8, 5], wa: 10, fF: [4.0, 0], fB: [-1.6, 0], glow: 0, chainSw: 0 }), [1.2, -4.4])]] };
     return R;
   }
-  A.register('en_thrall', () => A.creature({ name: 'en_thrall', S, box: [66, 58], anchor: [28, 53], rig, solve, draw, overlay, points, anims: anims(), post: K.post('#d08060', 0.3, 0.04) }));
+  return A.creature({ name: V.name, S, box: [66, 58], anchor: [28, 53], rig, solve, draw, overlay, points, anims: anims(), post: K.post('#d08060', 0.3, 0.04) });
+  }
+  A.register('en_thrall', () => make(4, { name: 'en_thrall' }));
+  A.register('en_thrall_big', () => make(6, { name: 'en_thrall_big', big: true }));
   (A.previewCell = A.previewCell || {}).en_thrall = [58, 54];
+  A.previewCell.en_thrall_big = [58, 54];
 })(window.ART);

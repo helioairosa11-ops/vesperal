@@ -12,7 +12,7 @@
     b.carve(40, 15, 43, 16); b.spikes(40, 43, 16);
     b.carve(10, 0, 13, 1);
     b.plat(8, 15, 12); b.plat(10, 13, 9); b.plat(8, 15, 6); b.plat(10, 13, 3);
-    b.enemy('torch', 32, 14); b.enemy('royalguard', 50, 14);
+    b.enemy('torch', 32, 14); b.enemy('royalguard_big', 52, 14);
     b.e('trap', 32, 0, { k: 'blade', len: 13, period: 2.8 });
     b.e('inscription', 56, 14, { id: 'i32' });
   });

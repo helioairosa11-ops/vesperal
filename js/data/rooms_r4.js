@@ -67,7 +67,7 @@
     b.plat(13, 17, 11);
     b.carve(0, 3, 1, 7);
     b.water(40, 13, 60, 14);
-    b.enemy('drowned', 46, 14); b.enemy('drowned', 56, 14); b.enemy('crawler', 66, 14); b.enemy('thornmaid', 84, 14); b.enemy('moth', 20, 6);
+    b.enemy('drowned', 46, 14); b.enemy('drowned_big', 56, 14); b.enemy('crawler', 66, 14); b.enemy('thornmaid', 84, 14); b.enemy('moth', 20, 6);
     b.item('ash_steel', 88, 14);
     b.e('lever', 79, 14, { id: 'r4', door: 'h_r4' });
     b.e('trigger', 18, 9, { w: 2, h: 6, hint: 'hint_too_high' });

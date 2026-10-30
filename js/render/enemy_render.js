@@ -39,10 +39,13 @@
     return { anim: 'idle', f: timed('idle') };
   };
   // ponto de um fotograma (unidades relativas à âncora) → mundo
+  // escala do desenho: tamanho do bicho (variantes grandes) × escala própria do tipo
+  const scaleOf = (e) => (e.size || 1) * (e.K.drawScale ? e.K.drawScale(e) : 1);
+  ER.scaleOf = scaleOf;
   ER.point = function (e, f, which) {
     const p = f && f.pts && f.pts[which]; if (!p) return null;
-    const ay = e.K.sheetAnchor === 'center' ? e.cy : e.bottom;
-    return { x: e.cx + e.facing * p[0], y: ay + p[1] };
+    const ay = e.K.sheetAnchor === 'center' ? e.cy : e.bottom, s = scaleOf(e);
+    return { x: e.cx + e.facing * p[0] * s, y: ay + p[1] * s };
   };
   ER.draw = function (ctx, e) {
     const sh = ER.sheet(e);
@@ -52,7 +55,7 @@
     e._f = sel.f;
     ctx.save();
     ctx.translate(e.cx, e.K.sheetAnchor === 'center' ? e.cy : e.bottom);
-    const sc = e.K.drawScale ? e.K.drawScale(e) : 1;
+    const sc = scaleOf(e);
     ctx.scale(e.facing * sc, sc);
     if (e.K.alpha) ctx.globalAlpha *= e.K.alpha(e);
     VS.Assets.drawFrame(ctx, sh, sel.f);
@@ -66,7 +69,7 @@
   ER.ghost = function (ctx, e, col, alpha, dx, dy) {
     const sh = ER.sheet(e), f = e._f; if (!sh || !f || !VS.Assets.ok(sh.img) || alpha <= 0.01) return;
     const s = sh.meta.scale, c = VS.Assets.tinted(sh, f, col);
-    const sc = (e.K.drawScale ? e.K.drawScale(e) : 1) * 1.06;
+    const sc = scaleOf(e) * 1.06;
     ctx.save(); ctx.translate(e.cx + (dx || 0), (e.K.sheetAnchor === 'center' ? e.cy : e.bottom) + (dy || 0)); ctx.scale(e.facing * sc, sc);
     ctx.globalAlpha *= alpha * 0.55; ctx.globalCompositeOperation = 'lighter';
     for (const [ox, oy] of [[-0.8, 0], [0.8, -0.6]]) ctx.drawImage(c, 0, 0, c.width, c.height, f.ox + ox, f.oy + oy, c.width / s, c.height / s);

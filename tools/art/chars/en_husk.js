@@ -2,7 +2,10 @@
 // Ataca com as unhas (golpe de cima) e com um abraço em salto (aparável). → assets/sprites/en_husk.png
 'use strict';
 (function (A) {
-  const S = 4, K = A.kit(S), D2R = A.D2R;
+  // V.big: variante grande (folha a 6× para ficar nítida quando o jogo a desenha maior)
+  function make(S, V) {
+  const K = A.kit(S), D2R = A.D2R;
+  const BIG = V.big ? A.bigParts(K, S) : null;
   const H = A.humanoid({ spine: 4.6, chest: 4.4, neck: 1.5, head: 3.9, thigh: 6.3, shin: 6.3, foot: 2.6, uarm: 5.3, farm: 5.0, hand: 2.0 });
   const rig = H.rig;
   const M = {
@@ -12,6 +15,12 @@
     rope: A.mat('#3b2f26', { shadow: '#211a15', light: '#665343' }),
     bone: A.mat('#d4c9b0', { shadow: '#8b7f68', light: '#f1e8d4' }),
   };
+  // Colosso: pele queimada, mortalha cor de ferrugem, grilhetas partidas e brasas a arder por dentro
+  const IRON = A.mat('#4c4a52', { shadow: '#24232a', light: '#8e8a96', deep: '#121116' });
+  if (V.big) Object.assign(M, {
+    skin: A.mat('#564c4e', { shadow: '#2a2326', light: '#877b77', deep: '#140f12' }),
+    shroud: A.mat('#6e5a4a', { shadow: '#3e3128', light: '#9a8270', deep: '#1c150f' }),
+  });
   const BACK = 0.68;
 
   // pés e mãos por IK. x.fF/x.fB = [dx, alturaDoChão] relativo à anca; x.hF/x.hB = [dx, dy] relativo ao ombro
@@ -140,8 +149,10 @@
   function draw(ctx, W, x) {
     cowl(ctx, W, x, false);
     arm(ctx, W, 'B', true, x);
+    if (BIG) BIG.shackle(ctx, W.farmB, K.dim(IRON, 0.7), x.sway);
     leg(ctx, W, 'B', true);
     torso(ctx, W, x);
+    if (BIG) BIG.cracks(ctx, W.chest, x.eye === undefined ? 1 : x.eye, 11, 0.9);
     leg(ctx, W, 'F', false);
     // farrapos da frente por cima das coxas
     const P = W.pelvis, [hx, hy] = K.along(P, 0.1), [pnx] = K.perp(W.spine);
@@ -151,6 +162,7 @@
     head(ctx, W, x);
     cowl(ctx, W, x, true);
     arm(ctx, W, 'F', false, x);
+    if (BIG) BIG.shackle(ctx, W.farmF, IRON, x.sway);
   }
   function points(W, x) {
     const Hd = W.handF, Hh = W.head;
@@ -224,6 +236,10 @@
     };
     return R;
   }
-  A.register('en_husk', () => A.creature({ name: 'en_husk', S, box: [44, 44], anchor: [20, 41], rig, solve, draw, points, anims: anims(), post: K.post('#a39ab8', 0.3, 0.045) }));
+  return A.creature({ name: V.name, S, box: [44, 44], anchor: [20, 41], rig, solve, draw, points, anims: anims(), post: K.post('#a39ab8', 0.3, 0.045) });
+  }
+  A.register('en_husk', () => make(4, { name: 'en_husk' }));
+  A.register('en_husk_big', () => make(6, { name: 'en_husk_big', big: true }));
   (A.previewCell = A.previewCell || {}).en_husk = [40, 40];
+  A.previewCell.en_husk_big = [40, 40];
 })(window.ART);

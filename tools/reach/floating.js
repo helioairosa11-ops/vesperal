@@ -17,8 +17,10 @@ for (const id in VS.ROOMS) {
   for (const p of d.props || []) if (FLOOR_PROPS.has(p.k)) check('adereço', p.k, p.x, p.y);
   // armadilhas: respiradouros no chão; esmagadores e lâminas presos ao teto
   for (const e of d.ents || []) if (e.t === 'trap') {
-    if (e.k === 'vent' && !SOLID.has(at(e.x, e.y + 1))) { console.log(`${id.padEnd(14)} armadilha vent (${e.x},${e.y}) sem chão`); n++; }
-    if ((e.k === 'crusher' || e.k === 'blade' || e.k === 'beam') && !SOLID.has(at(e.x, e.y - 1)) && e.y > 0) { console.log(`${id.padEnd(14)} armadilha ${e.k} (${e.x},${e.y}) sem teto por cima (por cima: ${JSON.stringify(at(e.x, e.y - 1))})`); n++; }
+    if (['vent', 'thorns', 'bones'].includes(e.k) && !SOLID.has(at(e.x, e.y + 1))) { console.log(`${id.padEnd(14)} armadilha ${e.k} (${e.x},${e.y}) sem chão`); n++; }
+    if (['crusher', 'grate', 'blade', 'bell', 'censer', 'beam'].includes(e.k) && !SOLID.has(at(e.x, e.y - 1)) && e.y > 0) { console.log(`${id.padEnd(14)} armadilha ${e.k} (${e.x},${e.y}) sem teto por cima (por cima: ${JSON.stringify(at(e.x, e.y - 1))})`); n++; }
+    if ((e.k === 'spear' || e.k === 'dart') && !SOLID.has(at(e.x - (e.dir || 1), e.y))) { console.log(`${id.padEnd(14)} armadilha ${e.k} (${e.x},${e.y}) sem parede atrás`); n++; }
+    if (SOLID.has(at(e.x, e.y)) && at(e.x, e.y) !== '=') { console.log(`${id.padEnd(14)} armadilha ${e.k} (${e.x},${e.y}) dentro de parede`); n++; }
   }
 }
 console.log(n ? `${n} objetos sem chão` : 'nenhum objeto a flutuar');

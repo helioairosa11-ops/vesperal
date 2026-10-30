@@ -1117,9 +1117,9 @@ def t_moves(R, b):
     a = pg.evaluate('T.anv')
     R.check('Aldric: o golpe de cima já não solta ondas pelo chão', k == 0, k)
     R.check('Aldric: o eco de Hilde deixa cair a bigorna onde está a protagonista', a, a)
-    # Seraphine (chefe secreto) — parede de penas de luz com uma abertura
+    # Seraphine (chefe secreto) — parede de penas de luz com uma abertura (junto ao chão ou à altura de um salto: o chão conta como limite)
     r = pg.evaluate("""() => new Promise((res) => { const g = T.g(); T.B.remove = true; const S = VS.Bosses.spawn({ boss: 'seraphine', x: 40, y: 12 }, g); g.spawn(S); S.intro = false; S.introDone = true; S.K = Object.assign({}, S.K, { think() {} });
-      let n = 0; T.hooks.push(() => { if (++n === 5) S.attack('beams'); if (n > 60) { const ps = g.ents.filter((e) => e.kind === 'plume'); const ys = ps.map((e) => Math.round(e.y)).sort((a, b) => a - b); let gap = 0; for (let i = 1; i < ys.length; i++) gap = Math.max(gap, ys[i] - ys[i - 1]); res({ n: ps.length, gap }); return true; } }); })""")
+      let n = 0; T.hooks.push(() => { if (++n === 5) S.attack('beams'); if (n > 60) { const ps = g.ents.filter((e) => e.kind === 'plume'); const ys = ps.map((e) => Math.round(e.y)).concat([Math.round(S.arena.floor)]).sort((a, b) => a - b); let gap = 0; for (let i = 1; i < ys.length; i++) gap = Math.max(gap, ys[i] - ys[i - 1]); res({ n: ps.length, gap }); return true; } }); })""")
     R.check('Seraphine: as asas soltam uma parede de penas com uma abertura por onde passar', r['n'] >= 8 and r['gap'] >= 45, r)
     R.check('golpes redesenhados sem erros', not errs, errs[:3])
     pg.close()
@@ -1180,8 +1180,46 @@ def t_reach(R, b):
     pg.close()
 
 
+GIANTS = [('husk_big', 'r1_crypt'), ('hound_big', 'r2_wall'), ('thrall_big', 'r3_foundry'), ('drowned_big', 'r4_roots'),
+          ('gargoyle_big', 'r5_eaves'), ('penitent_big', 'r6_nave'), ('royalguard_big', 'r7_bridge')]
+
+
+def t_giants(R, b):
+    """inimigos grandes: um gigante por região (folha própria, maior, ataca, fere e morre) e os de garras maiores"""
+    pg = b.new_page(viewport={'width': 1280, 'height': 720}); errs = []; page_errors(pg, errs)
+    boot(pg); new_game(pg); pg.evaluate('VSDebug.allAbilities(); VSDebug.god(true)')
+    for kind, room in GIANTS:
+        warp(pg, room)
+        info = pg.evaluate(f"""() => {{ const e = T.g().ents.find((x) => x.kind === '{kind}'); if (!e) return null; T.G = e;
+          return {{ size: e.size, w: e.w, h: e.h, hp: e.hp, sheet: !!VS.Assets.sheet('en_{kind}') }}; }}""")
+        if not info:
+            R.check(f'{kind}: está em {room}', False); continue
+        wait(pg, 'VS.EnemyRender.has(T.G)', 5)
+        # a protagonista aparece à frente dele, a uma distância de golpe
+        pg.evaluate("""() => { const e = T.G, p = T.p(); T.g().ents.filter((x) => x.isEnemy && x !== e).forEach((x) => x.remove = true);
+          const d = e.flying ? 30 : 34 * e.size; p.x = e.cx - d - p.w / 2; p.y = (e.flying ? e.bottom + 80 : e.bottom) - p.h; p.vx = 0; p.vy = 0; p.facing = 1; T.hits = []; T.wrapHits(); }""")
+        got = wait(pg, 'T.hits.length > 0', 9)
+        shot(pg, f'giant_{kind}')
+        R.check(f'{kind}: maior que o normal (×{info["size"]}), com folha própria, e ataca', info['size'] > 1.4 and info['sheet'] and got, dict(info, hits=pg.evaluate('T.hits.length')))
+        # morre com os golpes da protagonista (a caixa maior apanha os golpes) e conta no bestiário
+        # (a IA fica parada nesta parte: um bicho que voa não foge ao teste)
+        pg.evaluate("""() => { const e = T.G, p = T.p(); e.K = Object.assign({}, e.K, { think() {} }); e.atk = null; e.vx = 0; e.vy = 0; e.hp = 4; e.hidden = false; e.hittable = true; e.perched = false; e.returning = false; e.rise = 1; T.releaseAll(); p.action = null; p.x = e.x - p.w - 4; p.y = e.bottom - p.h; p.facing = 1; p.vx = 0; }""")
+        for _ in range(12):
+            pg.evaluate('T.tap("KeyJ", 3)'); frames(pg, 18)
+            if pg.evaluate('T.G.dead || T.G.remove'): break
+        dead = pg.evaluate(f'(T.G.dead || T.G.remove) && (VS.state.bestiary["{kind}"] || 0) > 0')
+        R.check(f'{kind}: cai com os golpes e fica no bestiário', dead, pg.evaluate('({ hp: T.G.hp, dead: T.G.dead })'))
+    # os de garras são um bocado maiores
+    sizes = pg.evaluate("() => ['crawler', 'gargoyle', 'drowned'].map((k) => VS.Enemies.KINDS[k].size || 1)")
+    R.check('rastejante, gárgula e afogado são maiores (garras)', all(s >= 1.3 for s in sizes), sizes)
+    names = pg.evaluate("() => ['husk_big', 'royalguard_big'].map((k) => VS.t('en_' + k))")
+    R.check('nomes dos gigantes no bestiário', all(n and not n.startswith('en_') for n in names), names)
+    R.check('gigantes sem erros de JavaScript', not errs, errs[:3])
+    pg.close()
+
+
 TESTS = {'menus': t_menus, 'combat': t_movement_combat, 'world': t_world, 'bosses': t_bosses, 'caedmon': t_caedmon, 'aldric': t_aldric, 'corvin': t_corvin,
-         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach}
+         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach, 'giants': t_giants}
 
 
 def main(filters):

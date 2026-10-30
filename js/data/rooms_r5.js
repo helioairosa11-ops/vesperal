@@ -34,7 +34,7 @@
     b.plat(22, 27, 11); b.plat(6, 10, 9);
     b.item('ash_steel', 8, 8);
     b.e('trap', 46, 0, { k: 'blade', len: 13, period: 2.6 });
-    b.enemy('raven', 20, 6); b.enemy('raven', 30, 4); b.enemy('gargoyle', 25, 6);
+    b.enemy('raven', 20, 6); b.enemy('raven', 30, 4); b.enemy('gargoyle_big', 25, 6);
     b.e('inscription', 54, 14, { id: 'i24' });
   });
 

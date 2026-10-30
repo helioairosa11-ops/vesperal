@@ -3,7 +3,10 @@
 // → assets/sprites/en_drowned.png
 'use strict';
 (function (A) {
-  const S = 4, K = A.kit(S), D2R = A.D2R;
+  // V.big: variante grande (folha a 6× para ficar nítida quando o jogo a desenha maior)
+  function make(S, V) {
+  const K = A.kit(S), D2R = A.D2R;
+  const BIG = V.big ? A.bigParts(K, S) : null;
   const H = A.humanoid({ spine: 4.6, chest: 4.6, neck: 1.2, head: 4.2, thigh: 6.2, shin: 6.2, foot: 2.7, uarm: 4.9, farm: 4.6, hand: 1.9 });
   const rig = H.rig;
   const M = {
@@ -14,6 +17,11 @@
     pad: A.mat('#4a6a3a', { shadow: '#2a3e20', light: '#7a9a5a' }),
     hair: '#1a2220',
   };
+  // Antigo: pele mais funda e esverdeada, cracas agarradas e algas a pender dos braços
+  if (V.big) Object.assign(M, {
+    skin: A.mat('#82998f', { shadow: '#46584f', light: '#b0c6ba', deep: '#1a2622' }),
+    skinB: A.mat('#64796f', { shadow: '#38463e', light: '#8ca296', deep: '#121c18' }),
+  });
   const BACK = 0.66;
   function solve(pose) {
     const x = pose.extra, r = pose.root;
@@ -80,11 +88,15 @@
   }
   function draw(ctx, W, x) {
     arm(ctx, W, 'B', true);
+    if (BIG) BIG.kelp(ctx, W.farmB, 0.65, '#2e4628', 2.6, x.sway);
     leg(ctx, W, 'B', true);
     torso(ctx, W, x);
+    if (BIG) BIG.barnacles(ctx, [[W.chest, 0.55, -1.3], [W.spine, 0.5, -1.2]], 3);
     leg(ctx, W, 'F', false);
+    if (BIG) BIG.barnacles(ctx, [[W.thighF, 0.35, -0.5]], 9);
     head(ctx, W, x);
     arm(ctx, W, 'F', false);
+    if (BIG) { BIG.barnacles(ctx, [[W.uarmF, 0.2, 0]], 21); BIG.kelp(ctx, W.farmF, 0.6, '#3e5a34', 3.0, x.sway); }
   }
   // água a escorrer (por cima do contorno)
   function overlay(ctx, W, x) {
@@ -118,6 +130,10 @@
     R.death = { n: 7, fps: 9, keys: [[0, P({ spine: -14, chest: -10 }, base({ hF: [-2, 7], hB: [-3, 7], eye: 1.6 }), [-0.8, -12.4])], [0.45, P({ spine: 32, chest: 16, neck: 16 }, base({ hF: [4, 9], hB: [3, 9], fF: [3.4, 0], fB: [-1.4, 0], eye: 0.4, wet: 1 }), [0.6, -7.4])], [1, P({ spine: 84, chest: 6, neck: 8 }, base({ hF: [7, 3], hB: [6, 4], fF: [3.8, 0], fB: [-1.6, 0], eye: 0, wet: 1.2 }), [1.2, -4.6])]] };
     return R;
   }
-  A.register('en_drowned', () => A.creature({ name: 'en_drowned', S, box: [50, 48], anchor: [22, 44], rig, solve, draw, overlay, points, anims: anims(), post: K.post('#a0d0d0', 0.3, 0.04) }));
+  return A.creature({ name: V.name, S, box: [50, 48], anchor: [22, 44], rig, solve, draw, overlay, points, anims: anims(), post: K.post('#a0d0d0', 0.3, 0.04) });
+  }
+  A.register('en_drowned', () => make(4, { name: 'en_drowned' }));
+  A.register('en_drowned_big', () => make(6, { name: 'en_drowned_big', big: true }));
   (A.previewCell = A.previewCell || {}).en_drowned = [46, 46];
+  A.previewCell.en_drowned_big = [46, 46];
 })(window.ART);

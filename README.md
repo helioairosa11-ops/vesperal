@@ -7,8 +7,10 @@ Metroidvania 2D de fantasia sombria para o navegador. O Desperto acorda numa cov
 - 7 regiões ligadas num só mapa, com altares de brasas, paredes falsas e passagens secretas
 - 14 chefes, cada um com a sua música, golpes que não se repetem de chefe para chefe, um ponto fraco que se vê na luta e uma dica
 - O rei final tem um golpe que mata de uma vez, bem avisado e possível de evitar
-- Missões dos NPC (com retratos no diálogo) e 3 finais
+- Inimigos gigantes, um por região — maiores, mais lentos a armar o golpe e muito mais duros; os inimigos com garras também são maiores
+- Missões dos NPC e 3 finais
 - Todo o mapa percorre-se a saltar (com o salto duplo e a investida quando os ganhas); trepar paredes é um atalho opcional
+- Plataformas sempre presas a alguma coisa (mísulas, correntes, cordas ou prumos), com estilos diferentes em cada região
 - Esquiva, parry e guarda, armas com ritmos diferentes
 - Português, English, Español e Français
 - Música e sons sintetizados em tempo real (Web Audio), sem ficheiros de áudio

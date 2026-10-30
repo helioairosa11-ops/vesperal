@@ -9,24 +9,25 @@
 
   class Enemy extends VS.Entity {
     constructor(kind, d) {
-      const K = KINDS[kind], c = K.cfg;
-      super(d.x * T + T / 2 - c.w / 2, (d.y + 1) * T - c.h, c.w, c.h);
-      this.kind = kind; this.K = K; this.c = c; this.d = d;
+      const K = KINDS[kind], c = K.cfg, size = d.size || K.size || 1;
+      const w = Math.round(c.w * size), h = Math.round(c.h * size);
+      super(d.x * T + T / 2 - w / 2, (d.y + 1) * T - h, w, h);
+      this.kind = kind; this.K = K; this.c = c; this.d = d; this.size = size;
       this.hp = this.maxHp = c.hp; this.poise = this.poiseMax = c.poise || 20;
       this.isEnemy = true; this.hittable = true; this.team = 'enemy'; this.z = 5;
       this.facing = d.face || -1; this.mode = 'idle'; this.modeT = 0; this.atk = null; this.attackHBs = [];
       this.home = { x: this.x, y: this.y }; this.stagger = 0; this.lastHitT = 99; this.flying = !!c.flying;
       this.gravity = this.flying ? 0 : 1350; this.cool = U.rand(0.3, 1.2); this.aggro = false; this.anim = 0;
       this.contactDmg = c.contact || 0;
-      this.nat = (VS.NATURE && VS.NATURE[kind]) || {};
+      this.nat = (VS.NATURE && (VS.NATURE[kind] || VS.NATURE[K.base])) || {};
       if (K.init) K.init(this, d);
     }
     // material do corpo (efeitos e sons dos golpes)
     get material() { return this.nat.mat || (this.nat.spectral ? 'spirit' : 'flesh'); }
     get player() { return this.game.player; }
     // ---------- utilidades de IA ----------
-    dx() { return this.player.cx - this.cx; }
-    dy() { return this.player.cy - this.cy; }
+    dx() { return (this.player.cx - this.cx) / this.size; }
+    dy() { return (this.player.cy - this.cy) / this.size; }
     face() { const d = this.dx(); if (Math.abs(d) > 2) this.facing = d > 0 ? 1 : -1; }
     sees(range, vert) {
       const p = this.player; if (p.action && p.action.type === 'dead') return false;
@@ -42,7 +43,7 @@
     walk(dir, speed, dt) {
       if (dir === 0) { this.vx = U.approach(this.vx, 0, 900 * dt); return; }
       if ((this.onGround && this.ledgeAhead(dir) && !this.c.fearless) || this.wallAhead(dir)) { this.vx = 0; return false; }
-      this.vx = U.approach(this.vx, dir * speed, 1100 * dt); return true;
+      this.vx = U.approach(this.vx, dir * speed * (this.K.speedMult || 1), 1100 * dt); return true;
     }
     fly(tx, ty, speed, dt, k) {
       const a = Math.atan2(ty - this.cy, tx - this.cx), d = Math.hypot(tx - this.cx, ty - this.cy);
@@ -65,10 +66,10 @@
       if (a.phase === 'wind' && s.tell === 'white' && !a.tellSnd && s.wind - a.t <= TELL_LEAD) { a.tellSnd = true; A.sfx('parry_tell', { vol: 0.7 }); }
       if (a.phase === 'wind' && a.t >= s.wind) { a.phase = 'act'; a.t = 0; if (s.sfx !== false) A.sfx(s.sfx || 'swing', { vol: 0.7 }); if (s.onAct) s.onAct(this, this.game); }
       if (a.phase === 'act') {
-        if (s.lunge !== undefined) this.vx = this.facing * s.lunge;
+        if (s.lunge !== undefined) this.vx = this.facing * s.lunge * Math.sqrt(this.size);
         if (s.hb) {
           const r = s.hb(this);
-          if (r) this.attackHBs.push(Object.assign(r, { dmg: s.dmg, id: a.id, parryable: s.parryable !== false && s.tell !== 'red', unblockable: s.tell === 'red', src: this }));
+          if (r) this.attackHBs.push(Object.assign(r, { dmg: Math.round(s.dmg * (this.K.dmgMult || 1)), id: a.id, parryable: s.parryable !== false && s.tell !== 'red', unblockable: s.tell === 'red', src: this }));
         }
         if (s.during) s.during(this, this.game, dt);
         if (a.t >= s.act) { a.phase = 'rec'; a.t = 0; }
@@ -180,7 +181,7 @@
   }
 
   // ---------- ajudantes de hitbox ----------
-  const front = (e, dx, dy, w, h) => ({ x: e.facing > 0 ? e.cx + dx : e.cx - dx - w, y: e.bottom - dy - h, w, h });
+  const front = (e, dx, dy, w, h) => { const s = e.size || 1; dx *= s; dy *= s; w *= s; h *= s; return { x: e.facing > 0 ? e.cx + dx : e.cx - dx - w, y: e.bottom - dy - h, w, h }; };
 
   // ===================== TIPOS =====================
   // --- R1: Cinzento (husk) ---
@@ -339,7 +340,7 @@
     eyeLight: { r: 40, i: 0.6, color: '#ff7a30', flicker: 2 },
     attacks: {
       slam: { wind: 0.85, act: 0.14, rec: 0.9, dmg: 24, hb: (e) => front(e, 6, 0, 30, 30), tell: 'red', armor: true, sfx: 'swing_heavy',
-        onAct(e, g) { G.addShake(0.3); A.sfx('crush', { vol: 0.7 }); for (const s of [-1, 1]) g.spawn(new VS.Projectile({ x: e.cx + e.facing * 22, y: e.bottom - 6, vx: s * 170, vy: 0, w: 14, h: 10, dmg: 12, kind: 'shockwave', color: '#ff8040', life: 1.1, solid: false, parryable: false, reflectable: false, light: true })); } },
+        onAct(e, g) { G.addShake(0.3); A.sfx('crush', { vol: 0.7 }); for (const s of [-1, 1]) g.spawn(new VS.Projectile({ x: e.cx + e.facing * 22 * e.size, y: e.bottom + 4 - 10 * e.size, vx: s * 170 * Math.sqrt(e.size), vy: 0, w: 14 * e.size, h: 10 * e.size, dmg: Math.round(12 * (e.K.dmgMult || 1)), kind: 'shockwave', color: '#ff8040', life: 1.1, solid: false, parryable: false, reflectable: false, light: true })); } },
       swipe: { wind: 0.5, act: 0.16, rec: 0.6, dmg: 16, hb: (e) => front(e, 0, 8, 36, 22), tell: 'white', lunge: 60, sfx: 'swing_heavy' },
     },
     think(e, dt, g) {
@@ -412,7 +413,7 @@
       e.face(); const d = Math.abs(e.dx());
       if (d < 36 && e.cool <= 0) e.attack(U.chance(0.4) ? 'grab' : 'claw'); else e.walk(e.facing, 35, dt);
     },
-    drawHidden(ctx, e) { ctx.fillStyle = 'rgba(40,70,70,0.6)'; ctx.beginPath(); ctx.ellipse(e.cx, e.bottom - 1, 10, 2, 0, 0, U.TAU); ctx.fill(); if (Math.random() < 0.05) G.emit({ x: e.cx + U.rand(-6, 6), y: e.bottom - 2, vy: -15, life: 0.6, size: 1, color: '#90c0c0' }); },
+    drawHidden(ctx, e) { ctx.fillStyle = 'rgba(40,70,70,0.6)'; ctx.beginPath(); ctx.ellipse(e.cx, e.bottom - 1, 10 * e.size, 2 * e.size, 0, 0, U.TAU); ctx.fill(); if (Math.random() < 0.05 * e.size) G.emit({ x: e.cx + U.rand(-6, 6) * e.size, y: e.bottom - 2, vy: -15, life: 0.6, size: 1, color: '#90c0c0' }); },
   };
   // --- R4: Mariposa ---
   KINDS.moth = {
@@ -571,6 +572,41 @@
     },
     light(e) { const p = VS.EnemyRender && VS.EnemyRender.point(e, e._f, 'light'); G.light(p ? p.x : e.cx, p ? p.y : e.y + 6, 90, '#ff7020', 0.9, 3); },
   };
+
+  // ---------- os de garras são um bocado maiores ----------
+  KINDS.crawler.size = 1.45;
+  KINDS.gargoyle.size = 1.35;
+  KINDS.drowned.size = 1.3;
+
+  // ---------- variantes grandes: o mesmo bicho, muito maior, mais lento a armar o golpe e muito mais duro ----------
+  // (o golpe chega mais longe e bate com mais força; a postura aguenta muito mais; não recua com golpes leves)
+  function giant(base, o) {
+    const B = KINDS[base], K = Object.assign({}, B);
+    K.base = base; K.big = true; K.sheet = base + '_big';
+    K.size = o.size; K.dmgMult = o.dmg || 1.5; K.speedMult = o.speed || 0.75;
+    K.cfg = Object.assign({}, B.cfg, { heavy: true }, o.cfg);
+    const slow = o.slow || 1.15;
+    K.attacks = {};
+    for (const n in B.attacks) { const a = B.attacks[n]; K.attacks[n] = Object.assign({}, a, { wind: a.wind * slow, rec: a.rec * (1 + (slow - 1) * 0.6), sfx: a.sfx === 'whip' || !a.sfx ? 'swing_heavy' : a.sfx }); }
+    if (B.eyeLight) K.eyeLight = Object.assign({}, B.eyeLight, { r: (B.eyeLight.r || 24) * 1.5, i: Math.min(0.9, (B.eyeLight.i || 0.5) * 1.3) });
+    // ao acordar e ao cair, o chão treme
+    const think = B.think;
+    K.think = function (e, dt, g) {
+      think(e, dt, g);
+      if (e.aggro && !e._roared) { e._roared = true; if (o.roar !== false) A.sfx('roar', { vol: 0.55 }); G.addShake(0.25); }
+      if (!e.flying && e.onGround && Math.abs(e.vx) > 20) { e._stepT = (e._stepT || 0) + dt; if (e._stepT > 0.42) { e._stepT = 0; G.addShake(0.05); A.sfx('step_heavy', { vol: 0.3 }); } }
+    };
+    const onDeath = B.onDeath;
+    K.onDeath = function (e, g) { G.addShake(0.4); G.burst(e.cx, e.bottom - 4, 26, { color: e.c.ashCol || '#a09080', speed: 160, angle: -Math.PI / 2, spread: 2.4, g: 400, life: 0.9, size: 2.2 }); if (onDeath) onDeath(e, g); };
+    return K;
+  }
+  KINDS.husk_big = giant('husk', { size: 1.85, cfg: { hp: 130, poise: 70, ash: 75 }, dmg: 1.6, speed: 0.8 });
+  KINDS.hound_big = giant('hound', { size: 1.75, cfg: { hp: 115, poise: 50, ash: 80 }, dmg: 1.5, speed: 0.9, slow: 1.1, roar: false });
+  KINDS.thrall_big = giant('thrall', { size: 1.55, cfg: { hp: 230, poise: 110, ash: 120 }, dmg: 1.4, speed: 0.8, slow: 1.12 });
+  KINDS.drowned_big = giant('drowned', { size: 1.8, cfg: { hp: 150, poise: 70, ash: 95 }, dmg: 1.5, speed: 0.85 });
+  KINDS.gargoyle_big = giant('gargoyle', { size: 1.75, cfg: { hp: 150, poise: 70, ash: 110 }, dmg: 1.45, speed: 0.85, slow: 1.1 });
+  KINDS.penitent_big = giant('penitent', { size: 1.65, cfg: { hp: 190, poise: 80, ash: 120 }, dmg: 1.45, speed: 0.75 });
+  KINDS.royalguard_big = giant('royalguard', { size: 1.5, cfg: { hp: 280, poise: 130, ash: 170 }, dmg: 1.35, speed: 0.85, slow: 1.1 });
 
   const E = {
     KINDS, Enemy,

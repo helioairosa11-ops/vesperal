@@ -3,12 +3,21 @@
 // → assets/sprites/en_gargoyle.png
 'use strict';
 (function (A) {
-  const S = 4, K = A.kit(S);
+  // V.big: variante grande (folha a 6× para ficar nítida quando o jogo a desenha maior)
+  function make(S, V) {
+  const K = A.kit(S);
+  const BIG = V.big ? A.bigParts(K, S) : null;
   const M = {
     stone: A.mat('#76727a', { shadow: '#3e3b44', light: '#aaa6ae', deep: '#1c1a20' }),
     stoneB: A.mat('#5a5660', { shadow: '#302d36', light: '#7e7a84', deep: '#16141a' }),
     lichen: '#6a7a4a', moss: '#4a5a34',
   };
+  // Colossal: basalto escuro, líquen vivo e as fissuras do tronco em brasa
+  if (V.big) Object.assign(M, {
+    stone: A.mat('#5c5862', { shadow: '#2c2a32', light: '#8c8894', deep: '#121016' }),
+    stoneB: A.mat('#46424c', { shadow: '#22202a', light: '#6a6670', deep: '#0e0c12' }),
+    lichen: '#7e9040',
+  });
   const rig = new A.Rig([{ n: 'root', len: 1, a: 0 }]);
   const P = (x) => A.pose({}, x, [0, 0]);
   // asa de morcego em pedra: x.wing (–1 baixo … 1 cima), a de perto está partida a meio
@@ -34,7 +43,10 @@
     const tr = K.blob(ctx, [[-5.4, -2.4], [-4.4, -6.4], [-0.8, -8.0], [2.6, -7.0], [4.0, -4.4], [3.2, -1.4], [0.0, 0.2], [-3.8, 0.0]], M.stone, { depth: S * 0.9, hlw: S * 0.4 });
     ctx.save(); ctx.clip(tr);
     // lascas, fissuras e líquen
-    for (const [a, b] of [[[-2.0, -7.2], [-1.0, -4.6]], [[1.2, -6.6], [2.0, -3.8]], [[-4.0, -3.6], [-2.6, -1.0]]]) K.line(ctx, [a, b, [b[0] + 0.6, b[1] + 0.8]], 0.18, '#1c1a20');
+    for (const [a, b] of [[[-2.0, -7.2], [-1.0, -4.6]], [[1.2, -6.6], [2.0, -3.8]], [[-4.0, -3.6], [-2.6, -1.0]]]) {
+      K.line(ctx, [a, b, [b[0] + 0.6, b[1] + 0.8]], V.big ? 0.4 : 0.18, '#1c1a20');
+      if (V.big) { K.line(ctx, [a, b, [b[0] + 0.6, b[1] + 0.8]], 0.22, '#ff6a20'); K.line(ctx, [a, b, [b[0] + 0.6, b[1] + 0.8]], 0.08, '#ffd8a0'); }
+    }
     for (const [lx, ly, r] of [[-3.0, -5.6, 1.2], [1.6, -2.2, 0.9]]) { const g = ctx.createRadialGradient(lx * S, ly * S, 0, lx * S, ly * S, r * S); g.addColorStop(0, A.rgba(M.lichen, 0.8)); g.addColorStop(1, A.rgba(M.lichen, 0)); ctx.fillStyle = g; ctx.fillRect((lx - 2) * S, (ly - 2) * S, 4 * S, 4 * S); }
     ctx.restore();
     // espigão das costas
@@ -79,6 +91,10 @@
     R.death = { n: 7, fps: 10, poseFn: (t, i) => P({ wing: 0.4 - i * 0.15, tilt: 10 + i * 18, eye: Math.max(0, 1 - i * 0.3), crouch: i / 6, mouth: 0.6 }) };
     return R;
   }
-  A.register('en_gargoyle', () => A.creature({ name: 'en_gargoyle', S, box: [40, 36], anchor: [18, 22], rig, draw, points, anims: anims(), post: K.post('#b8b4c8', 0.32, 0.06) }));
+  return A.creature({ name: V.name, S, box: [40, 36], anchor: [18, 22], rig, draw, points, anims: anims(), post: K.post('#b8b4c8', 0.32, 0.06) });
+  }
+  A.register('en_gargoyle', () => make(4, { name: 'en_gargoyle' }));
+  A.register('en_gargoyle_big', () => make(6, { name: 'en_gargoyle_big', big: true }));
   (A.previewCell = A.previewCell || {}).en_gargoyle = [36, 34];
+  A.previewCell.en_gargoyle_big = [36, 34];
 })(window.ART);
