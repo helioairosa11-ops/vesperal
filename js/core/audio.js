@@ -562,6 +562,27 @@
     for (let i = 0; i < 10; i++) nburst(d, t + 0.03 + i * 0.025, 'bandpass', 2400 + Math.random() * 2400, 6, 0.1, 0.03, 0.001);
     tone(d, t, 'sine', 160, 70, 0.3, 0.2);
   };
+  // Custódio: o eclipse (um coro grave que desce e a luz a apagar-se)
+  SFX.eclipse = (d, t) => {
+    [65.4, 98, 130.8].forEach((f0, i) => { const g = gainNode(0); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.12, t + 0.3); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.6); const o = osc(i ? 'triangle' : 'sawtooth', f0 * 2, t, t + 1.7); o.frequency.exponentialRampToValueAtTime(f0, t + 1.2); const lp = filt('lowpass', 900, 2); lp.frequency.exponentialRampToValueAtTime(180, t + 1.4); o.connect(lp); lp.connect(g); g.connect(d); });
+    const f = nburst(d, t, 'bandpass', 3200, 1.4, 0.2, 1.1, 0.05); f.frequency.exponentialRampToValueAtTime(240, t + 1.1);
+    INST.choir(d, t + 0.05, A.noteFreq('D3'), 1.2, 0.5);
+  };
+  // Eco de Seraphine: o tempo a parar (tique-taque que abranda, e um silêncio de vidro) e a voltar
+  SFX.timestop = (d, t) => {
+    for (let i = 0; i < 5; i++) { const tt = t + i * (0.09 + i * 0.03); tone(d, tt, 'square', 2400, 2200, 0.05, 0.03, 0.001); nburst(d, tt, 'highpass', 6000, 1, 0.06, 0.02, 0.001); }
+    const f = nburst(d, t, 'bandpass', 600, 2, 0.25, 0.9, 0.6); f.frequency.exponentialRampToValueAtTime(5200, t + 0.75);
+    INST.glass(d, t + 0.72, 2637, 1.2, 0.6); INST.glass(d, t + 0.74, 1975, 1.2, 0.4);
+  };
+  SFX.timeresume = (d, t) => {
+    const f = nburst(d, t, 'bandpass', 5000, 1.2, 0.35, 0.5, 0.005); f.frequency.exponentialRampToValueAtTime(400, t + 0.45);
+    tone(d, t, 'sine', 180, 60, 0.4, 0.4); INST.glass(d, t, 1318, 0.5, 0.4);
+  };
+  SFX.rewind = (d, t) => {
+    const f = nburst(d, t, 'bandpass', 300, 3, 0.3, 0.55, 0.45); f.frequency.exponentialRampToValueAtTime(3600, t + 0.5);
+    const g = gainNode(0); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.12, t + 0.45); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+    const o = osc('triangle', 220, t, t + 0.62); o.frequency.exponentialRampToValueAtTime(880, t + 0.5); vibrato(o.frequency, t, t + 0.6, 14, 40, 0.05); o.connect(g); g.connect(d);
+  };
   // projétil cortado pela arma: um tinido de vidro e um estalo
   SFX.proj_break = (d, t) => { INST.glass(d, t, 1600 + Math.random() * 500, 0.18, 0.55); nburst(d, t, 'highpass', 3800, 1, 0.22, 0.06, 0.001); tone(d, t, 'triangle', 900, 500, 0.08, 0.08); };
   SFX.choir_hit = (d, t) => { ['D3', 'A3', 'D4', 'F4'].forEach((n) => INST.choir(d, t, A.noteFreq(n), 1.2, 0.9)); };

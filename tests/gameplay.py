@@ -1342,7 +1342,7 @@ def t_wanderer(R, b):
     pg.close()
 
 def t_custodio(R, b):
-    """O Custódio de Ouro (opcional, na Cúpula por cima da nave): sem pontos fracos e cheio de luz"""
+    """O Custódio de Ouro (opcional, na Cúpula por cima da nave): todo ele luz — só o parry o fere"""
     pg = b.new_page(viewport={'width': 1280, 'height': 720}); errs = []; page_errors(pg, errs)
     boot(pg); new_game(pg); pg.evaluate('VSDebug.allAbilities(); VSDebug.god(true)')
     # chega-se à Cúpula pelo poço no teto da nave
@@ -1380,9 +1380,19 @@ def t_custodio(R, b):
     pos1 = pg.evaluate('[Math.round(T.C.cx), Math.round(T.C.cy)]')
     R.check('raios a girar, colunas de luz, lâminas de ouro, erupção de esferas e piscar para outro sítio',
             beams >= 4 and pills >= 3 and blades >= 3 and orbs >= 12 and pos0 != pos1, {'beams': beams, 'pillars': pills, 'blades': blades, 'orbs': orbs, 'moved': pos0 != pos1})
-    # sem pontos fracos: o parry não o atordoa e nada lhe faz dano a mais
-    nw = pg.evaluate("(() => { const e = T.C; e.atk = null; e.stagger = 0; e.onParried(T.g()); return { stag: e.stagger, mult: e.K.damageMult(e) }; })()")
-    R.check('sem pontos fracos: não fica atordoado com o parry e não leva dano a mais', nw['stag'] <= 0 and nw['mult'] == 1, nw)
+    # golpe de luz: aparece ao lado da protagonista com a lâmina erguida (é o golpe que se apara)
+    run_atk('smite', 30)
+    sm = pg.evaluate("({ d: Math.round(Math.abs(T.C.cx - T.p().cx)), atk: T.C.atk && T.C.atk.name, tell: T.C.atk && T.C.atk.s.tell })")
+    shot(pg, 'custodio_smite')
+    R.check('golpe de luz: aparece ao lado da protagonista e o golpe é aparável (sinal branco)', sm['d'] < 90 and sm['atk'] == 'smite' and sm['tell'] == 'white', sm)
+    frames(pg, 60)
+    # só o parry o fere: as armas atravessam-no; o parry dos golpes de luz tira-lhe vida (sem o atordoar)
+    nw = pg.evaluate('''(() => { const e = T.C, g = T.g(); e.atk = null; e.stagger = 0; const hp0 = e.hp;
+      const r1 = e.onHit({ x: e.x, y: e.y, w: 10, h: 10, dmg: 40, id: 9801, owner: T.p(), kind: 'light' }, g);
+      const r2 = e.onHit({ x: e.x, y: e.y, w: 10, h: 10, dmg: 80, id: 9802, owner: T.p(), kind: 'heavy' }, g);
+      const hp1 = e.hp; e.onParried(g); const hp2 = e.hp;
+      return { r1, r2, phys: hp0 - hp1, parry: hp1 - hp2, stag: e.stagger }; })()''')
+    R.check('só o parry o fere: as armas atravessam-no (0 de dano) e o parry tira-lhe vida, sem o atordoar', nw['r1'] == 'blocked' and nw['r2'] == 'blocked' and nw['phys'] == 0 and nw['parry'] > 0 and nw['stag'] <= 0, nw)
     # vencido: fica no diário e dá a recompensa
     ash0 = pg.evaluate('VS.state.ash')
     pg.evaluate('T.autoDlg = true; T.C.die(T.g())')
@@ -1391,6 +1401,56 @@ def t_custodio(R, b):
     R.check('vencido, fica no diário e dá a recompensa', won and pg.evaluate('VS.state.ash') >= ash0 + 2500, {'won': won})
     R.check('nomes do Custódio nas línguas', pg.evaluate("['boss_custodio', 'bossj_custodio', 'tip_custodio_rays', 'reg_dome'].every((k) => VS.t(k) && VS.t(k) !== k)"))
     R.check('Custódio sem erros de JavaScript', not errs, errs[:3])
+    pg.close()
+
+def t_extreme(R, b):
+    """chefes extremos: o Custódio só se fere com parry, o Eco de Seraphine para e desfaz o tempo,
+    o rei final tem os poderes de quase todos os chefes e acelera nas fases finais"""
+    pg = b.new_page(viewport={'width': 1280, 'height': 720}); errs = []; page_errors(pg, errs)
+    boot(pg)
+    # --- Custódio: só o parry o fere
+    new_game(pg, slot=0); pg.evaluate('VSDebug.allAbilities(); VSDebug.god(true)')
+    warp(pg, 'r6_dome', 30, 13)
+    pg.evaluate("(() => { const d = VS.ROOMS.r6_dome.ents.find((x) => x.t === 'boss'); const e = VS.Bosses.spawn(d, T.g()); e.intro = false; T.g().startBoss && T.g().startBoss(e); T.C = e; e.atk = null; e.cool = 99; })()")
+    frames(pg, 5)
+    cu = pg.evaluate('''(() => { const e = T.C, g = T.g(), hp0 = e.hp; const r1 = e.onHit({ x: e.x, y: e.y, w: 10, h: 10, dmg: 40, id: 9901, owner: T.p(), kind: 'light' }, g); const r2 = e.onHit({ x: e.x, y: e.y, w: 10, h: 10, dmg: 40, id: 9902, owner: T.p(), kind: 'heavy' }, g);
+      const hp1 = e.hp; e.onParried(g); const hp2 = e.hp; const r3 = e.onHit({ x: e.x, y: e.y, w: 10, h: 10, dmg: 32, id: 9903, owner: T.p(), proj: { kind: 'goldblade' }, kind: 'reflect' }, g);
+      return { r1, r2, phys: hp0 - hp1, parry: hp1 - hp2, reflect: hp2 - e.hp, stag: e.stagger }; })()''')
+    R.check('Custódio: as armas atravessam-no (0 de dano); o parry e as lâminas devolvidas ferem-no', cu['r1'] == 'blocked' and cu['r2'] == 'blocked' and cu['phys'] == 0 and cu['parry'] > 0 and cu['reflect'] > 0 and cu['stag'] <= 0, cu)
+    pg.evaluate("(() => { const e = T.C; e.atk = null; e.attack('eclipse'); })()"); frames(pg, 110)
+    ec = pg.evaluate('({ eclipse: T.C.eclipse, dark: T.C.darkBoost, atk: T.C.atk && T.C.atk.name, side: Math.round(Math.abs(T.C.cx - T.p().cx)) })')
+    R.check('Custódio: eclipse (a cúpula escurece) e golpes de luz que aparecem ao lado da protagonista', ec['eclipse'] > 0 and ec['dark'] > 0.5 and ec['atk'] == 'smite', ec)
+    # --- Eco de Seraphine: para o tempo (a luz fica suspensa) e desfá-lo (a luz volta para trás)
+    new_game(pg, slot=1); pg.evaluate('VSDebug.allAbilities(); VSDebug.god(true)')
+    pg.evaluate('VS.state.bosses.aldric = true')
+    warp(pg, 'r7_throne')
+    pg.evaluate("(() => { const p = T.p(), TT = VS.U.TILE; const e = VS.Bosses.spawn({ boss: 'seraphine', x: Math.floor(p.cx / TT) + 6, y: Math.floor((p.bottom - 1) / TT) - 3 }, T.g()); e.intro = false; T.g().startBoss && T.g().startBoss(e); T.S = e; e.cool = 99; e.atk = null; e.phase = 1; })()")
+    frames(pg, 5)
+    pg.evaluate("(() => { const e = T.S; e.cool = 99; e.atk = null; e.attack('stoptime'); })()")
+    wait(pg, "T.S.atk && T.S.atk.name === 'stoptime' && T.S.atk.phase === 'act' && T.S.atk.t > 0.3", 6)
+    st = pg.evaluate("(() => { const L = T.g().ents.filter((x) => x instanceof VS.Projectile && x.team === 'enemy' && x.isLight); return { n: L.length, still: L.filter((x) => x.vx === 0 && x.vy === 0).length, tint: VS.Gfx.timeTint, above: L.every((x) => x.bottom <= T.S.arena.floor) }; })()")
+    shot(pg, 'seraphine_stoptime')
+    wait(pg, "!T.S.atk || T.S.atk.go", 6)
+    st2 = pg.evaluate("(() => { const L = T.g().ents.filter((x) => x instanceof VS.Projectile && x.team === 'enemy' && x.isLight); return { n: L.length, moving: L.filter((x) => Math.abs(x.vx) + Math.abs(x.vy) > 10).length }; })()")
+    R.check('Eco de Seraphine: o tempo para (luz suspensa, mundo sem cor) e depois tudo voa de uma vez', st['n'] >= 5 and st['still'] == st['n'] and st['tint'] > 0.5 and st['above'] and st2['moving'] >= st['n'] - 1, {'parado': st, 'depois': st2})
+    pg.evaluate("(() => { const e = T.S, g = T.g(); e.atk = null; e.cool = 99; g.spawn(new VS.Projectile({ x: T.p().cx + 80, y: T.p().cy - 20, vx: 150, vy: 0, w: 14, h: 14, dmg: 16, kind: 'light', isLight: true, life: 5, solid: false })); e.attack('rewind'); })()"); frames(pg, 45)
+    rw = pg.evaluate("(() => { const L = T.g().ents.filter((x) => x instanceof VS.Projectile && x.team === 'enemy' && x.isLight); return { n: L.length, back: L.filter((x) => x.vx < 0).length }; })()")
+    R.check('Eco de Seraphine: o tempo desfaz-se (a luz que passou volta para trás)', rw['back'] >= 1, rw)
+    # --- o rei final: muita vida, ecos de quase todos os chefes, mais rápido nas fases finais
+    new_game(pg, slot=2); pg.evaluate('VSDebug.allAbilities(); VSDebug.god(true)')
+    warp(pg, 'r7_throne'); place_for_boss(pg, 'r7_throne')
+    wait(pg, 'T.bossEnts().length > 0', 6); wait(pg, 'T.bossEnts().length > 0 && !T.bossEnts()[0].intro', 14)
+    info = pg.evaluate("(() => { const e = T.bossEnts()[0]; return { hp: e.maxHp, echoes: Object.keys(e.K.attacks).filter((k) => k.startsWith('echo_')).length }; })()")
+    R.check('rei Aldric: o chefe mais duro (vida >= 2500) com os ecos de 15 guardiões', info['hp'] >= 2500 and info['echoes'] >= 15, info)
+    ran = []
+    for nm in ['echo_coveiro', 'echo_matilheira', 'echo_automato', 'echo_mariposa', 'echo_sineiro', 'echo_vael', 'echo_gemeos', 'echo_carpideira', 'echo_custodio', 'echo_seraphine']:
+        pg.evaluate("(() => { const e = T.bossEnts()[0]; e.knock = null; e.atk = null; e.cool = 99; e.attack('" + nm + "'); })()")
+        frames(pg, 150)
+        ran.append(nm)
+    pg.evaluate("(() => { const e = T.bossEnts()[0]; e.hp = e.maxHp * 0.3; })()"); frames(pg, 20)
+    sp = pg.evaluate("(() => { const e = T.bossEnts()[0]; return { phase: e.phase, speed: e.atkSpeed }; })()")
+    R.check('rei Aldric: todos os ecos novos correm sem erros e na última fase golpeia mais depressa', len(ran) == 10 and sp['phase'] == 2 and (sp['speed'] or 1) > 1.15 and not errs, {'fase': sp, 'erros': errs[:2]})
+    R.check('chefes extremos sem erros de JavaScript', not errs, errs[:3])
     pg.close()
 
 def t_turn(R, b):
@@ -1609,7 +1669,7 @@ def t_feel(R, b):
     pg.close()
 
 TESTS = {'menus': t_menus, 'combat': t_movement_combat, 'world': t_world, 'bosses': t_bosses, 'caedmon': t_caedmon, 'aldric': t_aldric, 'corvin': t_corvin,
-         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach, 'giants': t_giants, 'traps': t_traps, 'structs': t_structs, 'wanderer': t_wanderer, 'custodio': t_custodio, 'desktop': t_desktop, 'bgart': t_bgart, 'turn': t_turn, 'screen': t_screen, 'life': t_life, 'bossfair': t_bossfair, 'feel': t_feel}
+         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach, 'giants': t_giants, 'traps': t_traps, 'structs': t_structs, 'wanderer': t_wanderer, 'custodio': t_custodio, 'desktop': t_desktop, 'bgart': t_bgart, 'turn': t_turn, 'screen': t_screen, 'life': t_life, 'bossfair': t_bossfair, 'feel': t_feel, 'extreme': t_extreme}
 
 
 def main(filters):

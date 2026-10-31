@@ -28,7 +28,8 @@
     ins_i40: "Trois coups et le fer réclame l'eau. Qui tient un marteau chauffé à blanc le lâche, fût-ce la maîtresse. Compte les coups ; attends le blanc.",
     tip_mariposa_rest: "Après avoir lâché sa poussière, la Mère Phalène se pose épuisée, ailes repliées. Frappe-la au sol !",
     tip_carpideira_scream: 'Le cri ne se pare ni ne se saute : traverse les ondes en esquivant.', tip_carpideira_tired: 'Après le double cri, elle tombe à genoux, épuisée. Maintenant !',
-    tip_custodio_rays: 'Il n\'a aucune faiblesse : les rayons tournent — devance-les ou traverse-les en esquivant.', tip_custodio_blades: 'Pare les lames d\'or pour les renvoyer.',
+    tip_custodio_rays: 'Les rayons tournent — devance-les ou traverse-les en esquivant.', tip_custodio_blades: 'Pare les lames d\'or : elles repartent vers lui et le blessent.',
+    tip_custodio_parry: 'Il n\'est que lumière : les armes le traversent. Seule la parade le blesse — pare ses coups de lumière à l\'éclat.', tip_custodio_eclipse: 'Éclipse ! Dans le noir, seul l\'éclat de sa lame te prévient — pare-la.',
     msg_wail_far: 'Au loin, quelqu\'un pleure.', msg_wail_near: 'Les pleurs sont ici.',
     ins_i41_t: "Note d'un jardinier, épinglée à une épine",
     ins_i41: "Ne monte pas à sa rencontre. Elle secoue la poussière de ses ailes et la poussière lui pèse ; puis elle descend, replie ses ailes comme un toit et dort un peu. C'est dans ce court sommeil qu'on taille.",
@@ -72,5 +73,7 @@
     tip_ozias_orb: "L'orbe du calice peut être renvoyé : pare-le à son arrivée.",
     tip_aldric_judgement: "Le Jugement du Roi tue en un coup : saute par-dessus la vague pourpre ou esquive à travers !",
     tip_seraphine_wings: "Un mur de plumes de lumière arrive : glisse-toi dans l'ouverture quand il passe, ou traverse-le en esquivant.",
+    tip_seraphine_time: 'Le temps s\'est arrêté : sa lumière reste suspendue. Sors de l\'anneau de lances par la brèche (ou traverse-le en esquivant) avant que le temps ne reprenne !',
+    tip_seraphine_rewind: 'Le temps se défait : la lumière déjà passée revient en arrière — gare à ton dos.',
   });
 })(window.VS);

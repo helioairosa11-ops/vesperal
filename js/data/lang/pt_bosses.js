@@ -28,7 +28,8 @@
     ins_i40: "Três pancadas e o ferro pede água. Quem segura o malho em brasa larga-o, nem que seja a mestra. Conta as pancadas; espera o branco.",
     tip_mariposa_rest: "Depois de largar o pó, a Mãe-Mariposa pousa exausta, de asas fechadas. Fere-a no chão!",
     tip_carpideira_scream: 'O grito não se apara nem se salta: atravessa as ondas com a esquiva.', tip_carpideira_tired: 'Depois do grito duplo cai de joelhos, exausta. Agora!',
-    tip_custodio_rays: 'Não tem fraquezas: os raios rodam — corre à frente deles ou atravessa-os com a esquiva.', tip_custodio_blades: 'As lâminas de ouro devolvem-se com um parry.',
+    tip_custodio_rays: 'Os raios rodam — corre à frente deles ou atravessa-os com a esquiva.', tip_custodio_blades: 'Apara as lâminas de ouro: voltam contra ele e ferem-no.',
+    tip_custodio_parry: 'É todo ele luz: as armas atravessam-no. Só o parry o fere — apara os golpes de luz dele no instante do brilho.', tip_custodio_eclipse: 'Eclipse! Às escuras, só o brilho da lâmina dele te avisa — apara-a.',
     msg_wail_far: 'Ao longe, alguém chora.', msg_wail_near: 'O choro está aqui.',
     ins_i41_t: "Nota de um jardineiro, presa a um espinho",
     ins_i41: "Não lhe subas ao encontro. Ela sacode o pó das asas e o pó pesa-lhe; depois desce ao chão, fecha as asas como um telhado e dorme um pouco. É nesse sono curto que se poda.",
@@ -72,5 +73,7 @@
     tip_ozias_orb: "O orbe do cálice pode ser devolvido: faz parry quando ele chegar.",
     tip_aldric_judgement: "O Juízo do Rei mata de um golpe: salta por cima da onda carmesim ou esquiva-te através dela!",
     tip_seraphine_wings: "Vem aí uma parede de penas de luz: mete-te na abertura quando ela passar, ou atravessa-a com a esquiva.",
+    tip_seraphine_time: 'O tempo parou: a luz dela fica suspensa no ar. Sai do anel de lanças pela falha (ou atravessa-o com a esquiva) antes que o tempo volte!',
+    tip_seraphine_rewind: 'O tempo desfaz-se: a luz que já passou volta para trás — cuidado com as costas.',
   });
 })(window.VS);

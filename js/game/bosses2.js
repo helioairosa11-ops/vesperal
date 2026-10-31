@@ -138,14 +138,15 @@
   }
   VS.ThornRing = ThornRing;
   // silvas que rompem do chão (onda de raízes, erupção): três espigões curvos com espinhos claros
-  function rootSpikes(ctx, x, fl, h, seed) {
+  function rootSpikes(ctx, x, fl, h, seed, pal) {
     if (h <= 1) return;
+    const C = pal || ['#18200e', '#4e6428', '#d8d0b0'];
     const r = (k) => { const v = Math.sin(seed * 12.9898 + k * 78.233) * 43758.5453; return v - Math.floor(v); };
     for (let i = 0; i < 3; i++) {
       const bx = x + (i - 1) * 7 + (r(i) - 0.5) * 4, hh = h * (0.62 + r(i + 3) * 0.45), lean = (r(i + 6) - 0.5) * 12, w = 4 + r(i + 9) * 3;
-      ctx.fillStyle = '#18200e'; ctx.beginPath(); ctx.moveTo(bx - w, fl); ctx.quadraticCurveTo(bx - w * 0.3 + lean * 0.3, fl - hh * 0.6, bx + lean, fl - hh); ctx.quadraticCurveTo(bx + w * 0.4 + lean * 0.4, fl - hh * 0.55, bx + w, fl); ctx.fill();
-      ctx.fillStyle = '#4e6428'; ctx.beginPath(); ctx.moveTo(bx - w * 0.35, fl); ctx.quadraticCurveTo(bx + lean * 0.25, fl - hh * 0.6, bx + lean, fl - hh); ctx.lineTo(bx + w * 0.1, fl); ctx.fill();
-      ctx.fillStyle = '#d8d0b0';
+      ctx.fillStyle = C[0]; ctx.beginPath(); ctx.moveTo(bx - w, fl); ctx.quadraticCurveTo(bx - w * 0.3 + lean * 0.3, fl - hh * 0.6, bx + lean, fl - hh); ctx.quadraticCurveTo(bx + w * 0.4 + lean * 0.4, fl - hh * 0.55, bx + w, fl); ctx.fill();
+      ctx.fillStyle = C[1]; ctx.beginPath(); ctx.moveTo(bx - w * 0.35, fl); ctx.quadraticCurveTo(bx + lean * 0.25, fl - hh * 0.6, bx + lean, fl - hh); ctx.lineTo(bx + w * 0.1, fl); ctx.fill();
+      ctx.fillStyle = C[2];
       for (let q = 1; q < 4; q++) { const y = fl - hh * q / 4.2, xx = bx + lean * q / 4.2, s = q % 2 ? 1 : -1; ctx.beginPath(); ctx.moveTo(xx, y); ctx.lineTo(xx + s * 4.5, y - 2.6); ctx.lineTo(xx, y - 2.4); ctx.fill(); }
     }
   }
@@ -504,7 +505,12 @@
   // atraído contra uma parede (ou o estrado do trono), embate, cai de costas e fica exposto.
   // Fase 2: ecos dos guardiões caídos; fase 3: desespero (as bordas da sala ardem, investidas seguidas).
   // ======================================================================
-  const ECHO_COL = { caedmon: '#a0c8ff', hilde: '#ff8030', elowen: '#9fffd0', corvin: '#ffe0a0', ozias: '#fff0c0' };
+  const ECHO_COL = { caedmon: '#a0c8ff', hilde: '#ff8030', elowen: '#9fffd0', corvin: '#ffe0a0', ozias: '#fff0c0', coveiro: '#c8a878', matilheira: '#ff7a40', automato: '#ff9a40',
+    mariposa: '#f0e0a0', sineiro: '#ffe0a0', vael: '#ff6020', gemeos: '#c0c8d8', carpideira: '#ff6070', custodio: '#fff0c0', seraphine: '#fff8e0' };
+  // na fase 1 o rei usa os ecos dos primeiros guardiões; na última, os de todos (e encadeia logo um golpe a seguir)
+  const ECHOS_1 = ['echo_caedmon', 'echo_hilde', 'echo_elowen', 'echo_corvin', 'echo_ozias', 'echo_coveiro', 'echo_matilheira', 'echo_automato', 'echo_sineiro', 'echo_vael'];
+  const ECHOS_ALL = ECHOS_1.concat(['echo_mariposa', 'echo_gemeos', 'echo_carpideira', 'echo_custodio', 'echo_seraphine']);
+  const aldricChain = (e) => { if (e.phase >= 2 && Math.random() < 0.55) e.cool = 0; };
   const tipOf = (e) => (e._f && VS.EnemyRender.point(e, e._f, 'tip')) || { x: e.cx + e.facing * 50, y: e.bottom - 4 };
   // as ondas do Juízo: uma parede baixa de chama carmesim que corre rente ao chão, para os dois lados, até às paredes da arena
   // (fase final: cada onda bate na parede e volta para trás, mais devagar — vê-se a chegar de longe)
@@ -542,7 +548,8 @@
     if (!VS.state.flags.tip_aldric_wall) { VS.state.flags.tip_aldric_wall = 1; VS.UI.toast(VS.t('tip_aldric_wall'), 5); }
   }
   B.def('aldric', {
-    cfg: { w: 32, h: 68, hp: 1400, music: 'b_aldric', heavy: true, phases: [0.55, 0.2], introTime: 2.4, ashCol: '#6a5a50' },
+    cfg: { w: 32, h: 68, hp: 2600, music: 'b_aldric', heavy: true, phases: [0.66, 0.33], introTime: 2.4, ashCol: '#6a5a50' },
+    aggr: [1.55, 1.95, 2.35], repelCol: [255, 120, 60], repelDmg: 18,
     attacks: {
       // varrida horizontal à altura do peito (branco: aparável); na fase 2 encadeia com o corte ascendente
       sweep: { wind: 0.65, act: 0.2, rec: 0.55, dmg: 24, tell: 'white', sfx: 'swing_heavy', hb: (e) => front(e, -6, 16, 84, 48), lunge: 90, onEnd(e) { if (e.phase && Math.random() < 0.55) { e.attack('sweep2'); } } },
@@ -590,16 +597,121 @@
           aldricJudgeWave(e, g, x, e.phase >= 2 ? 1 : 0);
         } },
       // ecos dos guardiões caídos (fase 2+): ergue a mão livre; a sombra do guardião surge atrás dele
-      echo_caedmon: { wind: 0.7, act: 0.22, rec: 0.7, dmg: 24, tell: 'white', hb: (e) => front(e, 6, 36, 80, 20), lunge: 440, onWind(e) { e.echo = 'caedmon'; }, onEnd(e) { e.echo = null; } },
+      echo_caedmon: { wind: 0.7, act: 0.22, rec: 0.7, dmg: 24, tell: 'white', hb: (e) => front(e, 6, 36, 80, 20), lunge: 440, onWind(e) { e.echo = 'caedmon'; }, onEnd(e) { e.echo = null; aldricChain(e); } },
       echo_hilde: { wind: 0.6, act: 0.9, rec: 0.5, tell: null, sfx: 'chime', onWind(e) { e.echo = 'hilde'; }, onAct(e, g) { e.anvilX = g.player.cx; },
         during(e, g) { const a = e.atk; if (a.t < 0.7) e.anvilShadow = e.anvilX; else if (!a.dropped) { a.dropped = true; e.anvilShadow = null; g.spawn(P({ x: e.anvilX - 15, y: G.cam.y - 30, vx: 0, vy: 520, g: 1400, w: 30, h: 20, dmg: 26, kind: 'ingot', color: '#ff7020', life: 2, parryable: false, reflectable: false, onHitWall(g2) { G.addShake(0.5); A.sfx('crush'); firePool(g2, this.cx, e.arena.floor, 40, 2); } })); } },
-        onEnd(e) { e.echo = null; e.anvilShadow = null; } },
-      echo_elowen: { wind: 0.5, act: 1.1, rec: 0.5, tell: null, sfx: 'whip', onWind(e) { e.echo = 'elowen'; }, onAct(e, g) { const p = g.player; e.thX = [p.cx - 50, p.cx, p.cx + 50]; }, during(e, g) { columns(e, g, e.thX, { warn: 0.65, h: 60, w: 14, dmg: 18, sfx: 'whip', warnCol: '#8aa050', cols: ['#4a5a2a', '#6a7a3a'] }); }, onEnd(e) { e.echo = null; } },
-      echo_corvin: { wind: 0.6, act: 0.1, rec: 0.6, tell: null, sfx: 'note', onWind(e) { e.echo = 'corvin'; }, onAct(e, g) { const h = VS.EnemyRender.point(e, e._f, 'hand') || { x: e.cx, y: e.cy - 20 }; for (let i = 0; i < 10; i++) { const a = i / 10 * U.TAU; g.spawn(P({ x: h.x, y: h.y, vx: Math.cos(a) * 150, vy: Math.sin(a) * 150, w: 10, h: 10, dmg: 13, kind: 'note', color: '#ffd070', life: 4, solid: false })); } }, onEnd(e) { e.echo = null; } },
-      echo_ozias: { wind: 0.5, act: 1.2, rec: 0.5, tell: null, sfx: 'chime', onWind(e) { e.echo = 'ozias'; }, onAct(e, g) { const p = g.player; haloCast(e, [p.cx, U.clamp(p.cx + (Math.random() < 0.5 ? -1 : 1) * 100, 40, g.room.pw - 40)], p.cy - 4, { r: 44, warn: 0.8, dmg: 20 }); }, during(e, g, dt) { haloTick(e, g, dt); }, onEnd(e) { e.echo = null; e.halos = null; } },
+        onEnd(e) { e.echo = null; e.anvilShadow = null; aldricChain(e); } },
+      echo_elowen: { wind: 0.5, act: 1.1, rec: 0.5, tell: null, sfx: 'whip', onWind(e) { e.echo = 'elowen'; }, onAct(e, g) { const p = g.player; e.thX = [p.cx - 50, p.cx, p.cx + 50]; }, during(e, g) { columns(e, g, e.thX, { warn: 0.65, h: 60, w: 14, dmg: 18, sfx: 'whip', warnCol: '#8aa050', cols: ['#4a5a2a', '#6a7a3a'] }); }, onEnd(e) { e.echo = null; aldricChain(e); } },
+      echo_corvin: { wind: 0.6, act: 0.1, rec: 0.6, tell: null, sfx: 'note', onWind(e) { e.echo = 'corvin'; }, onAct(e, g) { const h = VS.EnemyRender.point(e, e._f, 'hand') || { x: e.cx, y: e.cy - 20 }; for (let i = 0; i < 10; i++) { const a = i / 10 * U.TAU; g.spawn(P({ x: h.x, y: h.y, vx: Math.cos(a) * 150, vy: Math.sin(a) * 150, w: 10, h: 10, dmg: 13, kind: 'note', color: '#ffd070', life: 4, solid: false, breakable: true })); } }, onEnd(e) { e.echo = null; aldricChain(e); } },
+      echo_ozias: { wind: 0.5, act: 1.2, rec: 0.5, tell: null, sfx: 'chime', onWind(e) { e.echo = 'ozias'; }, onAct(e, g) { const p = g.player; haloCast(e, [p.cx, U.clamp(p.cx + (Math.random() < 0.5 ? -1 : 1) * 100, 40, g.room.pw - 40)], p.cy - 4, { r: 44, warn: 0.8, dmg: 20 }); }, during(e, g, dt) { haloTick(e, g, dt); }, onEnd(e) { e.echo = null; e.halos = null; aldricChain(e); } },
+      // ---- ecos de todos os guardiões (o rei roubou-lhes a chama): cada um com a cor do dono, atrás dele ----
+      // COVEIRO: a terra dos mortos rebenta em três covas, uma atrás da outra, onde estás
+      echo_coveiro: { wind: 0.5, act: 1.55, rec: 0.4, tell: null, sfx: 'crush', onWind(e) { e.echo = 'coveiro'; },
+        onAct(e, g) { const p = g.player, s = Math.random() < 0.5 ? 1 : -1; e.graves = [0, 1, 2].map((i) => ({ x: U.clamp(p.cx + (i - 1) * 64 * s, 40, g.room.pw - 40), t: -i * 0.3, id: VS.Entity.newAttackId(), seed: Math.random() * 50 })); },
+        during(e, g, dt) {
+          for (const c of e.graves || []) {
+            c.t += dt;
+            if (c.t > 0 && c.t < 0.48) { if (Math.random() < 0.5) G.emit({ x: c.x + U.rand(-16, 16), y: e.arena.floor - 2, vx: U.rand(-30, 30), vy: U.rand(-110, -40), g: 500, life: 0.45, size: U.rand(1, 2), color: U.pick(['#3a2c1e', '#5a4632']) }); }
+            else if (c.t >= 0.48 && c.t < 0.72) {
+              if (!c.s) { c.s = 1; A.sfx('root_burst', { vol: 0.6 }); G.addShake(0.35); G.burst(c.x, e.arena.floor - 4, 16, { color: '#4a3826', speed: 220, angle: -Math.PI / 2, spread: 1.2, g: 600, life: 0.7, size: 2.4 }); }
+              e.attackHBs.push({ x: c.x - 24, y: e.arena.floor - 72, w: 48, h: 72, dmg: 22, id: c.id, unblockable: true, parryable: false, src: { cx: c.x } });
+            }
+          }
+        },
+        onEnd(e) { e.echo = null; e.graves = null; aldricChain(e); } },
+      // MATILHEIRA: mastins de chama correm a direito pelo salão — salta-lhes por cima
+      echo_matilheira: { wind: 0.6, act: 2.0, rec: 0.35, tell: 'red', sfx: false, onWind(e) { e.echo = 'matilheira'; A.sfx('howl', { vol: 0.7 }); },
+        // os mastins saem de pouco fora da vista (vêm de onde há mais sala) e cruzam o salão a direito
+        onAct(e, g) {
+          const p = g.player, fromL = p.cx > (e.arena.x0 + e.arena.x1) / 2, far = U.VIEW_W / 2 + 50;
+          const start = (dir) => (dir > 0 ? Math.max(e.arena.x0 - 30, p.cx - far) : Math.min(e.arena.x1 + 30, p.cx + far));
+          e.hounds = [{ x: start(fromL ? 1 : -1), dir: fromL ? 1 : -1, t: 0, id: VS.Entity.newAttackId() }];
+          if (e.phase >= 2) e.hounds.push({ x: start(fromL ? -1 : 1), dir: fromL ? -1 : 1, t: -0.55, id: VS.Entity.newAttackId() });
+        },
+        during(e, g, dt) {
+          for (const h of e.hounds || []) {
+            h.t += dt; if (h.t < 0) continue; h.x += h.dir * 440 * dt;
+            if (h.x > e.arena.x0 - 60 && h.x < e.arena.x1 + 60) e.attackHBs.push({ x: h.x - 24, y: e.arena.floor - 30, w: 48, h: 30, dmg: 20, id: h.id, unblockable: true, parryable: false, src: { cx: h.x } });
+            if (Math.random() < 0.9) G.emit({ x: h.x - h.dir * U.rand(0, 24), y: e.arena.floor - U.rand(4, 28), vx: -h.dir * U.rand(30, 90), vy: U.rand(-80, -20), life: 0.45, size: U.rand(1.2, 2.6), color: U.pick(['#ff6020', '#ffb040', '#ff3010']), add: true, shrink: true, layer: 2 });
+            if (!h.snd && h.x > e.arena.x0 && h.x < e.arena.x1) { h.snd = 1; A.sfx('roar', { vol: 0.35 }); }
+          }
+        },
+        onEnd(e) { e.echo = null; e.hounds = null; aldricChain(e); } },
+      // AUTÓMATO: as lajes do salão sopram fogo à vez (ímpares, depois pares)
+      echo_automato: { wind: 0.45, act: 1.8, rec: 0.4, tell: null, sfx: 'charge', onWind(e) { e.echo = 'automato'; },
+        // grelhas a 40 px umas das outras à volta da protagonista: primeiro sopram as pares (uma delas debaixo dela),
+        // depois as ímpares — é uma dança de um passo para cada lado
+        onAct(e, g) { const p = g.player; e.vents = []; for (let k = -5; k <= 5; k++) { const x = Math.round(p.cx + k * 40); if (x > e.arena.x0 + 10 && x < e.arena.x1 - 10) e.vents.push({ x, k }); } },
+        during(e) {
+          const a = e.atk; e.colXs = null; e.ventFire = null;
+          [[0, 0.55], [0.8, 1.35]].forEach(([t0, t1], wi) => {
+            const sel = (e.vents || []).filter((v) => Math.abs(v.k) % 2 === wi);
+            if (a.t >= t0 && a.t < t1) { e.colXs = sel.map((v) => v.x); e.colWarnCol = '#ff8030'; }
+            else if (a.t >= t1 && a.t < t1 + 0.4) {
+              if (!a['f' + wi]) { a['f' + wi] = 1; A.sfx('fire'); G.addShake(0.2); }
+              e.ventFire = sel.map((v) => v.x); e.ventK = (a.t - t1) / 0.4;
+              for (const v of sel) {
+                if (Math.random() < 0.85) G.emit({ x: v.x + U.rand(-6, 6), y: e.arena.floor, vx: U.rand(-10, 10), vy: U.rand(-430, -300), life: 0.45, size: U.rand(2, 4), color: U.pick(['#ffb040', '#ff6010', '#ffe0a0']), add: true, shrink: true, layer: 2 });
+                e.attackHBs.push({ x: v.x - 11, y: e.arena.floor - 140, w: 22, h: 140, dmg: 18, id: a.id * 100 + wi * 30 + v.k + 10, unblockable: true, parryable: false, src: { cx: v.x } });
+              }
+            }
+          });
+        },
+        onEnd(e) { e.echo = null; e.colXs = null; e.vents = null; e.ventFire = null; aldricChain(e); } },
+      // MÃE-MARIPOSA: espiral de escamas a girar da mão do rei — passa entre os braços
+      echo_mariposa: { wind: 0.5, act: 1.5, rec: 0.4, tell: null, sfx: 'moth', onWind(e) { e.echo = 'mariposa'; },
+        onAct(e) { e.spinA = Math.random() * U.TAU; e.spinT = 0; },
+        during(e, g, dt) {
+          const h = VS.EnemyRender.point(e, e._f, 'hand') || { x: e.cx, y: e.cy - 20 };
+          e.spinA += 2.6 * dt; e.spinT -= dt; if (e.spinT > 0) return; e.spinT = 0.085;
+          for (let i = 0; i < 3; i++) { const a = e.spinA + i * U.TAU / 3; g.spawn(P({ x: h.x, y: h.y, vx: Math.cos(a) * 120, vy: Math.sin(a) * 120, w: 8, h: 8, dmg: 10, kind: 'scale', hue: (e.t * 140 + i * 120) % 360, color: '#f0e0ff', life: 4, solid: false, reflectable: false, light: false })); }
+        },
+        onEnd(e) { e.echo = null; aldricChain(e); } },
+      // SINEIRO: o toque do sino — anéis de choque dourados (atravessa-os com a esquiva)
+      echo_sineiro: { wind: 0.7, act: 0.6, rec: 0.45, tell: 'red', sfx: false, armor: true, onWind(e) { e.echo = 'sineiro'; },
+        onAct(e, g) { A.sfx('bell'); G.addShake(0.5); if (VS.WailRing) g.spawn(new VS.WailRing(e.cx, e.arena.floor - 22, 235, 400, 20, [255, 214, 120])); },
+        during(e, g) { const a = e.atk; if (!a.second && a.t > 0.36 && e.phase >= 2 && VS.WailRing) { a.second = true; g.spawn(new VS.WailRing(e.cx, e.arena.floor - 22, 200, 400, 20, [255, 214, 120])); A.sfx('bell_small'); } },
+        onEnd(e) { e.echo = null; aldricChain(e); } },
+      // INQUISIDORA VAEL: dois muros de fogo fecham-se sobre ti — salta um deles antes que se toquem
+      echo_vael: { wind: 0.45, act: 1.75, rec: 0.45, tell: null, sfx: 'charge', onWind(e) { e.echo = 'vael'; },
+        onAct(e, g) { const p = g.player, x0 = e.arena.x0 + 14, x1 = e.arena.x1 - 14, c = U.clamp(p.cx, x0 + 60, x1 - 60); e.pyre = { l: Math.max(x0, c - 125), r: Math.min(x1, c + 125), boom: 0 }; },
+        during(e, g, dt) {
+          const a = e.atk, P2 = e.pyre; if (!P2) return;
+          if (a.t < 0.45) { e.colXs = [P2.l, P2.r]; e.colWarnCol = '#ff6020'; return; }
+          e.colXs = null; if (!P2.lit) { P2.lit = true; A.sfx('fire'); }
+          const mid = (P2.l + P2.r) / 2, sp = 150;
+          if (P2.r - P2.l > 6) { P2.l = Math.min(mid, P2.l + sp * dt); P2.r = Math.max(mid, P2.r - sp * dt); }
+          else if (!P2.boom) { P2.boom = 1; G.addShake(0.45); A.sfx('explode', { vol: 0.6 }); VS.FX.flare(mid, e.arena.floor - 20, 60, [255, 120, 40], 0.45); G.burst(mid, e.arena.floor - 10, 30, { color: '#ff8030', speed: 220, life: 0.6, size: 2.4, add: true }); }
+          if (P2.boom) { P2.boom += dt; if (P2.boom < 0.3) e.attackHBs.push({ x: mid - 34, y: e.arena.floor - 60, w: 68, h: 60, dmg: 22, id: a.id * 10 + 3, unblockable: true, parryable: false, src: { cx: mid } }); return; }
+          for (const [x, k] of [[P2.l, 1], [P2.r, 2]]) { e.attackHBs.push({ x: x - 8, y: e.arena.floor - 30, w: 16, h: 30, dmg: 18, id: a.id * 10 + k, unblockable: true, parryable: false, src: { cx: x } }); if (Math.random() < 0.7) G.emit({ x: x + U.rand(-6, 6), y: e.arena.floor - U.rand(2, 20), vx: U.rand(-20, 20), vy: U.rand(-120, -50), life: 0.5, size: U.rand(1.4, 3), color: U.pick(['#ffb040', '#ff5010', '#ffe0a0']), add: true, shrink: true, layer: 2 }); }
+        },
+        onEnd(e) { e.echo = null; e.pyre = null; e.colXs = null; aldricChain(e); } },
+      // GÉMEOS: remoinho do malho — gira o montante e avança em rodopio (afasta-te ou atravessa-o)
+      echo_gemeos: { wind: 0.55, act: 1.2, rec: 0.55, tell: 'red', sfx: 'swing_heavy', armor: true, onWind(e) { e.echo = 'gemeos'; },
+        onAct(e) { e.whirlDir = e.facing; e.whirlN = -1; },
+        during(e, g) { const a = e.atk, n = Math.floor(a.t / 0.3); e.vx = e.whirlDir * 200; const box = { x: e.cx - 52, y: e.bottom - 52, w: 104, h: 48 }; e.attackHBs.push(Object.assign({ dmg: 20, id: a.id * 10 + n, unblockable: true, parryable: false, src: e }, box)); if (n !== e.whirlN) { e.whirlN = n; A.sfx('swing_heavy', { vol: 0.6 }); } if (Math.random() < 0.6) G.emit({ x: e.cx + U.rand(-46, 46), y: e.bottom - 2, vx: U.rand(-60, 60), vy: U.rand(-60, -10), life: 0.4, size: U.rand(1.4, 2.6), color: 'rgba(120,100,90,0.5)' }); if (e.wallAhead(e.whirlDir)) a.t = a.s.act; },
+        onEnd(e) { e.echo = null; e.facing = e.whirlDir || e.facing; aldricChain(e); } },
+      // CARPIDEIRA: o grito em anel — não se apara nem se salta: atravessa-se com a esquiva
+      echo_carpideira: { wind: 0.85, act: 0.5, rec: 0.5, tell: 'red', sfx: false, armor: true, onWind(e) { e.echo = 'carpideira'; A.sfx('sob', { vol: 0.6 }); },
+        onAct(e, g) { const m = VS.EnemyRender.point(e, e._f, 'eye') || { x: e.cx, y: e.y + 14 }; A.sfx('wail', { vol: 0.85 }); G.addShake(0.55); G.dread = Math.min(1, (G.dread || 0) + 0.4); if (VS.WailRing) g.spawn(new VS.WailRing(m.x, m.y, 220, 420, 22)); },
+        onEnd(e) { e.echo = null; aldricChain(e); } },
+      // CUSTÓDIO: raios de sol a girar à volta do rei — corre à frente deles ou atravessa-os
+      echo_custodio: { wind: 0.6, act: 2.2, rec: 0.5, tell: 'red', sfx: false, onWind(e) { e.echo = 'custodio'; },
+        onAct(e, g) { if (VS.SunBeam) { const n = 3 + Math.min(1, e.phase - 1), dir = Math.random() < 0.5 ? 1 : -1, off = Math.random() * U.TAU; for (let i = 0; i < n; i++) g.spawn(new VS.SunBeam(e, off + i / n * U.TAU, 0.55 * dir, 0.85, 1.5)); } A.sfx('choir_hit', { vol: 0.6 }); },
+        during(e) { e.vx = 0; },
+        onEnd(e) { e.echo = null; aldricChain(e); } },
+      // ECO DE SERAPHINE: parede de penas de luz com uma abertura (no chão ou à altura de um salto)
+      echo_seraphine: { wind: 0.45, act: 0.1, rec: 0.45, tell: null, sfx: 'wind', onWind(e) { e.echo = 'seraphine'; },
+        onAct(e, g) {
+          const W = g.room.pw, fl = e.arena.floor, fromL = g.player.cx > W / 2, low = Math.random() < 0.5, gap0 = low ? fl - 50 : fl - 104, gap1 = low ? fl : fl - 50;
+          for (let y = fl - 6; y > fl - 190; y -= 13) { if (y > gap0 - 4 && y < gap1 + 4) continue; g.spawn(P({ x: fromL ? 18 : W - 28, y: y - 5, vx: (fromL ? 1 : -1) * 180, w: 10, h: 10, dmg: 16, kind: 'plume', color: '#fff4d8', life: W / 180 + 0.4, solid: false, reflectable: false, parryable: false, light: false })); }
+          A.sfx('choir_hit', { vol: 0.5 });
+        },
+        onEnd(e) { e.echo = null; aldricChain(e); } },
     },
     think(e, dt, g) {
       e.judgeCd = Math.max(0, (e.judgeCd === undefined ? 4 : e.judgeCd) - dt);
+      if (!e.atk && e.echo) { e.echo = null; e.colXs = null; e.graves = null; e.hounds = null; e.pyre = null; e.vents = null; e.anvilShadow = null; e.halos = null; }
       // derrubado: cai, fica estendido (exposto) e levanta-se apoiado no montante
       const kn = e.knock;
       if (kn) {
@@ -619,13 +731,16 @@
       if (e.cool > 0) { e.walk(d > 100 ? e.facing : d < 50 ? -e.facing : 0, e.phase >= 2 ? 80 : 55, dt); return; }
       const r = Math.random();
       if (e.phase >= 1 && e.judgeCd <= 0 && Math.random() < 0.5) { e.attack('judgement'); return; }
-      if (e.phase >= 1 && r < 0.3) { e.attack(U.pick(['echo_caedmon', 'echo_hilde', 'echo_elowen', 'echo_corvin', 'echo_ozias'])); return; }
+      if (e.phase >= 1 && r < (e.phase >= 2 ? 0.42 : 0.32)) {
+        const pool = e.phase >= 2 ? ECHOS_ALL : ECHOS_1; let nm = U.pick(pool); if (nm === e.lastEcho) nm = U.pick(pool);
+        e.lastEcho = nm; e.attack(nm); return;
+      }
       // a investida aparece mais quando a protagonista se afasta (ou está encostada a uma parede)
       if (d > 150 && r < (e.phase ? 0.6 : 0.45)) { e.attack('charge'); return; }
       if (d < 90) e.attack(r < 0.5 ? 'sweep' : r < 0.78 ? 'overhead' : 'grab');
       else if (d < 230) e.attack(r < 0.45 ? 'leap' : r < 0.75 ? 'grab' : 'charge');
       else e.attack(r < 0.5 ? 'charge' : 'leap');
-      if (e.phase >= 2) e.cool = 0.15;
+      if (e.phase >= 2) e.cool = 0.12;
     },
     onHitPlayer(e, hb, g) { if (e.atk && e.atk.name === 'charge') e.chargeHit = true; },
     // derrubado é o momento de castigar
@@ -638,6 +753,7 @@
       const a = e.atk; if (!a) return null;
       if (a.name === 'judgement') { const tr = a.phase === 'wind' ? Math.min(1, a.t / 0.75) : Math.min(1, a.t / (a.phase === 'act' ? 0.16 : a.s.rec)); return { anim: 'atk_overhead', phase: a.phase === 'act' && a.t > 0.16 ? 'rec' : a.phase, k: a.phase === 'act' && a.t > 0.16 ? 0 : tr }; }
       if (a.name === 'charge' && a.phase === 'act') { const st = sh.meta.anims.charge_run.stride || 38; return { anim: 'charge_run', idx: ((e._r.dist / st) % 1) * 6 }; }
+      if (a.name === 'echo_gemeos' && a.phase === 'act') return { anim: 'atk_sweep', phase: 'act', k: (a.t / 0.15) % 1 };
       if (a.name.startsWith('echo_') && a.name !== 'echo_caedmon') { const d = a.phase === 'wind' ? a.s.wind : a.phase === 'act' ? a.s.act : a.s.rec; return { anim: 'atk_echo', phase: a.phase, k: a.t / d }; }
       if (a.name === 'echo_caedmon') { const d = a.phase === 'wind' ? a.s.wind : a.phase === 'act' ? a.s.act : a.s.rec; return { anim: 'atk_thrust', phase: a.phase, k: a.t / d }; }
       return null;
@@ -654,6 +770,54 @@
       for (const s of [-1, 1]) { const lg = ctx.createLinearGradient(e.cx, 0, e.cx + s * reach, 0); lg.addColorStop(0, `rgba(255,40,40,${0.55 * k})`); lg.addColorStop(1, 'rgba(255,0,0,0)'); ctx.fillStyle = lg; ctx.fillRect(s > 0 ? e.cx : e.cx - reach, fy - 3, reach, 3); }
       ctx.restore();
     },
+    // o que os ecos deixam no chão: a terra das covas a rebentar, os mastins de chama, os muros de fogo do auto-da-fé
+    drawOver(ctx, e) {
+      const a0 = e.atk, an = a0 ? a0.name : '';
+      if (an === 'echo_gemeos' && a0.phase === 'act') { // o remoinho do montante
+        const cx = e.cx, cy = e.bottom - 34, r = 50, t = e.t || 0;
+        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+        for (let i = 0; i < 3; i++) { const st = t * 15 * e.whirlDir + i * U.TAU / 3; ctx.strokeStyle = `rgba(220,226,240,${0.42 - i * 0.1})`; ctx.lineWidth = 5 - i; ctx.beginPath(); ctx.ellipse(cx, cy, r, r * 0.45, 0, st, st + 1.7); ctx.stroke(); }
+        ctx.restore();
+      }
+      if (an === 'echo_automato' && e.ventFire) { // as grelhas a soprar: colunas de chama
+        const k = e.ventK || 0, h = 140 * Math.min(1, k * 5) * (k > 0.75 ? Math.max(0, 1 - (k - 0.75) / 0.25) : 1), fl = e.arena.floor, t = e.t || 0;
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        for (const x of e.ventFire) {
+          const gr = ctx.createLinearGradient(0, fl, 0, fl - h); gr.addColorStop(0, 'rgba(255,220,150,0.9)'); gr.addColorStop(0.35, 'rgba(255,120,30,0.7)'); gr.addColorStop(1, 'rgba(255,60,10,0)');
+          ctx.fillStyle = gr; const w = 9 + Math.sin(t * 30 + x) * 2;
+          ctx.beginPath(); ctx.moveTo(x - w, fl); ctx.quadraticCurveTo(x - w * 0.6, fl - h * 0.5, x + Math.sin(t * 20 + x) * 4, fl - h); ctx.quadraticCurveTo(x + w * 0.6, fl - h * 0.5, x + w, fl); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = 'rgba(255,250,220,0.8)'; ctx.fillRect(x - 2, fl - h * 0.6, 4, h * 0.6);
+          ctx.fillStyle = 'rgba(80,40,20,0.9)'; ctx.globalCompositeOperation = 'source-over'; ctx.fillRect(x - 12, fl - 2, 24, 3); ctx.globalCompositeOperation = 'lighter';
+        }
+        ctx.restore();
+      }
+      if (an === 'echo_coveiro') for (const c of e.graves || []) { if (c.t < 0.48 || c.t > 0.9) continue; const k = c.t < 0.54 ? (c.t - 0.48) / 0.06 : c.t > 0.72 ? Math.max(0, 1 - (c.t - 0.72) / 0.18) : 1; for (let i = -1; i <= 1; i++) rootSpikes(ctx, c.x + i * 14, e.arena.floor, 66 * k * (1 - Math.abs(i) * 0.2), c.seed + i, ['#1e140c', '#5a4632', '#e0d4bc']); }
+      if (an === 'echo_matilheira') for (const h of e.hounds || []) {
+        if (h.t < 0) continue; const x = h.x, fl = e.arena.floor, run = Math.sin(e.t * 22 + h.id) * 3, d = h.dir;
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        const gr = ctx.createRadialGradient(x, fl - 16, 0, x, fl - 16, 40); gr.addColorStop(0, 'rgba(255,120,40,0.55)'); gr.addColorStop(1, 'rgba(255,60,20,0)'); ctx.fillStyle = gr; ctx.fillRect(x - 40, fl - 56, 80, 64);
+        ctx.fillStyle = 'rgba(255,110,50,0.75)';
+        ctx.beginPath(); ctx.ellipse(x - d * 4, fl - 18, 20, 8.5, 0, 0, U.TAU); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(x + d * 12, fl - 22); ctx.lineTo(x + d * 30, fl - 20 + run * 0.3); ctx.lineTo(x + d * 24, fl - 12); ctx.lineTo(x + d * 10, fl - 13); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(x + d * 18, fl - 25); ctx.lineTo(x + d * 16, fl - 33); ctx.lineTo(x + d * 22, fl - 25); ctx.fill();
+        for (const [lx, ph] of [[10, 0], [4, 1.6], [-10, 3.1], [-16, 4.4]]) { const sw = Math.sin(e.t * 22 + ph) * 6; ctx.beginPath(); ctx.moveTo(x + d * lx - 1.8, fl - 14); ctx.lineTo(x + d * (lx + sw) - 1.2, fl - 1); ctx.lineTo(x + d * (lx + sw) + 1.2, fl - 1); ctx.lineTo(x + d * lx + 1.8, fl - 14); ctx.fill(); }
+        ctx.beginPath(); ctx.moveTo(x - d * 22, fl - 20); ctx.quadraticCurveTo(x - d * 34, fl - 28 + run, x - d * 40, fl - 24); ctx.lineTo(x - d * 22, fl - 16); ctx.fill();
+        ctx.fillStyle = 'rgba(255,240,200,0.9)'; ctx.beginPath(); ctx.arc(x + d * 22, fl - 22, 1.4, 0, U.TAU); ctx.fill();
+        ctx.restore();
+      }
+      const P2 = e.pyre, a = e.atk;
+      if (P2 && a && a.name === 'echo_vael' && a.t >= 0.45 && !P2.boom) {
+        const fl = e.arena.floor, t = e.t || 0;
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        for (const x of [P2.l, P2.r]) {
+          VS.Sprites.glow(ctx, x, fl - 14, 34, '#ff5010', 0.55);
+          for (let i = 0; i < 5; i++) { const ph = t * 16 + i * 1.7 + x * 0.05, h = 22 + 12 * Math.abs(Math.sin(ph)), ox = x + (i - 2) * 3.2;
+            ctx.fillStyle = i === 2 ? 'rgba(255,240,200,0.9)' : `rgba(255,${110 + i * 20},40,0.6)`;
+            ctx.beginPath(); ctx.moveTo(ox - 4.5, fl); ctx.quadraticCurveTo(ox - 3 + Math.sin(ph) * 2, fl - h * 0.6, ox + Math.sin(ph * 1.3) * 2.5, fl - h); ctx.quadraticCurveTo(ox + 3.5, fl - h * 0.5, ox + 4.5, fl); ctx.closePath(); ctx.fill(); }
+        }
+        ctx.restore();
+      }
+    },
     // a sombra do guardião evocado: a silhueta do próprio rei tingida com a cor do eco, atrás dele
     drawBehind(ctx, e) {
       if (!e.echo || !e.atk || e.atk.phase === 'rec') return;
@@ -661,7 +825,7 @@
       VS.EnemyRender.ghost(ctx, e, ECHO_COL[e.echo], (e.echo === 'corvin' || e.echo === 'ozias' ? 0.2 : 0.3) * k, -e.facing * (10 + 14 * k), -4 * k);
     },
     onPhase(e, g) {
-      A.sfx('roar'); G.addShake(0.6); e.cool = 0.3;
+      A.sfx('roar'); G.addShake(0.6); e.cool = 0.3; e.atkSpeed = [1, 1.1, 1.2][Math.min(2, e.phase)];
       const h = VS.EnemyRender.point(e, e._f, 'heart') || { x: e.cx, y: e.cy - 10 };
       VS.FX.flare(h.x, h.y, 60, [255, 120, 40], 0.5); G.flash('#ff6020', 0.35);
       if (e.phase === 2) { firePool(g, 50, e.arena.floor, 60, 999); firePool(g, g.room.pw - 50, e.arena.floor, 60, 999); }
@@ -678,33 +842,103 @@
   });
 
   // ======================================================================
-  // O ECO DE SERAPHINE — chefe secreto (final 3): devolve a luz com parries
+  // O ECO DE SERAPHINE — chefe secreto (final 3): só a luz devolvida (parry) ou os golpes enquanto se apaga a ferem.
+  // Poderes que mais ninguém tem: PARA O TEMPO (a luz dela fica suspensa no ar e solta-se toda de uma vez) e DESFAZ O
+  // TEMPO (a luz que já passou volta para trás e ela regressa ao sítio onde estava).
   // ======================================================================
+  const seraLight = (o) => P(Object.assign({ w: 14, h: 14, dmg: 16, kind: 'light', color: '#fff8e0', life: 5, solid: false, reflectable: true, isLight: true }, o));
+  function seraFreeze(e, g, on) {
+    for (const pr of g.ents) {
+      if (!(pr instanceof VS.Projectile) || pr.team !== 'enemy' || pr.remove) continue;
+      if (on && !pr._fv) { pr._fv = [pr.vx, pr.vy]; pr.vx = 0; pr.vy = 0; pr._fh = pr.homing; pr.homing = 0; }
+      else if (!on && pr._fv) { pr.vx = pr._fv[0]; pr.vy = pr._fv[1]; pr.homing = pr._fh || 0; pr._fv = null; }
+    }
+  }
   B.def('seraphine', {
-    cfg: { w: 30, h: 64, hp: 1000, music: 'b_seraphine', flying: true, phases: [0.6, 0.3], introTime: 2.4, heavy: true },
+    cfg: { w: 30, h: 64, hp: 1350, music: 'b_seraphine', flying: true, phases: [0.6, 0.3], introTime: 2.4, heavy: true },
+    aggr: [1.4, 1.75, 2.1],
+    noRepel: true,
     attacks: {
-      burst: { wind: 0.8, act: 0.1, rec: 0.7, tell: null, sfx: 'light', onAct(e, g) { const n = 10 + e.phase * 4; const off = Math.random(); for (let i = 0; i < n; i++) { const a = (i + off) / n * U.TAU; g.spawn(P({ x: e.cx, y: e.cy, vx: Math.cos(a) * 120, vy: Math.sin(a) * 120, w: 12, h: 12, dmg: 14, kind: 'light', color: '#fff0c0', life: 5, solid: false, reflectable: true, isLight: true })); } e.count++; } },
-      lance: { wind: 0.6, act: 0.6, rec: 0.5, tell: 'white', sfx: 'light', during(e, g) { const a = e.atk; const k = Math.floor(a.t / 0.2); if (k !== a.k && k < 3) { a.k = k; const p = g.player; const ang = Math.atan2(p.cy - e.cy, p.cx - e.cx); g.spawn(P({ x: e.cx, y: e.cy, vx: Math.cos(ang) * 230, vy: Math.sin(ang) * 230, w: 14, h: 14, dmg: 16, kind: 'light', color: '#fff8e0', life: 4, solid: false, reflectable: true, isLight: true })); A.sfx('chime'); } }, onEnd(e) { e.count++; } },
-      embrace: { wind: 0.8, act: 0.9, rec: 0.6, tell: 'red', sfx: 'wind', onAct(e, g) { const p = g.player; const a = Math.atan2(p.cy - e.cy, p.cx - e.cx); e.vx = Math.cos(a) * 360; e.vy = Math.sin(a) * 360; }, during(e) { e.attackHBs.push({ x: e.x, y: e.y, w: e.w, h: e.h, dmg: 26, id: e.atk.id, unblockable: true, parryable: false, src: e }); }, onEnd(e) { e.vx *= 0.2; e.vy *= 0.2; e.count++; } },
-      // ASAS: bate as asas e solta uma parede de penas de luz que atravessa a sala com uma abertura (no chão ou à
-      // altura de um salto) — mete-te na abertura quando a parede passar, ou atravessa-a com a esquiva
-      beams: { wind: 0.6, act: 0.1, rec: 0.6, tell: null, sfx: 'wind', onAct(e, g) {
+      burst: { wind: 0.75, act: 0.1, rec: 0.6, tell: null, sfx: 'light', onAct(e, g) { const n = 10 + e.phase * 4; const off = Math.random(); for (let i = 0; i < n; i++) { const a = (i + off) / n * U.TAU; g.spawn(seraLight({ x: e.cx, y: e.cy, vx: Math.cos(a) * 120, vy: Math.sin(a) * 120, w: 12, h: 12, dmg: 14, color: '#fff0c0' })); } e.count++; } },
+      lance: { wind: 0.55, act: 0.6, rec: 0.45, tell: 'white', sfx: 'light', during(e, g) { const a = e.atk; const k = Math.floor(a.t / 0.2); if (k !== a.k && k < 3) { a.k = k; const p = g.player; const ang = Math.atan2(p.cy - e.cy, p.cx - e.cx); g.spawn(seraLight({ x: e.cx, y: e.cy, vx: Math.cos(ang) * 240, vy: Math.sin(ang) * 240, life: 4, kind: 'lance' })); A.sfx('chime'); } }, onEnd(e) { e.count++; } },
+      embrace: { wind: 0.75, act: 0.9, rec: 0.55, tell: 'red', sfx: 'wind', onAct(e, g) { const p = g.player; const a = Math.atan2(p.cy - e.cy, p.cx - e.cx); e.vx = Math.cos(a) * 380; e.vy = Math.sin(a) * 380; }, during(e) { e.attackHBs.push({ x: e.x, y: e.y, w: e.w, h: e.h, dmg: 26, id: e.atk.id, unblockable: true, parryable: false, src: e }); }, onEnd(e) { e.vx *= 0.2; e.vy *= 0.2; e.count++; } },
+      // ASAS: parede de penas de luz com uma abertura (no chão ou à altura de um salto) — mete-te na abertura ou esquiva-te
+      beams: { wind: 0.55, act: 0.1, rec: 0.55, tell: null, sfx: 'wind', onAct(e, g) {
         const W = g.room.pw, fl = e.arena.floor, fromL = g.player.cx > W / 2, low = Math.random() < 0.5, gap0 = low ? fl - 50 : fl - 104, gap1 = low ? fl : fl - 50;
-        for (let y = fl - 6; y > fl - 190; y -= 13) { if (y > gap0 - 4 && y < gap1 + 4) continue; g.spawn(P({ x: fromL ? 18 : W - 28, y: y - 5, vx: (fromL ? 1 : -1) * 165, w: 10, h: 10, dmg: 16, kind: 'plume', color: '#fff4d8', life: W / 165 + 0.4, solid: false, reflectable: false, parryable: false, light: false })); }
+        for (let y = fl - 6; y > fl - 190; y -= 13) { if (y > gap0 - 4 && y < gap1 + 4) continue; g.spawn(P({ x: fromL ? 18 : W - 28, y: y - 5, vx: (fromL ? 1 : -1) * 175, w: 10, h: 10, dmg: 16, kind: 'plume', color: '#fff4d8', life: W / 175 + 0.4, solid: false, reflectable: false, parryable: false, light: false })); }
         A.sfx('choir_hit', { vol: 0.5 }); e.count++; if (!e.wingHint) { e.wingHint = true; VS.UI.toast(VS.t('tip_seraphine_wings'), 4); } } },
+      // O TEMPO PARADO (vermelho): o mundo perde a cor; a luz dela fica suspensa no ar e ela semeia uma cúpula de lanças à
+      // tua volta, com uma falha num dos lados, rente ao chão. Tu continuas a mexer-te: sai pela falha antes que o tempo
+      // volte (ou atravessa as lanças com a esquiva) — aí tudo voa de uma vez para o sítio onde estavas.
+      stoptime: { wind: 0.7, act: 1.9, rec: 0.5, tell: 'red', sfx: false,
+        onWind(e) { A.sfx('timestop'); },
+        onAct(e, g) {
+          G.timeTint = 1; seraFreeze(e, g, true);
+          const p = g.player, n = 16 + e.phase * 4, R = 118, sp = 260, fl = e.arena.floor;
+          // a falha abre para o lado com mais sala (encostada a uma parede, nunca fica virada para ela)
+          const side = p.cx - e.arena.x0 < 170 ? 1 : e.arena.x1 - p.cx < 170 ? -1 : (Math.random() < 0.5 ? -1 : 1);
+          const gapA = side > 0 ? -0.22 : Math.PI + 0.22, rot = Math.random() * 0.3;
+          for (let i = 0; i < n; i++) {
+            const a = i / n * U.TAU + rot;
+            if (Math.abs(Math.atan2(Math.sin(a - gapA), Math.cos(a - gapA))) < 0.46) continue;
+            const x = p.cx + Math.cos(a) * R, y = p.cy + Math.sin(a) * R;
+            if (y > fl - 6 || x < e.arena.x0 - 8 || x > e.arena.x1 + 8) continue; // nada dentro do chão nem das paredes
+            // vida curta: param pouco depois de passarem pelo centro (quem saiu pela falha fica a salvo)
+            const pr = seraLight({ x: x - 7, y: y - 7, vx: 0, vy: 0, life: R / sp + 0.2, kind: 'lance', ang: Math.atan2(-Math.sin(a), -Math.cos(a)) });
+            pr._fv = [-Math.cos(a) * sp, -Math.sin(a) * sp]; g.spawn(pr);
+          }
+          e.count++; if (!e.timeHint) { e.timeHint = true; VS.UI.toast(VS.t('tip_seraphine_time'), 4.5); }
+        },
+        during(e, g, dt) {
+          const a = e.atk;
+          if (!a.go) G.timeTint = 1;
+          for (const pr of g.ents) if (pr._fv) { pr.vx = 0; pr.vy = 0; pr.life += dt; }
+          if (a.t > 1.5 && !a.go) { a.go = true; seraFreeze(e, g, false); G.timeTint = 0; A.sfx('timeresume'); G.addShake(0.3); }
+        },
+        onEnd(e, g) { seraFreeze(e, g || e.game, false); G.timeTint = 0; } },
+      // O TEMPO DESFEITO: tudo o que ela lançou volta para trás pelo mesmo caminho e ela regressa ao sítio onde estava
+      rewind: { wind: 0.5, act: 0.5, rec: 0.4, tell: null, sfx: false,
+        onWind(e) { A.sfx('rewind'); G.rewindTint = 1; },
+        onAct(e, g) {
+          let n = 0; for (const pr of g.ents) if (pr instanceof VS.Projectile && pr.team === 'enemy' && !pr.remove && pr.isLight) { pr.vx = -pr.vx * 1.15; pr.vy = -pr.vy * 1.15; pr.homing = 0; pr.life = Math.max(pr.life, 2.5); n++; }
+          const h = e.hist && e.hist.length ? e.hist[0] : null;
+          G.burst(e.cx, e.cy, 20, { color: '#c8b0ff', speed: 120, life: 0.5, size: 1.6, add: true });
+          if (h) { e.x = h[0]; e.y = h[1]; }
+          G.burst(e.cx, e.cy, 20, { color: '#c8b0ff', speed: 120, life: 0.5, size: 1.6, add: true });
+          if (!n) { const p = g.player; for (let i = 0; i < 6; i++) { const a = i / 6 * U.TAU; g.spawn(seraLight({ x: p.cx + Math.cos(a) * 200, y: p.cy + Math.sin(a) * 200, vx: -Math.cos(a) * 160, vy: -Math.sin(a) * 160, life: 3, kind: 'lance' })); } }
+          e.count++; if (!e.rewindHint) { e.rewindHint = true; VS.UI.toast(VS.t('tip_seraphine_rewind'), 4); }
+        },
+        onEnd() { G.rewindTint = 0; } },
     },
     sheetAnchor: 'center',
+    animMap: { stoptime: 'atk_burst', rewind: 'atk_beams' },
     // apagada: animação própria (encolhida, cinzenta) enquanto dura a janela para lhe bater
     animState(e) { return e.dim > 0 && !e.defeated ? { anim: 'dim' } : null; },
-    init(e) { e.count = 0; e.dim = 0; },
+    // a desfazer o tempo: as imagens dela pelo caminho de volta, cada vez mais nítidas até ao sítio de onde vai reaparecer
+    drawBehind(ctx, e) {
+      const a = e.atk; if (!a || a.name !== 'rewind' || a.phase !== 'wind' || !e.hist || e.hist.length < 10) return;
+      const k = Math.min(1, a.t / a.s.wind), n = 4;
+      for (let i = 1; i <= n; i++) { const h = e.hist[Math.floor((e.hist.length - 1) * (1 - i / n))]; VS.EnemyRender.ghost(ctx, e, '#b49aff', (0.18 + 0.12 * i) * k, h[0] - e.x, h[1] - e.y); }
+    },
+    init(e) { e.count = 0; e.dim = 0; e.hist = []; },
     think(e, dt, g) {
       const p = g.player;
+      // nada fica suspenso fora do tempo parado (se o ataque for interrompido, a luz solta-se)
+      if ((!e.atk || e.atk.name !== 'stoptime') && g.ents.some((x) => x._fv)) seraFreeze(e, g, false);
+      // memória de onde esteve (para desfazer o tempo): ~2,5 s
+      e.hist.push([e.x, e.y]); if (e.hist.length > 150) e.hist.shift();
       if (e.dim > 0) { e.dim -= dt; e.vx *= 0.9; e.vy = U.approach(e.vy, 30, 100 * dt); e.y = Math.min(e.y, e.arena.floor - e.h - 4); return; }
       if (e.atk) { if (e.atk.phase === 'wind') { e.vx *= 0.9; e.vy *= 0.9; } return; }
       e.face();
-      e.fly(g.room.pw / 2 + Math.sin(e.anim * 0.5) * 160, e.arena.floor - 150 + Math.sin(e.anim) * 30, 120, dt, 0.04);
-      if (e.count >= 4 - Math.min(1, e.phase)) { e.count = 0; e.dim = 3.2; A.sfx('choir_hit'); VS.UI.toast(VS.t('tip_seraphine_dim'), 2); return; }
-      if (e.cool <= 0) { const r = Math.random(); e.attack(r < 0.3 ? 'burst' : r < 0.6 ? 'lance' : r < 0.8 ? 'beams' : 'embrace'); e.cool = 0.6 - e.phase * 0.15; }
+      e.fly(g.room.pw / 2 + Math.sin(e.anim * 0.6) * 170, e.arena.floor - 150 + Math.sin(e.anim) * 30, 140, dt, 0.05);
+      if (e.count >= 4 - Math.min(1, e.phase)) { e.count = 0; e.dim = e.phase >= 2 ? 2.2 : 2.7; A.sfx('choir_hit'); VS.UI.toast(VS.t('tip_seraphine_dim'), 2); return; }
+      if (e.cool <= 0) {
+        const r = Math.random(), ph = e.phase;
+        const pick = ph === 0 ? (r < 0.3 ? 'burst' : r < 0.6 ? 'lance' : r < 0.8 ? 'beams' : 'embrace')
+          : ph === 1 ? (r < 0.2 ? 'burst' : r < 0.4 ? 'lance' : r < 0.55 ? 'beams' : r < 0.7 ? 'embrace' : r < 0.88 ? 'stoptime' : 'rewind')
+            : (r < 0.15 ? 'burst' : r < 0.3 ? 'lance' : r < 0.42 ? 'beams' : r < 0.55 ? 'embrace' : r < 0.78 ? 'stoptime' : 'rewind');
+        e.attack(pick); e.cool = 0.6 - e.phase * 0.15;
+      }
     },
     // só a luz devolvida (ou golpes enquanto se apaga) a ferem
     onHitBoss(e, hb, g) {

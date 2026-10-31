@@ -209,6 +209,15 @@
       ctx.fillStyle = '#fff4c8'; ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(-4, -1.1); ctx.lineTo(-4, 1.1); ctx.closePath(); ctx.fill();
       ctx.restore(); return;
     }
+    if (k === 'lance') { // lança de luz (Eco de Seraphine): aponta para onde vai voar, mesmo parada no tempo
+      const ang = pr.vx || pr.vy ? Math.atan2(pr.vy, pr.vx) : (pr.ang || 0);
+      ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+      S.glow(ctx, 0, 0, 16, pr.team === 'player' ? '#a0d0ff' : '#fff0c0', 0.55);
+      ctx.fillStyle = pr.team === 'player' ? 'rgba(200,225,255,0.9)' : 'rgba(255,238,196,0.9)';
+      ctx.beginPath(); ctx.moveTo(15, 0); ctx.lineTo(-3, -2.8); ctx.lineTo(-13, 0); ctx.lineTo(-3, 2.8); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.moveTo(13, 0); ctx.lineTo(-6, -1.1); ctx.lineTo(-6, 1.1); ctx.closePath(); ctx.fill();
+      ctx.restore(); return;
+    }
     if (k === 'waxpool') { // poça de cera derretida, ainda quente
       const k2 = Math.min(1, pr.life / 0.6);
       ctx.globalAlpha = k2; S.glow(ctx, x, y, 16, '#ff9a50', 0.25);

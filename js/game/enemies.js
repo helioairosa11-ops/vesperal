@@ -62,7 +62,8 @@
     }
     updateAttack(dt) {
       const a = this.atk; if (!a) return;
-      const s = a.s; a.t += dt;
+      // atkSpeed > 1: o ataque inteiro (preparação, golpe, recuperação e o que corre dentro dele) passa mais depressa
+      const sdt = dt * (this.atkSpeed || 1), s = a.s; a.t += sdt;
       if (a.phase === 'wind' && s.tell === 'white' && !a.tellSnd && s.wind - a.t <= TELL_LEAD) { a.tellSnd = true; A.sfx('parry_tell', { vol: 0.7 }); }
       if (a.phase === 'wind' && a.t >= s.wind) { a.phase = 'act'; a.t = 0; if (s.sfx !== false) A.sfx(s.sfx || 'swing', { vol: 0.7 }); if (s.onAct) s.onAct(this, this.game); }
       if (a.phase === 'act') {
@@ -71,14 +72,14 @@
           const r = s.hb(this);
           if (r) this.attackHBs.push(Object.assign(r, { dmg: Math.round(s.dmg * (this.K.dmgMult || 1) * (this.dmgScale || 1)), id: a.id, parryable: s.parryable !== false && s.tell !== 'red', unblockable: s.tell === 'red', src: this }));
         }
-        if (s.during) s.during(this, this.game, dt);
+        if (s.during) s.during(this, this.game, sdt);
         if (a.t >= s.act) { a.phase = 'rec'; a.t = 0; }
       } else if (a.phase === 'rec') {
         if (s.lunge !== undefined) this.vx = U.approach(this.vx, 0, 1200 * dt);
         if (a.t >= s.rec) { this.atk = null; this.cool = s.cool !== undefined ? s.cool : U.rand(0.6, 1.4); if (s.onEnd) s.onEnd(this, this.game); }
       } else if (a.phase === 'wind') {
         this.vx = s.windMove !== undefined ? this.facing * s.windMove : U.approach(this.vx, 0, 900 * dt);
-        if (s.windTick) s.windTick(this, this.game, dt);
+        if (s.windTick) s.windTick(this, this.game, sdt);
       }
     }
     tellState() { const a = this.atk; if (!a || a.phase !== 'wind') return null; return a.s.tell ? { kind: a.s.tell, k: a.t / a.s.wind, left: a.s.wind - a.t } : null; }

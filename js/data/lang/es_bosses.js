@@ -28,7 +28,8 @@
     ins_i40: "Tres golpes y el hierro pide agua. Quien sujeta el mazo al rojo lo suelta, aunque sea la maestra. Cuenta los golpes; espera el blanco.",
     tip_mariposa_rest: "Tras soltar el polvo, la Madre Polilla se posa agotada, con las alas cerradas. ¡Hiérela en el suelo!",
     tip_carpideira_scream: 'El grito no se para ni se salta: atraviesa las ondas con la esquiva.', tip_carpideira_tired: 'Tras el grito doble cae de rodillas, agotada. ¡Ahora!',
-    tip_custodio_rays: 'No tiene debilidades: los rayos giran; corre delante de ellos o atraviésalos con la esquiva.', tip_custodio_blades: 'Las hojas de oro se devuelven con un parry.',
+    tip_custodio_rays: 'Los rayos giran: corre delante de ellos o atraviésalos con la esquiva.', tip_custodio_blades: 'Haz parry a las hojas de oro: vuelven contra él y lo hieren.',
+    tip_custodio_parry: 'Es todo luz: las armas lo atraviesan. Solo el parry lo hiere: para sus golpes de luz en el instante del brillo.', tip_custodio_eclipse: '¡Eclipse! A oscuras, solo el brillo de su hoja te avisa: haz parry.',
     msg_wail_far: 'A lo lejos, alguien llora.', msg_wail_near: 'El llanto está aquí.',
     ins_i41_t: "Nota de un jardinero, clavada en una espina",
     ins_i41: "No subas a su encuentro. Sacude el polvo de las alas y el polvo le pesa; luego baja al suelo, cierra las alas como un tejado y duerme un poco. Es en ese sueño corto cuando se poda.",
@@ -72,5 +73,7 @@
     tip_ozias_orb: "El orbe del cáliz puede devolverse: haz parry cuando llegue.",
     tip_aldric_judgement: "El Juicio del Rey mata de un golpe: ¡salta sobre la ola carmesí o esquívala atravesándola!",
     tip_seraphine_wings: "Se acerca un muro de plumas de luz: métete en su hueco cuando pase, o atraviésalo esquivando.",
+    tip_seraphine_time: 'El tiempo se ha detenido: su luz queda suspendida. ¡Sal del anillo de lanzas por el hueco (o atraviésalo con la esquiva) antes de que vuelva!',
+    tip_seraphine_rewind: 'El tiempo se deshace: la luz que ya pasó vuelve atrás; cuida tu espalda.',
   });
 })(window.VS);

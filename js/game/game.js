@@ -535,7 +535,9 @@
         ctx.stroke();
       }
       // luz
-      G.beginLights(VS.ROOMS[room.id].dark !== undefined ? VS.ROOMS[room.id].dark : R.dark, R.darkColor);
+      // a escuridão da sala (mais a de um eclipse do chefe)
+      const bk = this.boss && !this.boss.defeated ? (this.boss.darkBoost || 0) : 0;
+      G.beginLights(Math.min(0.96, (VS.ROOMS[room.id].dark !== undefined ? VS.ROOMS[room.id].dark : R.dark) + bk), R.darkColor);
       if (this.lightning > 0.3) G.ambientDark *= 0.4;
       this.player.emitLight(this);
       for (const e of this.ents) if (e.emitLight) e.emitLight(this);
@@ -550,6 +552,13 @@
       // indicador de interação (no mundo, por cima do primeiro plano)
       G.worldTransform(ctx);
       if (this.interactTarget && !this.cutscene) VS.UI.drawPrompt(ctx, this.interactTarget, this);
+      // o tempo parado (o mundo perde a cor) e o tempo desfeito (um véu violeta) — poderes do Eco de Seraphine
+      if (G.timeTint > 0.01) {
+        ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'saturation'; ctx.globalAlpha = Math.min(1, G.timeTint) * 0.92; ctx.fillStyle = '#808080'; ctx.fillRect(0, 0, G.canvas.width, G.canvas.height);
+        ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = Math.min(1, G.timeTint) * 0.12; ctx.fillStyle = '#c8d8ff'; ctx.fillRect(0, 0, G.canvas.width, G.canvas.height); ctx.restore();
+        G.timeTint = Math.max(0, G.timeTint - dt * 3);
+      }
+      if (G.rewindTint > 0.01) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = Math.min(1, G.rewindTint) * 0.26; ctx.fillStyle = '#8a64e0'; ctx.fillRect(0, 0, G.canvas.width, G.canvas.height); ctx.restore(); G.rewindTint = Math.max(0, G.rewindTint - dt * 0.9); }
       G.screenTransform(ctx);
       G.vignette(0.55, R.tint);
       this.drawBossPointer(ctx);
