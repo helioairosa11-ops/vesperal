@@ -38,7 +38,8 @@
   const HEAT_MAX = 3;
   const hildeHeat = (e) => { e.heat = (e.heat || 0) + 1; if (e.heat >= HEAT_MAX) e.mustCool = true; };
   B.def('hilde', {
-    cfg: { w: 30, h: 62, hp: 760, music: 'b_hilde', heavy: true, phases: [0.5], introTime: 1.6 },
+    cfg: { w: 30, h: 62, hp: 1050, music: 'b_hilde', heavy: true, phases: [0.5], introTime: 1.6 },
+    aggr: [1.65, 2.0, 2.2], repelCol: [255, 140, 60],
     attacks: {
       hammer: { wind: 0.7, act: 0.14, rec: 0.7, dmg: 24, tell: 'white', sfx: 'swing_heavy', hb: (e) => front(e, 12, 0, 44, 58), onAct(e, g) { G.addShake(0.45); A.sfx('crush'); VS.FX.impact(e.cx + e.facing * 40, e.bottom - 2, 'metal', e.facing, 1.3); firePool(g, e.cx + e.facing * 40, e.arena.floor, 40, 3.5); hildeHeat(e); } },
       sweep: { wind: 0.55, act: 0.2, rec: 0.55, dmg: 20, tell: 'white', sfx: 'swing_heavy', hb: (e) => front(e, -14, 0, 72, 32), lunge: 80, onAct(e) { hildeHeat(e); } },
@@ -64,7 +65,7 @@
       e.face(); const d = Math.abs(e.dx());
       if (e.pullHammer > 0) { e.pullHammer -= dt; if (e.pullHammer <= 0) { e.face(); e.attack('hammer'); } return; }
       if (e.mustCool) { e.attack('overheat'); return; }
-      if (e.cool > 0) { e.walk(d > 80 ? e.facing : d < 40 ? -e.facing : 0, 50, dt); return; }
+      if (e.cool > 0) { e.walk(d > 80 ? e.facing : d < 40 ? -e.facing : 0, e.phase ? 78 : 62, dt); return; }
       const r = Math.random();
       if (e.phase && r < 0.18) { e.attack('eruption'); return; }
       if (d < 70) e.attack(r < 0.5 ? 'hammer' : 'sweep');
@@ -96,109 +97,312 @@
   });
 
   // ======================================================================
-  // AMA ELOWEN — enraizada; na fase 2 a água sobe e ela liberta-se
+  // AMA ELOWEN — a ama das silvas. Rápida: nunca fica plantada, enterra-se e corre por baixo do chão atrás de quem a
+  // caça para irromper debaixo dela; raízes em onda pelo chão, anel de espinhos, chicote de silvas, nuvens de esporos.
+  // Ponto fraco: a canção de embalar (um golpe enquanto canta cala-a). Na fase 2 a água sobe e ela ainda acelera.
   // ======================================================================
   const ER = () => VS.EnemyRender;
+  // anel de espinhos: cresce a partir dela e fere quem o anel apanhar — atravessa-se com a esquiva, ou foge-se para longe
+  class ThornRing extends VS.Entity {
+    constructor(x, y, speed, max, dmg) {
+      super(x - 2, y - 2, 4, 4); this.ox = x; this.oy = y; this.r = 14; this.speed = speed; this.max = max; this.dmg = dmg;
+      this.z = 6; this.attackHBs = []; this.aid = VS.Entity.newAttackId(); this.drawAlways = true; this.rot = Math.random() * U.TAU;
+    }
+    update(dt, game) {
+      super.update(dt, game);
+      this.r += this.speed * dt; this.attackHBs = [];
+      if (this.r > this.max) { this.remove = true; return; }
+      const n = Math.max(14, Math.round(this.r / 7));
+      for (let i = 0; i < n; i++) {
+        const a = i / n * U.TAU, x = this.ox + Math.cos(a) * this.r, y = this.oy + Math.sin(a) * this.r;
+        if (y > game.room.ph || game.room.solidAtPoint(x, y)) continue;
+        this.attackHBs.push({ x: x - 6, y: y - 6, w: 12, h: 12, dmg: this.dmg, id: this.aid, unblockable: true, parryable: false, src: { cx: this.ox } });
+      }
+    }
+    draw(ctx) {
+      const k = 1 - this.r / this.max, n = Math.max(16, Math.round(this.r / 6));
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.strokeStyle = `rgba(150,220,110,${(0.42 * k + 0.08).toFixed(3)})`; ctx.lineWidth = 9; ctx.beginPath(); ctx.arc(this.ox, this.oy, Math.max(1, this.r - 3), 0, U.TAU); ctx.stroke();
+      ctx.globalCompositeOperation = 'source-over';
+      for (let i = 0; i < n; i++) {
+        const a = i / n * U.TAU + this.rot, c = Math.cos(a), s = Math.sin(a), r0 = this.r - 5, L = 12 + (i % 3) * 4;
+        ctx.fillStyle = `rgba(30,42,18,${(0.8 * k + 0.2).toFixed(3)})`;
+        ctx.beginPath(); ctx.moveTo(this.ox + c * r0 - s * 3.2, this.oy + s * r0 + c * 3.2); ctx.lineTo(this.ox + c * (r0 + L), this.oy + s * (r0 + L)); ctx.lineTo(this.ox + c * r0 + s * 3.2, this.oy + s * r0 - c * 3.2); ctx.fill();
+        ctx.fillStyle = `rgba(226,240,190,${(0.75 * k + 0.1).toFixed(3)})`;
+        ctx.beginPath(); ctx.moveTo(this.ox + c * (r0 + L * 0.4), this.oy + s * (r0 + L * 0.4)); ctx.lineTo(this.ox + c * (r0 + L), this.oy + s * (r0 + L)); ctx.lineTo(this.ox + c * (r0 + L * 0.4) + s * 1.4, this.oy + s * (r0 + L * 0.4) - c * 1.4); ctx.fill();
+      }
+      ctx.strokeStyle = `rgba(220,240,180,${(0.7 * k).toFixed(3)})`; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(this.ox, this.oy, Math.max(1, this.r - 5), 0, U.TAU); ctx.stroke();
+      ctx.restore();
+    }
+  }
+  VS.ThornRing = ThornRing;
+  // silvas que rompem do chão (onda de raízes, erupção): três espigões curvos com espinhos claros
+  function rootSpikes(ctx, x, fl, h, seed) {
+    if (h <= 1) return;
+    const r = (k) => { const v = Math.sin(seed * 12.9898 + k * 78.233) * 43758.5453; return v - Math.floor(v); };
+    for (let i = 0; i < 3; i++) {
+      const bx = x + (i - 1) * 7 + (r(i) - 0.5) * 4, hh = h * (0.62 + r(i + 3) * 0.45), lean = (r(i + 6) - 0.5) * 12, w = 4 + r(i + 9) * 3;
+      ctx.fillStyle = '#18200e'; ctx.beginPath(); ctx.moveTo(bx - w, fl); ctx.quadraticCurveTo(bx - w * 0.3 + lean * 0.3, fl - hh * 0.6, bx + lean, fl - hh); ctx.quadraticCurveTo(bx + w * 0.4 + lean * 0.4, fl - hh * 0.55, bx + w, fl); ctx.fill();
+      ctx.fillStyle = '#4e6428'; ctx.beginPath(); ctx.moveTo(bx - w * 0.35, fl); ctx.quadraticCurveTo(bx + lean * 0.25, fl - hh * 0.6, bx + lean, fl - hh); ctx.lineTo(bx + w * 0.1, fl); ctx.fill();
+      ctx.fillStyle = '#d8d0b0';
+      for (let q = 1; q < 4; q++) { const y = fl - hh * q / 4.2, xx = bx + lean * q / 4.2, s = q % 2 ? 1 : -1; ctx.beginPath(); ctx.moveTo(xx, y); ctx.lineTo(xx + s * 4.5, y - 2.6); ctx.lineTo(xx, y - 2.4); ctx.fill(); }
+    }
+  }
+  const elowenHand = (e) => (ER().point(e, e._f, 'hand') || { x: e.cx + e.facing * 14, y: e.y + 26 });
   B.def('elowen', {
-    cfg: { w: 32, h: 68, hp: 820, music: 'b_elowen', heavy: true, phases: [0.5], introTime: 1.8, blood: '#2a3a1a' },
+    cfg: { w: 32, h: 68, hp: 1100, music: 'b_elowen', heavy: true, phases: [0.5], introTime: 1.8, blood: '#2a3a1a' },
+    aggr: [1.6, 2.0, 2.2],
+    repelCol: [170, 230, 140],
     attacks: {
-      thorns: { wind: 0.4, act: 1.2, rec: 0.5, tell: null, sfx: 'whip', onAct(e, g) { const p = g.player; e.thX = [p.cx - 40, p.cx, p.cx + 40].map((x) => U.clamp(x, 30, g.room.pw - 30)); }, during(e, g) { columns(e, g, e.thX, { warn: 0.7, h: 60, w: 14, dmg: 18, sfx: 'whip', warnCol: '#8aa050', cols: ['#4a5a2a', '#6a7a3a'] }); } },
-      // chicote de silvas: sai da mão-ramo à altura do peito (a silva é desenhada em drawOver)
-      whip: { wind: 0.5, act: 0.18, rec: 0.5, dmg: 18, tell: 'white', sfx: 'whip', hb: (e) => front(e, 26, 38, 112, 18) },
-      seeds: { wind: 0.6, act: 0.1, rec: 0.6, tell: null, sfx: 'swing', onAct(e, g) { const h = ER().point(e, e._f, 'hand') || { x: e.cx, y: e.y + 10 }; for (let i = 0; i < 3; i++) g.spawn(P({ x: h.x, y: h.y, vx: e.facing * (100 + i * 70), vy: -300, g: 700, w: 10, h: 10, dmg: 12, kind: 'seed', color: '#8ac050', life: 4, bounce: true, bounces: 3, reflectable: true, light: false })); } },
+      // ENTERRAR (vermelho): crava as mãos-raiz na terra e afunda-se; corre por baixo do chão atrás de ti (vê-se o monte de terra
+      // a mexer) e irrompe onde estás — o chão racha e brilha um instante antes: sai dali ou atravessa com a esquiva
+      burrow: { wind: 0.48, act: 3.2, rec: 0.4, tell: 'red', sfx: false,
+        onWind(e) { e.bur = null; A.sfx('burrow', { vol: 0.85 }); },
+        windTick(e, g) { e.sink = Math.min(1, e.atk.t / e.atk.s.wind); if (Math.random() < 0.8) G.emit({ x: e.cx + U.rand(-18, 18), y: e.arena.floor - 2, vx: U.rand(-70, 70), vy: U.rand(-150, -40), g: 520, life: 0.6, size: U.rand(1.2, 2.6), color: U.pick(['#3a3020', '#4a5a2a', '#2a2014']) }); },
+        onAct(e) { e.sink = 1; e.bur = { ph: 'travel', t: 0 }; },
+        during(e, g, dt) {
+          const b = e.bur, a = e.atk; if (!b) return; b.t += dt;
+          if (b.ph === 'travel') {
+            const dx = g.player.cx - e.cx, sp = e.phase ? 340 : 280;
+            e.vx = Math.sign(dx) * Math.min(Math.abs(dx) * 9, sp);
+            if (Math.random() < 0.7) G.emit({ x: e.cx + U.rand(-14, 14), y: e.arena.floor - 2, vx: -e.vx * 0.2 + U.rand(-30, 30), vy: U.rand(-120, -40), g: 500, life: 0.5, size: U.rand(1, 2.2), color: U.pick(['#3a3020', '#4a5a2a']) });
+            if (Math.random() < 0.06) A.sfx('rumble', { vol: 0.3 });
+            if ((Math.abs(dx) < 6 && b.t > 0.25) || b.t > (e.phase ? 0.95 : 1.2)) { b.ph = 'warn'; b.t = 0; e.vx = 0; A.sfx('rumble', { vol: 0.75 }); }
+          } else if (b.ph === 'warn') {
+            e.vx = 0;
+            if (Math.random() < 0.6) G.emit({ x: e.cx + U.rand(-30, 30), y: e.arena.floor - 2, vx: U.rand(-20, 20), vy: U.rand(-90, -30), g: 400, life: 0.4, size: U.rand(1, 2), color: '#c8e090', add: true });
+            if (b.t > (e.phase ? 0.34 : 0.44)) {
+              b.ph = 'erupt'; b.t = 0; b.id = VS.Entity.newAttackId(); A.sfx('root_burst'); G.addShake(0.55);
+              VS.FX.impact(e.cx, e.arena.floor - 2, 'stone', e.facing, 1.6);
+              G.burst(e.cx, e.arena.floor - 4, 26, { color: '#4a3a24', speed: 240, angle: -Math.PI / 2, spread: 1.3, g: 600, life: 0.8, size: 2.6 });
+            }
+          } else {
+            e.sink = Math.max(0, 1 - b.t / 0.26);
+            if (b.t < 0.28) e.attackHBs.push({ x: e.cx - 48, y: e.arena.floor - 84, w: 96, h: 84, dmg: 22, id: b.id, unblockable: true, parryable: false, knock: 300, src: e });
+            if (b.t > 0.32) { e.sink = 0; a.t = a.s.act; }
+          }
+        },
+        onEnd(e) { e.bur = null; e.sink = 0; if (e.phase && !e.burChain && Math.random() < 0.45) { e.burChain = true; e.attack('burrow'); } else e.burChain = false; } },
+      // ONDA DE RAÍZES: bate com as mãos no chão e as silvas rompem em fila, a correr para os dois lados — salta-as
+      rootwave: { wind: 0.55, act: 1.6, rec: 0.45, tell: null, sfx: false,
+        onAct(e) { e.rw = { x0: e.cx, k: 0, t: 0, cols: [] }; A.sfx('root_burst', { vol: 0.6 }); G.addShake(0.3); VS.FX.impact(e.cx + e.facing * 16, e.arena.floor - 2, 'stone', e.facing, 1.1); },
+        during(e, g, dt) {
+          const w = e.rw; if (!w) return; w.t += dt;
+          const step = e.phase ? 0.055 : 0.07, gap = 34;
+          while (w.t > (w.k + 1) * step && w.k < 24) { w.k++; for (const s of [-1, 1]) { const x = w.x0 + s * w.k * gap; if (x > e.arena.x0 - 12 && x < e.arena.x1 + 12) w.cols.push({ x, t: 0, id: VS.Entity.newAttackId(), seed: Math.random() * 100 }); } }
+          for (const c of w.cols) {
+            c.t += dt;
+            if (c.t < 0.2) { if (Math.random() < 0.3) G.emit({ x: c.x + U.rand(-8, 8), y: e.arena.floor - 2, vx: U.rand(-20, 20), vy: U.rand(-80, -30), g: 400, life: 0.35, size: U.rand(1, 1.8), color: '#5a4a30' }); }
+            else if (c.t < 0.44) {
+              e.attackHBs.push({ x: c.x - 11, y: e.arena.floor - 48, w: 22, h: 48, dmg: 16, id: c.id, unblockable: true, parryable: false, src: { cx: c.x } });
+              if (!c.s) { c.s = 1; G.burst(c.x, e.arena.floor - 4, 6, { color: '#3a2c1c', speed: 120, angle: -Math.PI / 2, spread: 1.2, g: 500, life: 0.5, size: 1.8 }); if (Math.random() < 0.35) A.sfx('crackle', { vol: 0.6 }); }
+            }
+          }
+          e.rootCols = w.cols;
+        },
+        onEnd(e) { e.rw = null; e.rootCols = null; } },
+      // ANEL DE ESPINHOS (vermelho): roda sobre si e os espinhos saltam em anel — esquiva-te através dele ou sai de perto
+      thornring: { wind: 0.52, act: 0.3, rec: 0.55, tell: 'red', sfx: false,
+        onAct(e, g) { g.spawn(new ThornRing(e.cx, e.cy + 8, e.phase ? 310 : 260, e.phase ? 150 : 128, 18)); A.sfx('thorn_ring'); G.addShake(0.35); } },
+      // chicote de silvas (branco: aparável); na fase 2 volta com um revés
+      whip: { wind: 0.46, act: 0.18, rec: 0.42, dmg: 18, tell: 'white', sfx: 'whip', hb: (e) => front(e, 26, 38, 112, 18), onEnd(e) { if (e.phase && Math.random() < 0.6) e.attack('whip2'); } },
+      whip2: { wind: 0.3, act: 0.18, rec: 0.5, dmg: 18, tell: 'white', sfx: 'whip', hb: (e) => front(e, 22, 14, 104, 20) },
+      // CHICOTADA AO LONGE (vermelho): prende uma silva à parede do fundo e atira-se pela sala a direito — salta-lhe por cima
+      vinedash: { wind: 0.55, act: 0.8, rec: 0.45, tell: 'red', sfx: 'whip',
+        onAct(e) { e.dashDir = e.facing; A.sfx('wind', { vol: 0.6 }); },
+        during(e, g) {
+          const a = e.atk; e.vx = e.dashDir * (e.phase ? 470 : 420); e.facing = e.dashDir;
+          e.attackHBs.push({ x: e.x - 4, y: e.y + 10, w: e.w + 8, h: e.h - 10, dmg: 20, id: a.id, unblockable: true, parryable: false, src: e });
+          if (Math.random() < 0.8) G.emit({ x: e.cx - e.dashDir * 14, y: e.y + U.rand(10, e.h), vx: -e.dashDir * U.rand(40, 120), vy: U.rand(-40, 20), life: 0.6, size: U.rand(1.2, 2.2), color: U.pick(['#4a6a2a', '#7a9a4a', '#2a3a18']), kind: 'leaf', vr: 6 });
+          if (e.wallAhead(e.dashDir) || (e.dashDir > 0 ? e.x + e.w >= e.arena.x1 - 4 : e.x <= e.arena.x0 + 4)) a.t = a.s.act;
+        },
+        onEnd(e) { e.vx = 0; } },
+      // esporos: três vagens que rebentam no chão em nuvens que abrandam (e queimam um pouco)
+      spores: { wind: 0.5, act: 0.1, rec: 0.55, tell: null, sfx: 'swing',
+        onAct(e, g) {
+          const h = elowenHand(e), p = g.player, n = e.phase ? 4 : 3;
+          for (let i = 0; i < n; i++) {
+            const tx = U.clamp(p.cx + (i - (n - 1) / 2) * 56 + U.rand(-10, 10), e.arena.x0 + 10, e.arena.x1 - 10), T2 = 0.85;
+            g.spawn(P({ x: h.x, y: h.y, vx: (tx - h.x) / T2, vy: -320, g: 720, w: 10, h: 10, dmg: 10, kind: 'seed', color: '#a0c060', life: 3, reflectable: true, breakable: true, light: false,
+              onHitWall(g2) { g2.spawn(P({ x: this.cx, y: this.cy - 14, w: 46, h: 34, dmg: 6, kind: 'incense', color: '#9ab060', life: 2.6, solid: false, persist: true, parryable: false, reflectable: false, light: false, onHitPlayer(pl) { pl.slowT = Math.max(pl.slowT || 0, 1.2); } })); A.sfx('splash', { vol: 0.3 }); } }));
+          }
+        } },
+      thorns: { wind: 0.4, act: 1.2, rec: 0.5, tell: null, sfx: 'whip', onAct(e, g) { const p = g.player; e.thX = [p.cx - 40, p.cx, p.cx + 40].map((x) => U.clamp(x, 30, g.room.pw - 30)); }, during(e, g) { columns(e, g, e.thX, { warn: 0.62, h: 60, w: 14, dmg: 18, sfx: 'whip', warnCol: '#8aa050', cols: ['#4a5a2a', '#6a7a3a'] }); } },
       // ponto fraco: a canção é longa — um golpe enquanto canta cala-a e deixa-a vergada sobre a trouxa
-      lullaby: { wind: 1.35, act: 0.1, rec: 0.6, tell: null, sfx: 'choir_hit', onWind(e) { A.sfx('chime', { vol: 0.5 }); }, onAct(e, g) { e.ringR = 10; e.ringOn = true; } },
+      lullaby: { wind: 1.35, act: 0.1, rec: 0.6, tell: null, sfx: 'choir_hit', onWind(e) { A.sfx('chime', { vol: 0.5 }); }, onAct(e) { e.ringR = 10; e.ringOn = true; } },
     },
-    init(e) { e.rooted = true; e.ringR = 0; e.ringOn = false; },
+    animMap: { burrow: 'atk_thorns', rootwave: 'atk_thorns', thornring: 'atk_lullaby', whip2: 'atk_whip', spores: 'atk_seeds', vinedash: 'atk_whip' },
+    animState(e) { const a = e.atk; if (a && a.name === 'vinedash' && a.phase === 'act') return { anim: 'move', idx: (e.anim * 18) % 8 }; return null; },
+    init(e) { e.ringR = 0; e.ringOn = false; e.sink = 0; },
     think(e, dt, g) {
-      // anel de canção de embalar: abranda quem estiver na onda
-      if (e.ringOn) { e.ringR += 160 * dt; const p = g.player; const d = Math.hypot(p.cx - e.cx, p.cy - e.cy); if (Math.abs(d - e.ringR) < 14 && !(p.action && p.action.type === 'dodge')) { p.slowT = 2.2; if (!p.hitIds.has('ring' + Math.floor(e.ringR / 1000))) { p.hitIds.set('ring' + Math.floor(e.ringR / 1000), 1); } } if (e.ringR > 420) e.ringOn = false; }
+      // anel da canção de embalar: abranda quem estiver na onda
+      if (e.ringOn) { e.ringR += 160 * dt; const p = g.player; const d = Math.hypot(p.cx - e.cx, p.cy - e.cy); if (Math.abs(d - e.ringR) < 14 && !(p.action && p.action.type === 'dodge')) p.slowT = 2.2; if (e.ringR > 420) e.ringOn = false; }
       if (e.phase && g.floodY > e.floodTarget) g.floodY -= dt * 6;
       // notas da canção a sair da boca enquanto embala
       if (e.atk && e.atk.name === 'lullaby' && e.atk.phase === 'wind' && Math.random() < 0.12) { const m = ER().point(e, e._f, 'mouth'); if (m) G.emit({ x: m.x, y: m.y, vx: e.facing * U.rand(10, 30), vy: U.rand(-40, -20), life: 1.4, size: 1.8, color: '#c8f0b0', add: true }); if (!e.songHint && e.atk.t > 0.5) { e.songHint = true; VS.UI.toast(VS.t('tip_elowen_song'), 4); } }
-      if (e.atk) return;
-      e.face(); const d = Math.abs(e.dx());
-      if (e.rooted) e.vx = 0;
-      if (e.cool > 0) { if (!e.rooted) e.walk(d > 80 ? e.facing : 0, 40, dt); return; }
+      e.underground = e.sink > 0.001; e.hittable = e.sink < 0.6;
+      if (e.atk) { if (e.atk.name === 'lullaby') e.vx = 0; return; }
+      if (e.sink > 0) e.sink = Math.max(0, e.sink - dt * 4);
+      e.face(); const d = Math.abs(e.dx()), ph = e.phase;
+      if (e.cool > 0) {
+        // nunca fica plantada: aproxima-se ou recua para a sua distância, a deslizar sobre as raízes
+        const dir = d < 90 ? -e.facing : d > 170 ? e.facing : (Math.sin(e.anim * 1.7) > 0.55 ? e.facing : 0);
+        e.walk(dir, ph ? 150 : 125, dt); return;
+      }
       const r = Math.random();
-      if (d < 130) e.attack(r < 0.45 ? 'whip' : r < 0.7 ? 'thorns' : 'lullaby');
-      else e.attack(r < 0.4 ? 'thorns' : r < 0.7 ? 'seeds' : 'lullaby');
+      if (d > 210) e.attack(r < 0.42 ? 'burrow' : r < 0.66 ? 'vinedash' : r < 0.84 ? 'spores' : 'rootwave');
+      else if (d < 80) e.attack(r < 0.36 ? 'whip' : r < 0.6 ? 'thornring' : r < 0.84 ? 'burrow' : r < 0.93 ? 'rootwave' : 'lullaby');
+      else e.attack(r < 0.22 ? 'rootwave' : r < 0.42 ? 'burrow' : r < 0.56 ? 'whip' : r < 0.68 ? 'thorns' : r < 0.8 ? 'spores' : r < 0.9 ? 'vinedash' : 'lullaby');
     },
-    damageMult(e, hb) {
+    damageMult(e) {
       const a = e.atk;
       if (a && a.name === 'lullaby' && a.phase === 'wind') {
-        e.atk = null; e.stagger = 1.8; e.cool = 0.6; A.sfx('stagger'); A.sfx('glass', { vol: 0.5 });
+        e.atk = null; e.stagger = 1.6; e.cool = 0.6; A.sfx('stagger'); A.sfx('glass', { vol: 0.5 });
         const L = ER().point(e, e._f, 'light'); if (L) { VS.FX.flare(L.x, L.y, 26, [200, 240, 180], 0.2); G.burst(L.x, L.y, 16, { color: '#c8f0b0', speed: 120, life: 0.6, size: 1.6, add: true }); }
         VS.UI.toast(VS.t('tip_elowen_broken'), 3); return 1.6;
       }
       return e.stagger > 0 ? 1.3 : 1;
     },
-    // silva do chicote: sai da mão-ramo, ondula e recolhe; espinhos claros
+    // debaixo do chão: um monte de terra e raízes a correr; a afundar ou a sair, o corpo cortado pela linha do chão
+    drawSpecial(ctx, e) {
+      if (!(e.sink > 0.001)) return false;
+      const fl = e.arena.floor, b = e.bur, t = e.t || 0;
+      if (e.sink < 0.999) { ctx.save(); ctx.beginPath(); ctx.rect(e.cx - 140, fl - 420, 280, 420); ctx.clip(); ctx.translate(0, e.sink * (e.h + 16)); ER().draw(ctx, e); ctx.restore(); }
+      const x = e.cx, wob = Math.sin(t * 18) * 1.4, mk = e.sink;
+      for (let i = 0; i < 3; i++) { ctx.fillStyle = ['#211a10', '#33291a', '#46562a'][i]; ctx.beginPath(); ctx.ellipse(x + wob * (i - 1), fl, (30 - i * 8) * mk, (8 - i * 2 + Math.sin(t * 14 + i) * 0.8) * mk, 0, Math.PI, 0); ctx.fill(); }
+      ctx.strokeStyle = '#1a2410'; ctx.lineWidth = 1.6;
+      for (let i = 0; i < 4; i++) { const ox = x + (i - 1.5) * 9 + Math.sin(t * 6 + i) * 2, hh = (6 + (i % 2) * 5) * mk; ctx.beginPath(); ctx.moveTo(ox, fl - 2); ctx.quadraticCurveTo(ox + 4, fl - hh * 0.6, ox + Math.sin(t * 9 + i) * 3, fl - hh); ctx.stroke(); }
+      if (b && b.ph === 'warn') {
+        const k = Math.min(1, b.t / 0.4);
+        ctx.save(); ctx.globalCompositeOperation = 'lighter';
+        const gr = ctx.createRadialGradient(x, fl, 0, x, fl, 56); gr.addColorStop(0, `rgba(210,255,170,${(0.6 * k).toFixed(3)})`); gr.addColorStop(1, 'rgba(120,200,90,0)');
+        ctx.fillStyle = gr; ctx.fillRect(x - 56, fl - 34, 112, 38);
+        ctx.strokeStyle = `rgba(232,255,204,${(0.85 * k).toFixed(3)})`; ctx.lineWidth = 1.2;
+        for (let i = 0; i < 7; i++) { const s = i % 2 ? 1 : -1, L = (12 + 34 * k) * (0.6 + 0.4 * ((i * 37) % 10) / 10); ctx.beginPath(); ctx.moveTo(x, fl - 1); ctx.lineTo(x + s * L * 0.5, fl - 2); ctx.lineTo(x + s * L, fl - 1); ctx.stroke(); }
+        ctx.restore();
+      }
+      if (b && b.ph === 'erupt') { const hh = 64 * Math.min(1, b.t / 0.08) * Math.max(0, 1 - Math.max(0, b.t - 0.2) / 0.2); for (let i = -2; i <= 2; i++) rootSpikes(ctx, x + i * 18, fl, hh * (1 - Math.abs(i) * 0.18), i + 7); }
+      return true;
+    },
+    // a silva do chicote e as raízes da onda (espigões que sobem e voltam a entrar)
     drawOver(ctx, e) {
-      const a = e.atk; if (!a || a.name !== 'whip' || a.phase === 'wind') return;
+      const cols = e.rootCols; if (cols) for (const c of cols) { if (c.t < 0.2 || c.t > 0.62) continue; const k = c.t < 0.26 ? (c.t - 0.2) / 0.06 : c.t > 0.44 ? Math.max(0, 1 - (c.t - 0.44) / 0.18) : 1; rootSpikes(ctx, c.x, e.arena.floor, 46 * k, c.seed); }
+      const a = e.atk; if (!a || (a.name !== 'whip' && a.name !== 'whip2') || a.phase === 'wind') return;
       const h = ER().point(e, e._f, 'hand'); if (!h) return;
       const ext = a.phase === 'act' ? Math.min(1, 0.4 + a.t / 0.1) : Math.max(0, 1 - a.t / 0.3); if (ext <= 0.02) return;
-      const L = 112 * ext, n = 18, pts = [];
-      for (let i = 0; i <= n; i++) { const k = i / n; pts.push([h.x + e.facing * L * k, h.y + Math.sin(k * 9 + (e.t || 0) * 30) * 3 * k * (1 - k * 0.5) + k * 4]); }
+      const L = 112 * ext, n = 18, pts = [], dy = a.name === 'whip2' ? 18 : 4;
+      for (let i = 0; i <= n; i++) { const k = i / n; pts.push([h.x + e.facing * L * k, h.y + Math.sin(k * 9 + (e.t || 0) * 30) * 3 * k * (1 - k * 0.5) + k * dy]); }
       ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      for (const [w, c] of [[4.2, '#0e140a'], [2.8, '#3e5228'], [1.0, '#6e8a46']]) { ctx.lineWidth = w * (1 - 0.3); ctx.strokeStyle = c; ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.stroke(); }
+      for (const [w, c] of [[4.2, '#0e140a'], [2.8, '#3e5228'], [1.0, '#6e8a46']]) { ctx.lineWidth = w * 0.7; ctx.strokeStyle = c; ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.stroke(); }
       ctx.fillStyle = '#d8d0b0';
       for (let i = 2; i < n; i += 2) { const p = pts[i], s = i % 4 ? -1 : 1; ctx.beginPath(); ctx.moveTo(p[0] - 1.2, p[1]); ctx.lineTo(p[0] + e.facing * 1.6, p[1] + s * 3.2); ctx.lineTo(p[0] + 1.2, p[1]); ctx.fill(); }
       ctx.restore();
     },
+    // a chicotada ao longe deixa um rasto (a silhueta dela, verde, atrás)
+    drawBehind(ctx, e) { const a = e.atk; if (a && a.name === 'vinedash' && a.phase === 'act') ER().ghost(ctx, e, '#9fd080', 0.5, -e.dashDir * 18, 0); },
     onPhase(e, g) {
-      e.rooted = false; A.sfx('roar'); G.addShake(0.5); A.sfx('splash');
+      A.sfx('roar'); G.addShake(0.5); A.sfx('splash'); e.cool = 0;
       g.floodY = e.arena.floor + 2; e.floodTarget = e.arena.floor - T * 2.2;
       VS.UI.bark('boss_elowen', 'elowen_mid');
     },
     preLines: () => [{ s: 'boss_elowen', k: 'elowen_pre1' }, { s: 'boss_elowen', k: 'elowen_pre2' }],
-    eyeLight: { r: 16, i: 0.4, color: '#a8f0a0' },
-    light(e) { const L = e._f && ER().point(e, e._f, 'light'); const sing = e.atk && e.atk.name === 'lullaby'; G.light(L ? L.x : e.cx, L ? L.y : e.y + 10, sing ? 130 : 100, '#b0ffd0', sing ? 0.85 : 0.6, 1); },
+    eyeLight: { r: 16, i: 0.4, color: '#a8f0a0', when: (e) => !(e.sink > 0.5) },
+    light(e) { if (e.sink > 0.9) { G.light(e.cx, e.arena.floor - 6, 60, '#b0ffd0', 0.5, 1); return; } const L = e._f && ER().point(e, e._f, 'light'); const sing = e.atk && e.atk.name === 'lullaby'; G.light(L ? L.x : e.cx, L ? L.y : e.y + 10, sing ? 130 : 100, '#b0ffd0', sing ? 0.85 : 0.6, 1); },
   });
 
   // ======================================================================
-  // CORVIN, O MENESTREL — ataques sincronizados com a sua música (120 BPM)
+  // CORVIN, O MENESTREL — toca do alto dos balcões, com os ataques no compasso da música (120 BPM); de tempos a tempos
+  // salta lá de cima e crava o alaúde no chão (onda de choque) e fica tonto um instante; luta então cá em baixo com o
+  // alaúde até voltar a subir. As notas apontadas devolvem-se com o parry (e ferem-no) ou cortam-se com a arma.
   // ======================================================================
-  // Corvin toca do alto dos balcões dos sinos. Do chão não se lhe toca: a canção desvia golpes e feitiços que
-  // venham de baixo — é preciso trepar pelas paredes/coluna até ao balcão dele. Golpes no tempo ferem mais.
+  // padrões por fase (16 tempos): n = nota apontada, w = onda no chão, r = chuva de notas, d = golpe (se a protagonista
+  // estiver no balcão), j = muda de balcão
   const CORVIN_PATTERNS = [
-    'n...n...w...n...',
-    'n.n.w...n.n.r...',
-    'nnw.r.nnw.r.d.j.',
+    'n.......w...n...',
+    'n...n...w...r...',
+    'n.n.w...n.r...j.',
   ];
   const corvinPerch = (e) => e.perches[e.perchI];
   const corvinOnPerch = (e, who) => { const P = corvinPerch(e); return who.bottom <= P.y + 6 && who.bottom >= P.y - 60 && who.cx >= P.x0 - 24 && who.cx <= P.x1 + 24; };
+  const corvinNote = (o) => P2(Object.assign({ w: 10, h: 10, dmg: 13, kind: 'note', color: U.pick(['#ffd070', '#ff9070', '#c0a0ff']), life: 5, solid: false, breakable: true }, o));
   function corvinLeap(e, g, avoid) {
     const p = g.player; let best = -1, bd = -1;
-    e.perches.forEach((P, i) => { if (i === e.perchI) return; const d = Math.abs((P.x0 + P.x1) / 2 - p.cx) + (avoid && i === avoid ? -999 : 0); if (d > bd) { bd = d; best = i; } });
+    e.perches.forEach((P, i) => { if (i === e.perchI && e.mode === 'perch') return; const d = Math.abs((P.x0 + P.x1) / 2 - p.cx) + (avoid && i === avoid ? -999 : 0); if (d > bd) { bd = d; best = i; } });
     if (best < 0) return;
     G.burst(e.cx, e.cy, 18, { color: '#ffe0a0', speed: 110, life: 0.5, size: 1.5, add: true }); A.sfx('chime', { vol: 0.6 });
     e.perchI = best; const P = e.perches[best];
-    e.x = (P.x0 + P.x1) / 2 - e.w / 2; e.y = P.y - e.h; e.vx = 0; e.vy = 0; e.hitsHere = 0; e.nearT = 0;
+    e.x = (P.x0 + P.x1) / 2 - e.w / 2; e.y = P.y - e.h; e.vx = 0; e.vy = 0; e.hitsHere = 0; e.nearT = 0; e.mode = 'perch'; e.perchT = 0;
     G.burst(e.cx, e.cy, 18, { color: '#ffe0a0', speed: 110, life: 0.5, size: 1.5, add: true });
     e.beatAnim = { anim: 'bow', t: 0, d: 0.35 };
   }
+  // cá em baixo: golpes de alaúde, rodopio, leque de notas; volta a subir ao fim de algum tempo
+  function corvinGround(e, dt, g) {
+    e.groundT += dt;
+    if (e.atk) return;
+    e.face(); const d = Math.abs(e.dx());
+    if (e.groundT > (e.phase >= 2 ? 5.2 : 6.5)) { corvinLeap(e, g); return; }
+    if (e.cool > 0) { e.walk(d > 62 ? e.facing : d < 30 ? -e.facing : 0, 100, dt); return; }
+    const r = Math.random();
+    if (d < 64) e.attack(r < 0.55 ? 'strike' : r < 0.8 ? 'spin' : 'fan');
+    else if (d < 170) e.attack(r < 0.45 ? 'fan' : r < 0.7 ? 'spin' : 'strike');
+    else { e.walk(e.facing, 120, dt); if (r < 0.025) e.attack('fan'); }
+  }
   B.def('corvin', {
-    cfg: { w: 22, h: 62, hp: 700, music: 'b_corvin', phases: [0.6, 0.3], introTime: 1.6, heavy: true },
+    cfg: { w: 22, h: 62, hp: 1000, music: 'b_corvin', phases: [0.6, 0.3], introTime: 1.6, heavy: true },
     camBias: 0.45,
+    aggr: [1.5, 1.8, 2.1],
+    repelCol: [255, 224, 160], repelAt: 7,
     attacks: {
-      strike: { wind: 0.3, act: 0.14, rec: 0.35, dmg: 18, tell: 'white', hb: (e) => front(e, 2, 8, 46, 44), lunge: 90, sfx: 'whip' },
+      strike: { wind: 0.3, act: 0.14, rec: 0.35, dmg: 18, tell: 'white', hb: (e) => front(e, 2, 8, 46, 44), lunge: 90, sfx: 'whip', onEnd(e) { if (e.mode === 'ground' && Math.random() < (e.phase ? 0.7 : 0.45)) e.attack('strike2'); } },
+      strike2: { wind: 0.26, act: 0.14, rec: 0.45, dmg: 18, tell: 'white', hb: (e) => front(e, 0, 20, 52, 30), lunge: 120, sfx: 'whip' },
+      // QUEDA DO MENESTREL (vermelho): salta do balcão e crava o alaúde no chão — ondas de choque rente ao chão (salta-as);
+      // fica tonto um instante: é a janela para o castigar
+      dive: { wind: 0.55, act: 0.62, rec: 0.2, tell: 'red', sfx: 'wind',
+        onAct(e, g) { const p = g.player; e.mode = 'dive'; e.dv = { x0: e.x, y0: e.y, x1: U.clamp(p.cx - e.w / 2 + U.rand(-30, 30), e.arena.x0 + 10, e.arena.x1 - e.w - 10), y1: e.arena.floor - e.h, t: 0 }; },
+        during(e, g, dt) {
+          const v = e.dv; if (!v) return; v.t += dt; const k = Math.min(1, v.t / 0.55);
+          e.x = U.lerp(v.x0, v.x1, k); e.y = U.lerp(v.y0, v.y1, k * k) - Math.sin(k * Math.PI) * 40; e.vx = 0; e.vy = 0;
+          e.attackHBs.push({ x: e.x - 4, y: e.y, w: e.w + 8, h: e.h, dmg: 22, id: e.atk.id, unblockable: true, parryable: false, src: e });
+          if (k >= 1 && !v.landed) {
+            v.landed = true; e.y = v.y1;
+            for (const s of [-1, 1]) g.spawn(P2({ x: e.cx + s * 14, y: e.arena.floor - 12, vx: s * 250, w: 12, h: 22, dmg: 16, kind: 'wave', color: '#ffe0a0', life: 2.2, solid: true, reflectable: false, parryable: false }));
+            G.addShake(0.6); A.sfx('crush'); A.sfx('bell_small'); VS.FX.impact(e.cx, e.arena.floor - 2, 'stone', e.facing, 1.6); VS.FX.flare(e.cx, e.arena.floor - 10, 40, [255, 224, 160], 0.3);
+            e.atk.t = e.atk.s.act;
+          }
+        },
+        onEnd(e) { e.dv = null; e.mode = 'ground'; e.groundT = 0; e.groggy = e.phase >= 2 ? 1.0 : 1.4; e.cool = 0.3; A.sfx('stagger'); VS.FX.stun(e); if (!e.groggyHint) { e.groggyHint = true; VS.UI.toast(VS.t('tip_corvin_groggy'), 4); } } },
+      // RODOPIO (vermelho): gira com o alaúde a soar e solta um anel de notas — afasta-te ou esquiva-te através
+      spin: { wind: 0.5, act: 0.55, rec: 0.5, tell: 'red', sfx: 'whip',
+        onAct(e, g) { const n = e.phase ? 12 : 9, off = Math.random(); for (let i = 0; i < n; i++) { const a = (i + off) / n * U.TAU; g.spawn(corvinNote({ x: e.cx, y: e.cy - 6, vx: Math.cos(a) * 170, vy: Math.sin(a) * 170, life: 2.2, solid: true })); } A.sfx('note', { note: 'E5' }); },
+        during(e) { e.attackHBs.push({ x: e.cx - 30, y: e.y + 6, w: 60, h: e.h - 6, dmg: 16, id: e.atk.id, unblockable: true, parryable: false, src: e }); } },
+      // LEQUE: recua num salto e dispara um leque de notas
+      fan: { wind: 0.4, act: 0.12, rec: 0.5, tell: null, sfx: false, windMove: -150,
+        onWind(e) { e.vy = -200; },
+        onAct(e, g) { const p = g.player, a0 = Math.atan2(p.cy - e.cy, p.cx - e.cx), n = e.phase ? 5 : 3; for (let i = 0; i < n; i++) { const a = a0 + (i - (n - 1) / 2) * 0.2; g.spawn(corvinNote({ x: e.cx, y: e.cy - 6, vx: Math.cos(a) * 210, vy: Math.sin(a) * 210, life: 4 })); } A.sfx('note', { note: U.pick(['E5', 'G5', 'B5']) }); } },
     },
     init(e) {
-      e.lastBeat = -1; e.strum = 0; e.hitsHere = 0; e.nearT = 0;
+      e.lastBeat = -1; e.strum = 0; e.hitsHere = 0; e.nearT = 0; e.mode = 'perch'; e.perchT = 0; e.groundT = 0; e.groggy = 0;
       const T2 = U.TILE, pr = (e.spawn && e.spawn.perches) || [[2, 8, 10], [28, 35, 8], [55, 61, 10]];
       e.perches = pr.map(([x0, x1, y]) => ({ x0: x0 * T2, x1: (x1 + 1) * T2, y: y * T2 }));
       e.perchI = 1;
     },
     think(e, dt, g) {
-      const beat = Math.floor(A.beat()), p = g.player, P = corvinPerch(e);
+      const p = g.player;
       e.strum = Math.max(0, e.strum - dt * 4);
       if (e.beatAnim) { e.beatAnim.t += dt; if (e.beatAnim.t > e.beatAnim.d) e.beatAnim = null; }
-      // fica no seu balcão
+      if (e.groggy > 0) { e.groggy -= dt; e.vx = U.approach(e.vx, 0, 600 * dt); return; }
+      if (e.mode === 'dive') return;
+      if (e.mode === 'ground') { corvinGround(e, dt, g); return; }
+      // ---- no balcão ----
+      const beat = Math.floor(A.beat()), P = corvinPerch(e);
       if (e.cx < P.x0 + 6) e.x = P.x0 + 6 - e.w / 2; if (e.cx > P.x1 - 6) e.x = P.x1 - 6 - e.w / 2;
       if (e.bottom > P.y + 30) { e.x = (P.x0 + P.x1) / 2 - e.w / 2; e.y = P.y - e.h; e.vy = 0; }
       const near = corvinOnPerch(e, p);
       e.nearT = near ? e.nearT + dt : Math.max(0, e.nearT - dt * 0.5);
+      e.perchT += dt;
+      // não fica lá em cima muito tempo: salta e vem lutar cá abaixo
+      if (!e.atk && !near && e.perchT > (e.phase >= 2 ? 5 : e.phase ? 6 : 7)) { e.attack('dive'); return; }
       if (beat !== e.lastBeat && beat >= 0) {
         e.lastBeat = beat;
         const pat = CORVIN_PATTERNS[Math.min(e.phase, 2)];
@@ -207,16 +411,16 @@
         if (near && (c === 'n' || c === 'r') && beat % 2 === 0) c = 'd';
         e.strum = 1;
         e.face();
-        if (c === 'n') { // nota apontada (aparável; ao ser devolvida perde-se no canto — não o fere)
+        if (c === 'n') { // nota apontada: devolve-se com o parry (e fere-o) ou corta-se com a arma
           const a = Math.atan2(p.cy - e.cy + 4, p.cx - e.cx);
           const L = VS.EnemyRender.point(e, e._f, 'lute') || { x: e.cx + e.facing * 10, y: e.cy - 6 };
-          g.spawn(P2({ x: L.x, y: L.y, vx: Math.cos(a) * 190, vy: Math.sin(a) * 190, w: 10, h: 10, dmg: 13, kind: 'note', color: U.pick(['#ffd070', '#ff9070', '#c0a0ff']), life: 5, solid: false }));
+          g.spawn(corvinNote({ x: L.x, y: L.y, vx: Math.cos(a) * 190, vy: Math.sin(a) * 190 }));
           A.sfx('note', { note: U.pick(['E5', 'G5', 'B5']) });
-        } else if (c === 'w') { // onda pelo chão da torre (empurra para as paredes: trepar livra dela)
+        } else if (c === 'w') { // onda pelo chão da torre (trepar livra dela)
           for (const sx of [-1, 1]) g.spawn(P2({ x: g.room.pw / 2, y: e.arena.floor - 10, vx: sx * 220, w: 12, h: 22, dmg: 14, kind: 'wave', color: '#ffe0a0', life: 3, solid: true, reflectable: false }));
           A.sfx('bell_small'); e.beatAnim = { anim: 'heel', t: 0, d: 0.3 };
         } else if (c === 'r') { // chuva de notas
-          for (let i = 0; i < 4; i++) g.spawn(P2({ x: U.clamp(p.cx + (i - 1.5) * 60 + U.rand(-10, 10), 30, g.room.pw - 30), y: 40, vx: 0, vy: 150, w: 10, h: 10, dmg: 12, kind: 'note', color: '#c0a0ff', life: 5, solid: false }));
+          for (let i = 0; i < 4; i++) g.spawn(corvinNote({ x: U.clamp(p.cx + (i - 1.5) * 60 + U.rand(-10, 10), 30, g.room.pw - 30), y: 40, vx: 0, vy: 150, color: '#c0a0ff' }));
           e.beatAnim = { anim: 'flourish', t: 0, d: 0.35 };
         } else if (c === 'd') { if (!e.atk && near) e.attack('strike'); }
         else if (c === 'j' && !e.atk) corvinLeap(e, g);
@@ -227,22 +431,34 @@
       e.vx = U.approach(e.vx, 0, 600 * dt);
       if (near && Math.abs(e.dx()) < 50 && e.cool <= 0) e.attack('strike');
     },
-    // só se lhe fere no balcão: a canção desvia o que vem de baixo (feitiços, notas devolvidas, golpes de salto)
+    // fere-se cá em baixo (e tonto ainda mais), no balcão ao pé dele, ou com as notas devolvidas; do chão, a canção desvia o resto
     onHitBoss(e, hb, g) {
-      const p = g.player;
-      if (!corvinOnPerch(e, p) || hb.proj) {
-        A.sfx('note', { note: 'B5' }); G.burst(e.cx, e.cy - 10, 8, { color: '#ffe0a0', speed: 80, life: 0.35, size: 1.2, add: true });
-        if (!e.climbHint || g.time - e.climbHint > 8) { e.climbHint = g.time; VS.UI.toast(VS.t('tip_corvin_climb'), 4); }
-        return 'blocked';
+      const p = g.player, reflected = hb.proj && hb.proj.kind === 'note';
+      if (e.mode !== 'perch' || (corvinOnPerch(e, p) && !hb.proj) || reflected) {
+        if (reflected) hb = Object.assign({}, hb, { dmg: Math.round(hb.dmg * 1.4) });
+        const ph = A.beat() % 1, onBeat = ph < 0.16 || ph > 0.9;
+        if (onBeat && !hb.proj) { hb = Object.assign({}, hb, { dmg: Math.round(hb.dmg * 1.4) }); VS.FX.flare(e.cx, e.cy - 14, 18, [255, 230, 160], 0.14); if (!e.beatHint) { e.beatHint = true; VS.UI.toast(VS.t('tip_corvin_beat'), 4); } }
+        if (e.mode === 'perch') e.hitsHere++;
+        return E.Enemy.prototype.onHit.call(e, hb, g);
       }
-      // no tempo (perto da batida) o golpe fere mais
-      const ph = A.beat() % 1, onBeat = ph < 0.16 || ph > 0.9;
-      if (onBeat) { hb = Object.assign({}, hb, { dmg: Math.round(hb.dmg * 1.6) }); VS.FX.flare(e.cx, e.cy - 14, 18, [255, 230, 160], 0.14); if (!e.beatHint) { e.beatHint = true; VS.UI.toast(VS.t('tip_corvin_beat'), 4); } }
-      e.hitsHere++;
-      return E.Enemy.prototype.onHit.call(e, hb, g);
+      A.sfx('note', { note: 'B5' }); G.burst(e.cx, e.cy - 10, 8, { color: '#ffe0a0', speed: 80, life: 0.35, size: 1.2, add: true });
+      if (!e.climbHint || g.time - e.climbHint > 8) { e.climbHint = g.time; VS.UI.toast(VS.t('tip_corvin_climb'), 4); }
+      return 'blocked';
     },
-    animState(e) { if (e.beatAnim && !e.atk) return { anim: e.beatAnim.anim, idx: Math.min(4.99, e.beatAnim.t / e.beatAnim.d * 5) }; if (!e.atk && Math.abs(e.vx) < 6) return { anim: 'play', idx: Math.min(5.99, (1 - e.strum) * 6) }; return null; },
-    onPhase(e, g) { A.sfx('chime'); VS.UI.bark('boss_corvin', e.phase === 1 ? 'corvin_mid1' : 'corvin_mid2'); corvinLeap(e, g); },
+    damageMult(e) { return e.groggy > 0 ? 1.4 : 1; },
+    animMap: { strike2: 'atk_strike' },
+    animState(e) {
+      if (e.groggy > 0) return { anim: 'stagger' };
+      const a = e.atk;
+      if (a && a.name === 'dive') return a.phase === 'wind' ? { anim: 'flourish', idx: Math.min(4.99, a.t / a.s.wind * 5) } : { anim: 'heel', idx: Math.min(4.99, (e.dv ? e.dv.t / 0.55 : 1) * 5) };
+      if (a && a.name === 'spin') return { anim: 'flourish', idx: (a.t * 12) % 5 };
+      if (a && a.name === 'fan') return a.phase === 'wind' ? { anim: 'bow', idx: Math.min(4.99, a.t / a.s.wind * 5) } : { anim: 'flourish', idx: Math.min(4.99, a.t / 0.3 * 5) };
+      if (e.mode !== 'perch') return null;
+      if (e.beatAnim && !a) return { anim: e.beatAnim.anim, idx: Math.min(4.99, e.beatAnim.t / e.beatAnim.d * 5) };
+      if (!a && Math.abs(e.vx) < 6) return { anim: 'play', idx: Math.min(5.99, (1 - e.strum) * 6) };
+      return null;
+    },
+    onPhase(e, g) { A.sfx('chime'); VS.UI.bark('boss_corvin', e.phase === 1 ? 'corvin_mid1' : 'corvin_mid2'); if (e.mode === 'perch') corvinLeap(e, g); },
     preLines: () => [{ s: 'boss_corvin', k: 'corvin_pre1' }, { s: 'boss_corvin', k: 'corvin_pre2' }],
     eyeLight: { r: 14, i: 0.35, color: '#ffd070' },
     smearCol: [255, 220, 180],
@@ -253,7 +469,7 @@
   // BISPO OZIAS — pilares de luz, vidro, orbe do cálice (reflete com parry), varrimento (agachar ou saltar)
   // ======================================================================
   B.def('ozias', {
-    cfg: { w: 30, h: 64, hp: 900, music: 'b_ozias', flying: true, phases: [0.6, 0.3], introTime: 1.8, heavy: true },
+    cfg: { w: 30, h: 64, hp: 1200, music: 'b_ozias', flying: true, phases: [0.6, 0.3], introTime: 1.8, heavy: true },
     sheetAnchor: 'center',
     attacks: {
       // AURÉOLAS: desenha um círculo de luz à volta da protagonista (e, nas fases seguintes, outro onde ela fugiria); ao fechar-se, queima quem lá estiver

@@ -9,10 +9,11 @@
 
   const C = {
     W: 12, H: 30, CH: 18,
-    RUN: 160, CRAWL: 58, ACC_G: 1700, ACC_A: 1150, FRIC: 2100,
-    GRAV: 1350, MAXFALL: 470, JUMP: -445, JUMP_CUT: 0.42, DOUBLE: -405,
+    RUN: 160, CRAWL: 58, ACC_G: 1700, ACC_A: 1350, FRIC: 2100,
+    // a descer pesa mais (FALL_MUL): salto menos "flutuante"; o impulso sobe um pouco para o alcance ficar igual
+    GRAV: 1350, FALL_MUL: 1.2, MAXFALL: 480, JUMP: -452, JUMP_CUT: 0.42, DOUBLE: -412,
     COYOTE: 0.12, JUMP_BUF: 0.15,
-    WALL_SLIDE: 70, WALL_JVX: 200, WALL_JVY: -430, WALL_LOCK: 0.15,
+    WALL_SLIDE: 70, WALL_JVX: 240, WALL_JVY: -430, WALL_LOCK: 0.16,
     CLIMB_UP: 58, CLIMB_UP_G: 80, CLIMB_DOWN: 150, CLIMB_STAM: 1.4, CLIMB_STAM_G: 3.0, CLIMB_HOP: -300,
     PARRY: 0.2, PARRY_LATE: 0.07, PARRY_BUF: 0.18, IFRAMES: 0.9,
   };
@@ -157,6 +158,7 @@
         }
       }
       this.climbing = climbing;
+      if (this.vy > 0 && !this.inWater && !climbing && maxFall !== C.WALL_SLIDE && !(a && (a.type === 'dodge' || a.type === 'plunge'))) grav *= C.FALL_MUL;
       this.vy = Math.min(maxFall, this.vy + grav * dt);
       if (this.vy > maxFall) this.vy = maxFall;
 
@@ -409,7 +411,9 @@
         if (a.air && !a.short) this.vy = 0;
         // invulnerabilidade limitada ao centro do movimento
         a.inv = a.air ? (a.short ? a.t > 0.02 && a.t < 0.09 : a.t > 0.02 && a.t < 0.15) : (a.t > 0.04 && a.t < 0.26);
-        if (Math.random() < 0.7) { const cur = this.anim.cur; this.afterimages.push({ x: this.cx, y: this.bottom, dir: this.facing, a: 0.4, f: cur && cur.f, sh: cur && cur.sh, crouch: !a.air }); }
+        if (Math.random() < 0.7 || a.inv) { const cur = this.anim.cur; this.afterimages.push({ x: this.cx, y: this.bottom, dir: this.facing, a: a.inv ? 0.6 : 0.4, f: cur && cur.f, sh: cur && cur.sh, crouch: !a.air, inv: a.inv }); }
+        // invulnerável: riscos de luz para trás (vê-se bem a janela da esquiva)
+        if (a.inv && Math.random() < 0.9) VS.Gfx.emit({ x: this.cx - a.dir * U.rand(4, 12), y: this.y + U.rand(4, this.h - 2), vx: -a.dir * U.rand(160, 260), vy: 0, drag: 6, life: U.rand(0.12, 0.22), size: U.rand(2, 3.2), color: U.pick(['#d8ccff', '#a898f0', '#ffffff']), add: true, kind: 'line', layer: 2 });
         if (a.t >= a.dur) { this.action = null; if (!a.air) this.vx *= 0.5; }
       } else if (a.type === 'parry') {
         if (!a.guard && a.t >= a.window) {
@@ -479,6 +483,7 @@
       let minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9;
       for (const [px, py] of pts) { minX = Math.min(minX, px); maxX = Math.max(maxX, px); minY = Math.min(minY, py); maxY = Math.max(maxY, py); }
       const pad = w.cls === 'malho' || w.cls === 'montante' ? 4 : 3;
+      if (a.type === 'attack' && /^(l\d|air2?)$/.test(a.name)) minY -= 9;
       const kind = d.kind || (a.type === 'heavy' ? 'heavy' : 'light');
       let dmg = st.damage(kind === 'riposte' ? 'riposte' : kind) * (d.mult || 1);
       if (a.charged) dmg *= 1.5;
@@ -583,12 +588,13 @@
       dmg = Math.max(1, Math.round(dmg));
       st.hp -= dmg;
       this.flash = 0.25; this.iframes = C.IFRAMES;
-      VS.Audio.sfx('hurt'); VS.Gfx.addShake(0.4); VS.Gfx.flash('#a01010', 0.22);
+      VS.Audio.sfx('hurt'); VS.Gfx.addShake(0.45); VS.Gfx.flash('#a01010', 0.24); VS.Gfx.hurt = 1;
       game.hitstop(0.08);
       st.lume = Math.min(100, st.lume + st.fx('lumeOnHurt', 0));
       VS.FX.hurt(this.cx, this.cy - 4, kdir);
       if (this.crouch) this.setCrouch(false, game);
-      if (!st.fx('noKnockback', false)) { this.vx = kdir * 190; this.vy = -210; }
+      // recuo mais claro (os golpes que empurram — investida, onda de choque — trazem a força no 'knock')
+      if (!st.fx('noKnockback', false)) { this.vx = kdir * (hb && !hb.projectile && hb.knock > 230 ? hb.knock : 230); this.vy = -235; }
       this.action = { type: 'hurt', t: 0 };
       if (st.hp <= 0) { st.hp = 0; this.die(game); }
     }

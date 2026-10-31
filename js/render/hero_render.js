@@ -111,14 +111,19 @@
     // imagens residuais (esquiva)
     for (const g of p.afterimages) {
       if (!g.f) continue;
-      ctx.save(); ctx.globalAlpha = g.a * 0.45; ctx.translate(g.x, g.y); ctx.scale(g.dir, 1);
-      VS.Assets.drawTinted(ctx, g.sh, g.f, '#3a5aa0'); ctx.restore();
+      ctx.save(); ctx.translate(g.x, g.y);
+      // fotogramas invulneráveis: rasto claro e esticado na direção da esquiva; os outros, sombra azul
+      if (g.inv) { ctx.globalAlpha = g.a * 0.6; ctx.globalCompositeOperation = 'lighter'; ctx.scale(g.dir * 1.12, 0.94); VS.Assets.drawTinted(ctx, g.sh, g.f, '#7a6ad8'); }
+      else { ctx.globalAlpha = g.a * 0.45; ctx.scale(g.dir, 1); VS.Assets.drawTinted(ctx, g.sh, g.f, '#3a5aa0'); }
+      ctx.restore();
     }
     ctx.save();
     if (p.iframes > 0 && p.iframes < 0.9 && !(a && a.type === 'dead') && Math.floor(p.t * 20) % 2 === 0) ctx.globalAlpha = 0.5;
     ctx.translate(p.cx, p.bottom);
     let sx = 1, sy = 1;
     if (p.landSquash > 0) { sx = 1 + p.landSquash * 0.12; sy = 1 - p.landSquash * 0.1; }
+    // esquiva: estica-se na direção do movimento
+    if (a && a.type === 'dodge') { const k = Math.sin(Math.min(1, a.t / a.dur) * Math.PI); sx *= 1 + 0.14 * k; sy *= 1 - 0.08 * k; }
     ctx.scale(p.dir * sx, sy);
     const glow = a && a.type === 'heavy' && a.charged ? 0.55 + Math.sin(p.t * 30) * 0.2 : 0;
     const g = f.pts && f.pts.grip;

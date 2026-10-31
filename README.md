@@ -7,6 +7,11 @@ Metroidvania 2D de fantasia sombria para o navegador. O Desperto acorda numa cov
 - 7 regiões ligadas num só mapa, com altares de brasas, paredes falsas e passagens secretas
 - 16 chefes, cada um com a sua música, golpes que não se repetem de chefe para chefe, um ponto fraco que se vê na luta e uma dica
 - O rei final tem um golpe que mata de uma vez, bem avisado e possível de evitar
+- Chefes que não ficam parados a levar golpes: aceleram à medida que perdem vida e, se os atacas sem parar, carregam uma onda de choque (vê-se a carregar; esquiva-te ou afasta-te)
+- A Ama Elowen mergulha na terra e rebenta debaixo de ti, chicoteia e lança ondas de raízes e anéis de espinhos — tudo em área, tudo esquivável
+- Corvin, o trovador, desce dos balcões e luta no chão com combos de alaúde; depois do golpe grande fica atordoado, e as notas dele partem-se com a espada ou devolvem-se com um parry
+- Sensação de jogo afinada: queda mais pesada, salto que perdoa (coyote time e memória do botão), investida com rasto, pausas de impacto nos golpes fortes, a câmara olha para onde vais e setas vermelhas apontam inimigos voadores fora do ecrã
+- Cenas finais pintadas de novo para os três finais
 - O Custódio de Ouro, chefe opcional escondido numa cúpula por cima da nave da Catedral: sem pontos fracos, todo ele luz — raios a girar, colunas de luz, lâminas de ouro que se devolvem com um parry
 - A Carpideira, chefe errante: aparece em salas ao acaso (ouve-se o choro antes de a ver) e grita de sofrimento — o grito sai em ondas que só a esquiva atravessa; pode-se fugir dela, e volta com a vida que tinha
 - Inimigos gigantes, um por região — maiores, mais lentos a armar o golpe e muito mais duros; os inimigos com garras também são maiores

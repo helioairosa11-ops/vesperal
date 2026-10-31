@@ -22,7 +22,12 @@
     if (e.stagger > 0 && has('stagger')) return { anim: 'stagger', f: timed('stagger') };
     if (e.atk) {
       const mapped = e.K.animMap && e.K.animMap[e.atk.name];
-      const an = has('atk_' + e.atk.name) ? 'atk_' + e.atk.name : mapped && has(mapped) ? mapped : has('attack') ? 'attack' : null;
+      let an = has('atk_' + e.atk.name) ? 'atk_' + e.atk.name : mapped && has(mapped) ? mapped : has('attack') ? 'attack' : null;
+      // a onda de choque comum dos chefes ("larga-me!") usa o golpe mais pesado que a folha tiver
+      if (!an && e.atk.name === '_repel') {
+        if (e.K._repelAnim === undefined) e.K._repelAnim = ['atk_overhead', 'atk_slam', 'atk_stomp', 'atk_crush', 'atk_maul', 'atk_hammer', 'atk_burst', 'atk_ring', 'atk_charge', 'atk_scream', 'atk_howl', 'atk_dust', 'atk_thorns'].find(has) || Object.keys(A).find((k) => k.startsWith('atk_')) || null;
+        an = e.K._repelAnim;
+      }
       if (an) {
         const s = e.atk.s, d = e.atk.phase === 'wind' ? s.wind : e.atk.phase === 'act' ? s.act : s.rec;
         r.key = an;

@@ -6,6 +6,29 @@
   const front = (e, dx, dy, w, h) => ({ x: e.facing > 0 ? e.cx + dx : e.cx - dx - w, y: e.bottom - dy - h, w, h });
   const P = (o) => new VS.Projectile(o);
 
+  // ---------- regras comuns a todos os chefes ----------
+  // agressividade por fase: o tempo de espera entre golpes passa mais depressa (×1,45 → ×2,1 na última fase)
+  const AGGR = [1.45, 1.75, 2.1];
+  // janelas de castigo próprias de cada chefe (arfar, derrubado, postura quebrada, pousada, exausta, apagada…):
+  // aí os golpes são merecidos e não contam como "martelar"
+  const exposedOf = (e) => e.pant > 0 || !!e.knock || e.broken > 0 || e.resting > 0 || e.tired > 0 || e.dim > 0 || e.overheat > 0 || !!e.underground || e.groggy > 0;
+  // LARGA-ME! Quem martela um chefe sem parar leva com uma onda de choque à volta dele: aviso vermelho curto,
+  // não se apara — afasta-te ou atravessa-a com a esquiva. Acabou-se ficar encostado a bater.
+  const repelR = (e) => Math.max(e.w, e.h) * 0.5 + 46;
+  const REPEL = { wind: 0.36, act: 0.18, rec: 0.42, tell: 'red', sfx: false, armor: true,
+    onWind(e) { e.pressure = 0; A.sfx('repel_charge', { vol: 0.8 }); G.addShake(0.08); const c = e.K.repelCol || [255, 190, 140]; VS.FX.flare(e.cx, e.cy, 26, c, 0.36); },
+    onAct(e, g) {
+      const R = repelR(e), c = e.K.repelCol || [255, 196, 150];
+      A.sfx('repel'); G.addShake(0.45); G.flash('#ffd8b0', 0.1);
+      VS.FX.flare(e.cx, e.cy, R * 0.9, c, 0.32);
+      VS.FX.ring(e.cx, e.flying ? e.cy : e.bottom - 3, R * 0.4, e.flying ? R * 0.4 : R * 0.13, c, 0.4, 3);
+      for (let i = 0; i < 28; i++) { const a = i / 28 * U.TAU + U.rand(-0.08, 0.08), sp = U.rand(260, 380); G.emit({ x: e.cx + Math.cos(a) * 12, y: e.cy + Math.sin(a) * 12, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * (e.flying ? 1 : 0.6), drag: 4.5, life: U.rand(0.3, 0.45), size: U.rand(1.4, 2.6), color: U.pick(['#fff2d8', '#ffc080', '#ff8a48']), add: true, shrink: true, layer: 2 }); }
+      if (!e.flying) VS.FX.impact(e.cx, e.bottom - 2, 'stone', e.facing, 1.5);
+      if (!VS.state.flags.tip_repel) { VS.state.flags.tip_repel = 1; VS.UI.toast(VS.t('tip_repel'), 4.5); }
+    },
+    during(e) { const R = repelR(e); e.attackHBs.push({ x: e.cx - R, y: e.cy - R, w: R * 2, h: R * 2, dmg: e.K.repelDmg || 14, id: e.atk.id, unblockable: true, parryable: false, knock: 360, src: e }); },
+  };
+
   class Boss extends E.Enemy {
     constructor(id, d, game) {
       super('b_' + id, d);
@@ -14,6 +37,7 @@
       this.postureMax = this.c.posture || 0; this.posture = 0; this.poise = this.poiseMax = this.c.poise || 9999;
       this.defeated = false; this.defT = 0; this.z = 4; this.cool = 1.2;
       this.room = game.room; this.spawn = d;
+      this.pressure = 0; this.dmgScale = 1;
       this.arena = { x0: T * 2, x1: game.room.pw - T * 2, floor: (d.floor !== undefined ? d.floor : d.y + 1) * T };
     }
     update(dt, game) {
@@ -26,6 +50,13 @@
         this.phase++; A.setIntensity(this.phase);
         if (this.K.onPhase) this.K.onPhase(this, game, this.phase);
       }
+      // cada fase bate um pouco mais forte e espera menos entre golpes
+      this.dmgScale = 1 + 0.12 * this.phase;
+      const ag = (this.K.aggr || AGGR)[Math.min(this.phase, 2)] || 1;
+      if (this.cool > 0) this.cool -= dt * (ag - 1);
+      // martelado sem parar: responde com a onda de choque assim que estiver livre
+      this.pressure = Math.max(0, this.pressure - dt * 0.9);
+      if (this.pressure >= (this.K.repelAt || 4.5) && !this.atk && !(this.stagger > 0) && this.K.attacks._repel && !exposedOf(this)) this.attack('_repel');
       super.update(dt, game);
       // nunca sair da arena
       this.x = U.clamp(this.x, 0, game.room.pw - this.w);
@@ -52,9 +83,11 @@
     }
     onHit(hb, game) {
       if (this.intro || this.defeated) return false;
-      if (this.K.onHitBoss) { const r = this.K.onHitBoss(this, hb, game); if (r !== undefined) return r; }
-      const r = super.onHit(hb, game);
-      if (r === true && !this.defeated) A.sfx('boss_hit', { vol: 0.6 });
+      let r;
+      if (this.K.onHitBoss) r = this.K.onHitBoss(this, hb, game);
+      if (r === undefined) { r = super.onHit(hb, game); if (r === true && !this.defeated) A.sfx('boss_hit', { vol: 0.6 }); }
+      // golpes corpo a corpo fora das janelas de castigo enchem a "pressão" (ver REPEL)
+      if (r === true && !this.defeated && !hb.proj && !exposedOf(this)) this.pressure += hb.kind === 'heavy' || hb.kind === 'riposte' ? 1.7 : 1;
       return r;
     }
     onParried(game, hb) {
@@ -102,8 +135,12 @@
     emitLight() { if (this.K.light) this.K.light(this); this.emitLightEyes(); }
   }
 
-  const Bosses = { DEFS, Boss };
-  Bosses.def = function (id, def) { def.boss = true; DEFS[id] = def; E.KINDS['b_' + id] = def; };
+  const Bosses = { DEFS, Boss, exposedOf, REPEL };
+  Bosses.def = function (id, def) {
+    def.boss = true; def.attacks = def.attacks || {};
+    if (!def.noRepel && !def.attacks._repel) def.attacks._repel = REPEL;
+    DEFS[id] = def; E.KINDS['b_' + id] = def;
+  };
   Bosses.spawn = function (d, game) {
     if (DEFS[d.boss].spawn) return DEFS[d.boss].spawn(d, game);
     const b = new Boss(d.boss, d, game);
@@ -131,8 +168,9 @@
   // O COVEIRO — subchefe da Cidade Cinzenta
   // ======================================================================
   Bosses.def('coveiro', {
+    aggr: [1.6, 1.95, 2.2], repelCol: [210, 180, 130],
     // gigante (≈2× a protagonista): caixa do corpo 40×64; a pá chega a ~70 px à frente
-    cfg: { w: 40, h: 64, hp: 320, music: 'sb_coveiro', heavy: true, phases: [0.5], ash: 0, ashCol: '#7a6a58' },
+    cfg: { w: 40, h: 64, hp: 520, music: 'sb_coveiro', heavy: true, phases: [0.5], ash: 0, ashCol: '#7a6a58' },
     attacks: {
       // golpe de cima: a pá desce por cima da cabeça e crava-se à frente (aparável); fica presa — costas expostas
       slam: { wind: 0.8, act: 0.16, rec: 1.15, dmg: 22, tell: 'white', sfx: 'swing_heavy', hb: (e) => front(e, 10, 0, 64, 62),
@@ -196,7 +234,7 @@
   // ======================================================================
   Bosses.def('matilheira', {
     // mastim velho e enorme (≈92 px de comprimento); fraqueza: ao uivar ergue-se e mostra a barriga
-    cfg: { w: 70, h: 46, hp: 400, music: 'sb_matilheira', heavy: true, phases: [0.5], ashCol: '#5a524c' },
+    cfg: { w: 70, h: 46, hp: 620, music: 'sb_matilheira', heavy: true, phases: [0.5], ashCol: '#5a524c' },
     attacks: {
       lunge: { wind: 0.5, act: 0.3, rec: 0.55, dmg: 18, tell: null, sfx: 'whip', lunge: 380, hb: (e) => front(e, 18, 6, 44, 40), onAct(e) { e.vy = -140; } },
       bite: { wind: 0.32, act: 0.14, rec: 0.25, dmg: 14, tell: 'white', hb: (e) => front(e, 24, 14, 34, 32), lunge: 60, cool: 0, onEnd(e) { if (e.bites++ < (e.phase ? 2 : 1)) e.attack('bite'); else e.bites = 0; } },
@@ -268,7 +306,7 @@
   const CAED_RIPOSTE_WINDOW = 2.2;
   Bosses.def('caedmon', {
     // cavaleiro alto (≈2× a protagonista) com um pavês quase da altura dele
-    cfg: { w: 30, h: 66, hp: 520, music: 'b_caedmon', heavy: true, phases: [0.66, 0.33], posture: 3, introTime: 1.6, ashCol: '#8a90a0' },
+    cfg: { w: 30, h: 66, hp: 620, music: 'b_caedmon', heavy: true, phases: [0.66, 0.33], posture: 3, introTime: 1.6, ashCol: '#8a90a0' },
     attacks: {
       cut: { wind: 0.55, act: 0.13, rec: 0.45, dmg: 18, tell: 'white', hb: (e) => front(e, 2, 10, 62, 70), lunge: 120, cool: 0.6 },
       cut2a: { wind: 0.45, act: 0.12, rec: 0.12, dmg: 16, tell: 'white', hb: (e) => front(e, 2, 10, 62, 70), lunge: 110, cool: 0, onEnd(e) { e.attack('cut2b'); } },
@@ -358,7 +396,8 @@
   // grelhas da fundição: oito posições fixas, igualmente espaçadas pela arena
   const automatoGrates = (e) => e.grates || (e.grates = Array.from({ length: 8 }, (_, i) => Math.round(e.arena.x0 + (e.arena.x1 - e.arena.x0) * (i + 0.5) / 8)));
   Bosses.def('automato', {
-    cfg: { w: 40, h: 60, hp: 520, music: 'sb_automato', heavy: true, phases: [0.5], parryStagger: 1.2 },
+    cfg: { w: 40, h: 60, hp: 760, music: 'sb_automato', heavy: true, phases: [0.5], parryStagger: 1.2 },
+    aggr: [1.7, 2.1, 2.3], repelCol: [255, 150, 80],
     attacks: {
       punch: { wind: 0.6, act: 0.16, rec: 0.6, dmg: 22, tell: 'white', hb: (e) => front(e, 12, 20, 52, 28), lunge: 90, sfx: 'swing_heavy' },
       crush: { wind: 0.85, act: 0.15, rec: 0.9, dmg: 28, tell: 'red', hb: (e) => front(e, 6, 0, 58, 34), sfx: 'swing_heavy', armor: true, onAct(e, g) { G.addShake(0.5); A.sfx('crush'); VS.FX.impact(e.cx + e.facing * 44, e.bottom - 2, 'metal', e.facing, 1.4); e.steam = { t: 0, id: VS.Entity.newAttackId() }; A.sfx('wind'); } },
@@ -397,7 +436,7 @@
       e.face(); const d = Math.abs(e.dx());
       // em sobreaquecimento vira-se devagar (dá tempo de passar para trás dele)
       if (e.overheat > 0) { e.vx = U.approach(e.vx, 0, 400 * dt); return; }
-      if (e.cool > 0) { e.walk(d > 80 ? e.facing : 0, 35, dt); return; }
+      if (e.cool > 0) { e.walk(d > 80 ? e.facing : 0, e.phase ? 62 : 50, dt); return; }
       const r = Math.random();
       if (d < 70) e.attack(r < 0.5 ? 'punch' : r < 0.8 ? 'crush' : 'bellows');
       else if (d < 200) e.attack(r < 0.45 ? 'bellows' : 'vents');
@@ -432,10 +471,11 @@
   // A MÃE-MARIPOSA — subchefe dos Jardins (concede o salto duplo)
   // ======================================================================
   Bosses.def('mariposa', {
-    cfg: { w: 50, h: 46, hp: 440, music: 'sb_mariposa', flying: true, phases: [0.5], heavy: true, parryStagger: 0.9 },
+    cfg: { w: 50, h: 46, hp: 660, music: 'sb_mariposa', flying: true, phases: [0.5], heavy: true, parryStagger: 0.9 },
     sheetAnchor: 'center',
     attacks: {
-      dive: { wind: 0.65, act: 0.7, rec: 0.6, dmg: 20, tell: 'red', sfx: 'wind', onAct(e, g) { const p = g.player; const a = Math.atan2(p.cy - e.cy, p.cx - e.cx); e.vx = Math.cos(a) * 380; e.vy = Math.sin(a) * 380; }, during(e) { e.attackHBs.push({ x: e.x + 8, y: e.y + 6, w: e.w - 16, h: e.h - 12, dmg: 20, id: e.atk.id, unblockable: true, parryable: false, src: e }); }, onEnd(e) { e.vx *= 0.2; e.vy = -120; } },
+      dive: { wind: 0.55, act: 0.62, rec: 0.42, dmg: 20, tell: 'red', sfx: 'wind', onAct(e, g) { const p = g.player; const a = Math.atan2(p.cy - e.cy, p.cx - e.cx), sp = e.phase ? 470 : 420; e.vx = Math.cos(a) * sp; e.vy = Math.sin(a) * sp; }, during(e) { e.attackHBs.push({ x: e.x + 8, y: e.y + 6, w: e.w - 16, h: e.h - 12, dmg: 20, id: e.atk.id, unblockable: true, parryable: false, src: e }); if (Math.random() < 0.6) G.emit({ x: e.cx + U.rand(-14, 14), y: e.cy + U.rand(-10, 10), vx: -e.vx * 0.1, vy: -e.vy * 0.1, life: 0.6, size: U.rand(1.2, 2.4), color: 'rgba(235,220,170,0.6)', kind: 'glow', color2: '#000000' }); },
+        onEnd(e) { e.vx *= 0.2; e.vy = -140; if (e.phase && !e.diveChain && Math.random() < 0.6) { e.diveChain = true; e.attack('dive'); } else e.diveChain = false; } },
       swarm: { wind: 0.7, act: 0.1, rec: 0.7, tell: null, sfx: 'moth', onAct(e, g) { const n = e.phase ? 6 : 4; for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + (i - (n - 1) / 2) * 0.5; g.spawn(P({ x: e.cx, y: e.cy, vx: Math.cos(a) * 120, vy: Math.sin(a) * 120, w: 9, h: 9, dmg: 10, kind: 'moth', color: '#f0e0a0', life: 5, homing: 1.4, solid: false })); } } },
       // depois de largar o pó fica exausta e pousa para descansar (ponto fraco)
       dust: { wind: 0.6, act: 0.3, rec: 0.5, tell: null, sfx: 'moth', onAct(e, g) { const p = g.player; for (let i = -1; i <= 1; i++) g.spawn(P({ x: p.cx + i * 60, y: e.cy, vx: 0, vy: 60, w: 34, h: 34, dmg: 6, kind: 'incense', color: '#c8b880', life: 3.5, solid: false, persist: true, parryable: false, reflectable: false, light: false })); G.burst(e.cx, e.cy, 26, { color: 'rgba(230,215,170,0.55)', speed: 110, life: 1.1, size: 2.4 }); }, onEnd(e) { e.wantRest = true; } },
@@ -460,7 +500,7 @@
       e.face();
       if (e.wantRest) {
         e.fly(e.cx, fl - e.h / 2 + 5, 240, dt, 0.12);
-        if (e.bottom >= fl - 3) { e.wantRest = false; e.resting = e.phase ? 2.4 : 3.0; e.restHits = 0; e.y = fl - e.h; A.sfx('land'); G.burst(e.cx, fl - 2, 14, { color: 'rgba(200,190,160,0.5)', speed: 80, life: 0.6, size: 2 }); if (!e.restHint) { e.restHint = true; VS.UI.toast(VS.t('tip_mariposa_rest'), 5); } }
+        if (e.bottom >= fl - 3) { e.wantRest = false; e.resting = e.phase ? 1.9 : 2.5; e.restHits = 0; e.restStag = false; e.y = fl - e.h; A.sfx('land'); G.burst(e.cx, fl - 2, 14, { color: 'rgba(200,190,160,0.5)', speed: 80, life: 0.6, size: 2 }); if (!e.restHint) { e.restHint = true; VS.UI.toast(VS.t('tip_mariposa_rest'), 5); } }
         return;
       }
       e.fly(p.cx + Math.sin(t * 0.8) * 140, p.cy - 110 + Math.sin(t * 1.7) * 30, 160, dt, 0.05);
@@ -470,8 +510,9 @@
     damageMult(e, hb) {
       if (!(e.resting > 0)) return 1;
       e.restHits = (e.restHits || 0) + (hb.kind === 'heavy' ? 3 : 1);
-      if (e.restHits >= 3 && !(e.stagger > 0)) { e.stagger = 1.4; e.resting = Math.max(e.resting, 1.5); A.sfx('stagger'); }
-      return 1.8;
+      // atordoada uma única vez por pouso (antes cada golpe renovava o atordoamento e prendia-a no chão)
+      if (e.restHits >= 3 && !e.restStag && !(e.stagger > 0)) { e.restStag = true; e.stagger = 1.1; e.resting = Math.max(e.resting, 1.2); A.sfx('stagger'); }
+      return 1.6;
     },
     animState(e) {
       if (e.resting > 0) { if (e.stagger > 0) return { anim: 'stagger' }; const L = e.phase ? 2.4 : 3.0, k = L - e.resting; return k < 0.4 ? { anim: 'land', idx: Math.min(3.9, k / 0.4 * 4) } : { anim: 'rest' }; }
@@ -486,7 +527,8 @@
   // ======================================================================
   const bellAt = (e) => (VS.EnemyRender.point(e, e._f, 'bell') || { x: e.cx + e.facing * 30, y: e.bottom - 16 });
   Bosses.def('sineiro', {
-    cfg: { w: 34, h: 58, hp: 480, music: 'sb_sineiro', heavy: true, phases: [0.5] },
+    cfg: { w: 34, h: 58, hp: 720, music: 'sb_sineiro', heavy: true, phases: [0.5] },
+    aggr: [1.65, 2.0, 2.2], repelCol: [255, 226, 150],
     attacks: {
       // balanço do sino (branco): a caixa de dano segue o sino desenhado; aparar devolve-lho à cabeça
       swing: { wind: 0.7, act: 0.4, rec: 0.6, dmg: 24, tell: 'white', sfx: 'swing_heavy', during(e, g) { const b = bellAt(e); e.attackHBs.push({ x: b.x - 15, y: b.y - 15, w: 30, h: 30, dmg: 24, id: e.atk.id, src: e }); if (!e.atk.thud && e.atk.t > 0.24) { e.atk.thud = true; G.addShake(0.3); VS.FX.impact(b.x, e.bottom - 2, 'metal', e.facing, 1.2); A.sfx('bell_small'); } } },
@@ -500,7 +542,7 @@
       for (let i = e.debris.length - 1; i >= 0; i--) { const d = e.debris[i]; d.t -= dt; if (d.t <= 0) { e.debris.splice(i, 1); g.spawn(P({ x: d.x, y: 30, vx: 0, vy: 200, g: 900, w: 14, h: 14, dmg: 16, kind: 'clod', life: 3, parryable: false, reflectable: false, light: false })); } }
       if (e.atk) return;
       e.face(); const d = Math.abs(e.dx());
-      if (e.cool > 0) { e.walk(d > 70 ? e.facing : 0, 45, dt); return; }
+      if (e.cool > 0) { e.walk(d > 70 ? e.facing : 0, e.phase ? 70 : 55, dt); return; }
       const r = Math.random();
       if (d < 90) e.attack(r < 0.6 ? 'swing' : 'stomp');
       else e.attack(r < 0.35 ? 'ring' : r < 0.65 ? 'charge' : r < 0.8 ? 'stomp' : 'swing');
@@ -529,7 +571,7 @@
   // INQUISIDORA VAEL — subchefe da Catedral
   // ======================================================================
   Bosses.def('vael', {
-    cfg: { w: 28, h: 62, hp: 560, music: 'sb_vael', phases: [0.5], heavy: true },
+    cfg: { w: 28, h: 62, hp: 820, music: 'sb_vael', phases: [0.5], heavy: true },
     attacks: {
       flail: { wind: 0.45, act: 0.16, rec: 0.3, dmg: 18, tell: 'white', sfx: 'whip', hb: (e) => front(e, 0, 6, 56, 28), cool: 0.2, onEnd(e) { if (e.phase && Math.random() < 0.6) e.attack('flail2'); } },
       flail2: { wind: 0.3, act: 0.16, rec: 0.2, dmg: 18, tell: 'white', sfx: 'whip', hb: (e) => front(e, -10, 0, 66, 22), onEnd(e) { e.attack('stuck'); } },
@@ -589,7 +631,7 @@
   // OS GÉMEOS DA GUARDA — dois guardas coordenados (o Lâmina aparável, o Malho pesado)
   // ======================================================================
   Bosses.def('gemeo_a', {
-    cfg: { w: 26, h: 60, hp: 360, music: 'sb_gemeos', heavy: true },
+    cfg: { w: 26, h: 60, hp: 540, music: 'sb_gemeos', heavy: true },
     attacks: {
       cut: { wind: 0.45, act: 0.12, rec: 0.15, dmg: 16, tell: 'white', hb: (e) => front(e, 4, 6, 52, 28), lunge: 140, cool: 0, onEnd(e) { if (Math.random() < 0.6 + (e.enraged ? 0.3 : 0)) e.attack('cut2'); } },
       cut2: { wind: 0.3, act: 0.12, rec: 0.5, dmg: 16, tell: 'white', hb: (e) => front(e, 4, 4, 52, 32), lunge: 140 },
@@ -613,7 +655,7 @@
     VS.UI.bark('boss_gemeos', 'gemeos_friendly');
   }
   Bosses.def('gemeo_b', {
-    cfg: { w: 34, h: 66, hp: 420, music: 'sb_gemeos', heavy: true },
+    cfg: { w: 34, h: 66, hp: 620, music: 'sb_gemeos', heavy: true },
     attacks: {
       maul: { wind: 0.8, act: 0.15, rec: 0.8, dmg: 26, tell: 'red', sfx: 'swing_heavy', hb: (e) => front(e, 4, 0, 46, 40), armor: true,
         onWind(e) { if (!e.friendHint && e.partner && !e.partner.defeated) { e.friendHint = true; VS.UI.toast(VS.t('tip_gemeos_friendly'), 5); } },

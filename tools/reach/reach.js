@@ -27,8 +27,8 @@ const PW = 12, PH = 30, PCH = 18;
 let TOPROW = [];
 // constantes do jogo (js/game/player.js) com uma pequena folga: um salto que só dá por um pixel não conta como "normal"
 const SLACK = 0.985;
-const C = { RUN: 160 * SLACK, ACC_G: 1700, ACC_A: 1150, FRIC: 2100, GRAV: 1350, MAXFALL: 470, JUMP: -445 * SLACK, CUT: 0.42, DOUBLE: -405 * SLACK, COYOTE: 0.1,
-  CLIMB_UP: 58, CLIMB_UP_G: 80, STAM: 1.4, STAM_G: 3.0, HOP: -300, WJX: 200, WJY: -430 };
+const C = { RUN: 160 * SLACK, ACC_G: 1700, ACC_A: 1350, FRIC: 2100, GRAV: 1350, FALL_MUL: 1.2, MAXFALL: 480, JUMP: -452 * SLACK, CUT: 0.42, DOUBLE: -412 * SLACK, COYOTE: 0.1,
+  CLIMB_UP: 58, CLIMB_UP_G: 80, STAM: 1.4, STAM_G: 3.0, HOP: -300, WJX: 240, WJY: -430 };
 // códigos de tile
 const EMPTY = 0, SOL = 1, PLAT = 2, SPIKE = 3, LAVA = 4, WATER = 5, CRACK = 6, FAKE = 7, CRUMB = 8, VEIL = 9, DOOR = 10;
 const CODE = { '#': SOL, '=': PLAT, '^': SPIKE, 'L': LAVA, '~': WATER, 'C': CRACK, 'F': FAKE, 'X': CRUMB, 'V': VEIL };
@@ -161,7 +161,7 @@ function simulate(P, abil, s0, plan, touch, GW) {
       if (inWater) { b.vy = -300; }
       else if (coyote > 0) { b.vy = C.JUMP; coyote = 0; b.onGround = false; jumping = true; airborne = true; }
       else if (climbMode && climbing && up && garra && stam > 0.2) { b.vy = C.HOP; stam -= 0.4; }
-      else if (climbMode && garra && (touching(P, b, 1) || touching(P, b, -1))) { const wd = touching(P, b, 1) ? 1 : -1; climbing = false; b.vx = -wd * C.WJX; b.vy = C.WJY; wallLock = 0.15; }
+      else if (climbMode && garra && (touching(P, b, 1) || touching(P, b, -1))) { const wd = touching(P, b, 1) ? 1 : -1; climbing = false; b.vx = -wd * C.WJX; b.vy = C.WJY; wallLock = 0.16; }
       else if (abil.double && !doubleUsed) { doubleUsed = true; b.vy = C.DOUBLE; jumping = true; }
     }
     if (!held && b.vy < 0 && jumping && !inWater) { b.vy *= C.CUT; jumping = false; }
@@ -194,6 +194,7 @@ function simulate(P, abil, s0, plan, touch, GW) {
       }
     }
     climbing = climbNow;
+    if (b.vy > 0 && !inWater && !climbNow && maxFall !== 70 && !dodge) grav *= C.FALL_MUL;
     b.vy = Math.min(maxFall, b.vy + grav * DT);
     const riBefore = P.roomAtPx(b.x + b.w / 2, b.y + b.h / 2);
     const res = P.moveBody(b);

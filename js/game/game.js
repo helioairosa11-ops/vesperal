@@ -133,7 +133,13 @@
       let bias = 0; const bo = this.boss;
       if (bo && bo.K && bo.K.camBias && !bo.defeated) bias = U.clamp((bo.cy - p.cy) * bo.K.camBias, -U.VIEW_H * 0.34, U.VIEW_H * 0.34);
       this.camBiasY = U.lerp(this.camBiasY || 0, bias, 1 - Math.exp(-dt * 2.5));
-      G.cameraFollow(p.cx + this.camLook, p.cy - 20 + this.camLookY + this.camBiasY, dt);
+      // antecipação vertical: a trepar ou a subir depressa a câmara olha para cima; numa queda longa, para baixo
+      let moveY = 0;
+      if (p.climbing && VS.Input.down('up')) moveY = -44;
+      else if (!p.onGround && p.vy < -160) moveY = -30;
+      else if (!p.onGround && p.vy > 270) moveY = Math.min(64, 26 + (p.vy - 270) * 0.25);
+      this.camMoveY = U.lerp(this.camMoveY || 0, moveY, 1 - Math.exp(-dt * (Math.abs(moveY) > Math.abs(this.camMoveY || 0) ? 2.4 : 1.6)));
+      G.cameraFollow(p.cx + this.camLook, p.cy - 20 + this.camLookY + this.camBiasY + this.camMoveY, dt);
       this.updateWeather(dt);
       G.updateParticles(dt, (x, y) => this.room.solidAtPoint(x, y));
       VS.FX.update(dt);
@@ -175,6 +181,13 @@
             if (p.onGround && hb.kind !== 'heavy') p.vx -= p.dir * 50;
           }
         }
+      }
+      // projéteis que se cortam com a arma (notas de Corvin, vagens de esporos…)
+      if (p.attackHB) for (const e of this.ents) {
+        if (!(e instanceof VS.Projectile) || e.team !== 'enemy' || !e.breakable || e.remove) continue;
+        if (!U.overlap(p.attackHB, e)) continue;
+        e.remove = true; VS.Audio.sfx('proj_break', { vol: 0.6 }); VS.FX.flare(e.cx, e.cy, 14, [255, 232, 190], 0.12);
+        G.burst(e.cx, e.cy, 8, { color: e.color || '#ffe0a0', speed: 110, life: 0.35, size: 1.4, add: true });
       }
       // golpes inimigos sobre o jogador
       if (p.action && p.action.type === 'dead') return;
@@ -447,6 +460,23 @@
         c.x = cx; c.y = cy; G.ia = 0;
       }
     }
+    // inimigos voadores atentos fora de vista (até ~200 px da borda): uma pequena seta vermelha na margem — vêem-se antes de atacar
+    drawThreatPointers(ctx) {
+      if (this.cutscene) return;
+      const m = 12, pulse = 0.65 + 0.35 * Math.sin(this.time * 8); let n = 0;
+      for (const e of this.ents) {
+        if (!e.isEnemy || e.isBoss || e.dead || !e.flying || !e.aggro) continue;
+        const sx = e.cx - G.cam.x, sy = e.cy - G.cam.y;
+        if (sx > -2 && sx < U.VIEW_W + 2 && sy > -2 && sy < U.VIEW_H + 2) continue;
+        if (sx < -210 || sx > U.VIEW_W + 210 || sy < -190 || sy > U.VIEW_H + 190) continue;
+        const x = U.clamp(sx, m, U.VIEW_W - m), y = U.clamp(sy, m + 10, U.VIEW_H - m), a = Math.atan2(sy - y, sx - x);
+        ctx.save(); ctx.translate(x, y); ctx.rotate(a); ctx.globalAlpha = 0.8 * pulse;
+        ctx.fillStyle = '#ff6a50'; ctx.strokeStyle = '#1a0a0a'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(6, 0); ctx.lineTo(-3, -4.2); ctx.lineTo(-1, 0); ctx.lineTo(-3, 4.2); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.restore();
+        if (++n >= 4) break;
+      }
+    }
     // seta na borda do ecrã a apontar para o chefe quando ele está fora de vista
     drawBossPointer(ctx) {
       const b = this.boss; if (!b || b.defeated || this.cutscene) return;
@@ -523,7 +553,9 @@
       G.screenTransform(ctx);
       G.vignette(0.55, R.tint);
       this.drawBossPointer(ctx);
+      this.drawThreatPointers(ctx);
       G.drawDread(dt);
+      G.drawHurt(dt);
       G.drawFlash(dt);
       VS.UI.drawHUD(ctx, this);
       G.screenTransform(ctx);

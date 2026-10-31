@@ -592,15 +592,16 @@ def t_corvin(R, b):
     pg.evaluate('VSDebug.allAbilities(); VSDebug.god(true)')
     warp(pg, 'r5_crown'); place_for_boss(pg, 'r5_crown')
     wait(pg, 'T.bossEnts().length > 0 && !T.bossEnts()[0].intro', 12)
-    pg.evaluate('''() => { T.notes = []; const g = T.g(); const sp = g.spawn.bind(g); g.spawn = (e) => { if (e instanceof VS.Projectile && e.kind === "note") T.notes.push(VS.Audio.beat()); return sp(e); }; }''')
+    # no balcão (sem descer, para medir só o canto): as notas saem no tempo da música
+    pg.evaluate('''() => { const B = T.bossEnts()[0]; B.perchT = -1e9; T.notes = []; const g = T.g(); const sp = g.spawn.bind(g); g.spawn = (e) => { if (e instanceof VS.Projectile && e.kind === "note" && B.mode === 'perch') T.notes.push(VS.Audio.beat()); return sp(e); }; }''')
     frames(pg, 600)
     fr = pg.evaluate('T.notes.map((b) => b - Math.floor(b))')
     bpm = pg.evaluate('VS.MUSIC.b_corvin.bpm')
     good = [f for f in fr if f < 0.2 or f > 0.95]
-    R.check(f'Corvin: notas lançadas no tempo da música ({bpm} BPM)', len(fr) >= 4 and len(good) / max(1, len(fr)) > 0.9, f'{len(good)}/{len(fr)} no tempo; frações={[round(x, 2) for x in fr[:8]]}')
-    # só se vence a trepar: do chão os golpes e feitiços são desviados; no balcão dele ferem
-    low = pg.evaluate('''() => { const B = T.bossEnts()[0], g = T.g(), hp = B.hp; const r1 = B.onHit({ x: B.x, y: B.y, w: 10, h: 10, dmg: 30, id: 7771, owner: T.p() }, g); const r2 = B.onHit({ x: B.x, y: B.y, w: 10, h: 10, dmg: 30, id: 7772, owner: T.p(), proj: {} }, g); return { r1, r2, dhp: B.hp - hp, py: Math.round(T.p().bottom / 20), perch: B.perchI }; }''')
-    R.check('Corvin: do chão (e com projéteis) não se lhe faz dano', low['r1'] == 'blocked' and low['r2'] == 'blocked' and low['dhp'] == 0, low)
+    R.check(f'Corvin: notas lançadas no tempo da música ({bpm} BPM)', len(fr) >= 2 and len(good) / max(1, len(fr)) > 0.9, f'{len(good)}/{len(fr)} no tempo; frações={[round(x, 2) for x in fr[:8]]}')
+    # lá em cima, do chão os golpes e feitiços são desviados — mas as notas devolvidas com o parry ferem-no
+    low = pg.evaluate('''() => { const B = T.bossEnts()[0], g = T.g(), hp = B.hp; const r1 = B.onHit({ x: B.x, y: B.y, w: 10, h: 10, dmg: 30, id: 7771, owner: T.p() }, g); const r2 = B.onHit({ x: B.x, y: B.y, w: 10, h: 10, dmg: 30, id: 7772, owner: T.p(), proj: {} }, g); const d0 = B.hp - hp; const r3 = B.onHit({ x: B.x, y: B.y, w: 10, h: 10, dmg: 26, id: 7773, owner: T.p(), proj: { kind: 'note' }, kind: 'reflect' }, g); return { r1, r2, dhp: d0, r3, dnote: hp - B.hp, py: Math.round(T.p().bottom / 20), perch: B.perchI, mode: B.mode }; }''')
+    R.check('Corvin: do chão (e com projéteis) não se lhe faz dano, mas as notas devolvidas ferem-no', low['r1'] == 'blocked' and low['r2'] == 'blocked' and low['dhp'] == 0 and low['dnote'] > 0, low)
     up = pg.evaluate('''() => { const B = T.bossEnts()[0], g = T.g(), p = T.p(); const P = B.perches[B.perchI]; p.x = B.cx - 26 - p.w / 2; p.y = P.y - p.h - 1; p.vy = 0; const hp = B.hp, i0 = B.perchI; let n = 0; for (let k = 0; k < 6; k++) { const r = B.onHit({ x: B.x, y: B.y, w: 10, h: 10, dmg: 20, id: 7800 + k, owner: p }, g); if (r !== 'blocked' && r !== false) n++; } return { dhp: hp - B.hp, hits: n, i0 }; }''')
     frames(pg, 30)
     moved = pg.evaluate('T.bossEnts()[0].perchI')
@@ -1536,8 +1537,79 @@ def t_life(R, b):
     pg.close()
 
 
+def t_bossfair(R, b):
+    """chefes a sério: não ficam presos quando se lhes bate, respondem a quem os martela (onda de choque),
+    a Ama Elowen enterra-se e irrompe debaixo da protagonista, Corvin desce do balcão e fica tonto"""
+    pg = b.new_page(viewport={'width': 1280, 'height': 720}); errs = []; page_errors(pg, errs)
+    boot(pg)
+    stats = {}
+    for i, (bid, room) in enumerate(BOSSES):
+        if bid in ('caedmon', 'ozias', 'gemeos'):
+            continue  # escudo absoluto / voa alto / dupla: medidos à parte
+        new_game(pg, slot=i % 3)
+        pg.evaluate('VSDebug.allAbilities(); VSDebug.god(true)')
+        warp(pg, room); place_for_boss(pg, room)
+        wait(pg, 'T.bossEnts().length > 0', 6); wait(pg, 'T.bossEnts().length > 0 && !T.bossEnts()[0].intro', 12)
+        frames(pg, 20)
+        st = pg.evaluate('''() => new Promise((res) => { const st = { f: 0, atks: 0, stag: 0, repel: 0, lastId: null };
+          T.hooks.push(() => { const bs = T.bossEnts(); if (!bs.length || st.f++ > 480) { T.releaseAll(); res(st); return true; }
+            const bo = bs[0], p = T.p(), dx = bo.cx - p.cx; T.key("KeyD", dx > 26); T.key("KeyA", dx < -26); if (st.f % 12 === 0) T.tap("KeyJ", 3);
+            if (bo.atk && bo.atk.id !== st.lastId) { st.atks++; st.lastId = bo.atk.id; if (bo.atk.name === '_repel') st.repel++; } if (bo.stagger > 0) st.stag++; }); })''')
+        stats[bid] = st
+        pg.evaluate('T.releaseAll(); T.hooks = []; T.bossEnts().forEach((e) => e.remove = true); VS.UI.closeAll && VS.UI.closeAll()')
+        if pg.evaluate('VS.App.mode') != 'game':
+            pg.evaluate('VS.App.toMenu()')
+    # (Corvin fica no balcão a tocar — as notas não contam como golpes; tem teste próprio em baixo)
+    stuck = {k: v for k, v in stats.items() if k != 'corvin' and (v['atks'] < 2 or v['stag'] > 0.25 * v['f'])}
+    R.check('nenhum chefe fica parado a levar golpes (ataca pelo menos 2 vezes em 8 s de marteladas, atordoado < 25 %)', not stuck, {k: (v['atks'], round(v['stag'] / max(1, v['f']), 2)) for k, v in stats.items()})
+    R.check('quem martela leva com a onda de choque (larga-me!) em vários chefes', sum(1 for v in stats.values() if v['repel']) >= 3, {k: v['repel'] for k, v in stats.items()})
+    hp = pg.evaluate('({ coveiro: VS.Bosses.DEFS.coveiro.cfg.hp, elowen: VS.Bosses.DEFS.elowen.cfg.hp, corvin: VS.Bosses.DEFS.corvin.cfg.hp })')
+    R.check('chefes com mais vida (Coveiro >= 500, Elowen >= 1000, Corvin >= 900)', hp['coveiro'] >= 500 and hp['elowen'] >= 1000 and hp['corvin'] >= 900, hp)
+    # Ama Elowen: enterra-se, segue a protagonista por baixo do chão e irrompe debaixo dela
+    new_game(pg, slot=0); pg.evaluate('VSDebug.allAbilities(); VSDebug.god(true)')
+    warp(pg, 'r4_elowen'); place_for_boss(pg, 'r4_elowen')
+    wait(pg, 'T.bossEnts().length > 0 && !T.bossEnts()[0].intro', 12); frames(pg, 10)
+    bur = pg.evaluate('''() => new Promise((res) => { const e = T.bossEnts()[0]; e.atk = null; e.cool = 99; e.attack('burrow'); const o = { sunk: false, hidden: false, moved: 0, x0: e.cx, warn: false, erupt: false, d0: Math.abs(T.p().cx - e.cx) }; let n = 0; const h0 = T.hits.length;
+      T.hooks.push(() => { if (e.sink >= 1) o.sunk = true; if (!e.hittable) o.hidden = true; if (e.bur && e.bur.ph === 'warn') o.warn = true; if (e.bur && e.bur.ph === 'erupt' && !o.erupt) { o.erupt = true; o.dEnd = Math.round(Math.abs(T.p().cx - e.cx)); }
+        if (++n > 220 || (o.erupt && !e.atk)) { o.moved = Math.round(Math.abs(e.cx - o.x0)); o.hit = T.hits.slice(h0).length; res(o); return true; } }); })''')
+    R.check('Ama Elowen enterra-se (invulnerável), corre por baixo do chão até à protagonista e irrompe debaixo dela', bur['sunk'] and bur['hidden'] and bur['warn'] and bur['erupt'] and bur.get('dEnd', 999) < 40 and bur['hit'] >= 1, bur)
+    # Corvin: desce do balcão, fica tonto e leva dano cá em baixo; as notas cortam-se com a arma
+    new_game(pg, slot=1); pg.evaluate('VSDebug.allAbilities(); VSDebug.god(true)')
+    warp(pg, 'r5_crown'); place_for_boss(pg, 'r5_crown')
+    wait(pg, 'T.bossEnts().length > 0 && !T.bossEnts()[0].intro', 12); frames(pg, 10)
+    cv = pg.evaluate('''() => new Promise((res) => { const e = T.bossEnts()[0]; e.atk = null; e.attack('dive'); const o = {}; let n = 0;
+      T.hooks.push(() => { if (e.groggy > 0 && !o.groggy) { o.groggy = true; o.mode = e.mode; o.bottom = Math.round(e.bottom); o.floor = e.arena.floor; const p = T.p(); p.x = e.cx - 30; p.y = e.bottom - p.h; p.vx = 0; p.vy = 0; p.facing = 1; o.hp0 = e.hp; }
+        if (o.groggy && n % 10 === 0) T.tap('KeyJ', 3);
+        if (++n > 150) { o.hp1 = e.hp; res(o); return true; } }); })''')
+    R.check('Corvin salta do balcão para o chão, fica tonto e leva dano cá em baixo', cv.get('groggy') and cv.get('mode') == 'ground' and abs(cv.get('bottom', 0) - cv.get('floor', 1)) < 4 and cv['hp1'] < cv['hp0'], cv)
+    br = pg.evaluate('''() => new Promise((res) => { const g = T.g(), p = T.p(); T.bossEnts().forEach((e) => { e.cool = 99; e.atk = null; e.mode = 'ground'; e.groggy = 5; });
+      const n0 = new VS.Projectile({ x: p.cx + p.facing * 26, y: p.cy - 6, vx: -p.facing * 20, vy: 0, w: 10, h: 10, dmg: 13, kind: 'note', color: '#ffd070', life: 3, solid: false, breakable: true }); g.spawn(n0); T.tap('KeyJ', 3); let k = 0;
+      T.hooks.push(() => { if (++k > 25) { res({ removed: n0.remove, team: n0.team }); return true; } }); })''')
+    R.check('as notas cortam-se com a arma (projéteis "breakable")', br['removed'], br)
+    R.check('chefes a sério sem erros de JavaScript', not errs, errs[:3])
+    pg.close()
+
+
+def t_feel(R, b):
+    """física e impacto: descida mais pesada, alcance do salto mantido, arco do golpe mais alto, rasto da esquiva"""
+    pg = b.new_page(viewport={'width': 1280, 'height': 720}); errs = []; page_errors(pg, errs)
+    boot(pg); new_game(pg); warp(pg, 'r1_street', 6, 12); frames(pg, 30)
+    pg.evaluate('VSDebug.god(true); T.g().ents.filter((e) => e.isEnemy).forEach((e) => e.remove = true)')
+    wait(pg, 'T.p().onGround && !T.p().action', 3)
+    j = pg.evaluate('''() => new Promise((res) => { const p = T.p(), y0 = p.bottom; let apex = 0, tApex = 0, n = 0; T.tap('Space', 30);
+      T.hooks.push(() => { n++; const h = y0 - p.bottom; if (h > apex) { apex = h; tApex = n; } if ((n > 4 && p.onGround) || n > 200) { res({ apex: Math.round(apex), up: tApex, total: n }); return true; } }); })''')
+    R.check('salto: sobe ~3,6 tiles e desce mais depressa do que sobe (sem "flutuar")', j['apex'] >= 70 and j['total'] - j['up'] < j['up'], j)
+    pg.evaluate('T.p().facing = 1; T.tap("KeyJ", 3)')
+    hb = pg.evaluate('''() => new Promise((res) => { let best = null, n = 0; T.hooks.push(() => { const h = T.p().attackHB; if (h && (!best || h.y < best.y)) best = { y: h.y, top: Math.round(T.p().bottom - h.y) }; if (++n > 20) { res(best); return true; } }); })''')
+    R.check('golpe básico alcança mais alto (>= 44 px acima dos pés: apanha voadores a 45 graus)', hb and hb['top'] >= 44, hb)
+    pg.evaluate('T.tap("KeyL", 3)')
+    dg = pg.evaluate('''() => new Promise((res) => { let inv = 0, n = 0; T.hooks.push(() => { inv = Math.max(inv, T.p().afterimages.filter((g) => g.inv).length); if (++n > 20) { res(inv); return true; } }); })''')
+    R.check('esquiva: rasto claro nos fotogramas invulneráveis', dg >= 2, dg)
+    R.check('física e impacto sem erros de JavaScript', not errs, errs[:3])
+    pg.close()
+
 TESTS = {'menus': t_menus, 'combat': t_movement_combat, 'world': t_world, 'bosses': t_bosses, 'caedmon': t_caedmon, 'aldric': t_aldric, 'corvin': t_corvin,
-         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach, 'giants': t_giants, 'traps': t_traps, 'structs': t_structs, 'wanderer': t_wanderer, 'custodio': t_custodio, 'desktop': t_desktop, 'bgart': t_bgart, 'turn': t_turn, 'screen': t_screen, 'life': t_life}
+         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach, 'giants': t_giants, 'traps': t_traps, 'structs': t_structs, 'wanderer': t_wanderer, 'custodio': t_custodio, 'desktop': t_desktop, 'bgart': t_bgart, 'turn': t_turn, 'screen': t_screen, 'life': t_life, 'bossfair': t_bossfair, 'feel': t_feel}
 
 
 def main(filters):

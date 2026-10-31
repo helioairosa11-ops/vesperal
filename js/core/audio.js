@@ -532,6 +532,38 @@
   SFX.flap = (d, t) => { for (let i = 0; i < 5; i++) nburst(d, t + i * 0.055 + Math.random() * 0.01, 'bandpass', 520 + Math.random() * 160, 2.5, 0.12, 0.04); };
   SFX.caw = (d, t) => { for (let i = 0; i < 2; i++) { const tt = t + i * 0.24; tone(d, tt, 'sawtooth', 620, 430, 0.07, 0.16, 0.01); nburst(d, tt, 'bandpass', 1300, 3, 0.1, 0.15, 0.01); } };
   SFX.squeak = (d, t) => { tone(d, t, 'sine', 2600, 3600, 0.05, 0.07, 0.005); tone(d, t + 0.09, 'sine', 2900, 3900, 0.04, 0.06, 0.005); };
+  // onda de choque dos chefes ("larga-me!"): rosnar que sobe e o estrondo que empurra
+  SFX.repel_charge = (d, t) => {
+    const f = nburst(d, t, 'bandpass', 220, 1.2, 0.34, 0.36, 0.26); f.frequency.exponentialRampToValueAtTime(1700, t + 0.34);
+    const g = gainNode(0); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.22, t + 0.3); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.42);
+    const o = osc('sawtooth', 52, t, t + 0.45); o.frequency.exponentialRampToValueAtTime(96, t + 0.36); const lp = filt('lowpass', 420, 3); o.connect(lp); lp.connect(g); g.connect(d);
+  };
+  SFX.repel = (d, t) => {
+    tone(d, t, 'sine', 120, 30, 0.95, 0.5); tone(d, t, 'triangle', 240, 60, 0.25, 0.25);
+    nburst(d, t, 'lowpass', 1800, 0.7, 0.85, 0.38, 0.002); nburst(d, t, 'highpass', 3200, 0.8, 0.3, 0.07, 0.001);
+    const f = nburst(d, t + 0.02, 'bandpass', 1400, 1.2, 0.3, 0.5, 0.02); f.frequency.exponentialRampToValueAtTime(300, t + 0.5);
+  };
+  // Ama Elowen: escavar, o chão a tremer por baixo, raízes a romper, anel de espinhos
+  SFX.burrow = (d, t) => {
+    for (let i = 0; i < 7; i++) nburst(d, t + i * 0.065 + Math.random() * 0.03, 'lowpass', 500 + Math.random() * 500, 0.9, 0.3, 0.09, 0.004);
+    tone(d, t, 'sine', 70, 40, 0.4, 0.6); const f = nburst(d, t, 'bandpass', 900, 0.8, 0.18, 0.5, 0.1); f.frequency.exponentialRampToValueAtTime(260, t + 0.5);
+  };
+  SFX.rumble = (d, t) => {
+    const n = noiseSrc(t, 0.8); const lp = filt('lowpass', 130, 1.4); const g = gainNode(0); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.75, t + 0.15); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.75);
+    n.connect(lp); lp.connect(g); g.connect(d); tone(d, t, 'sine', 48, 36, 0.35, 0.7, 0.1);
+  };
+  SFX.root_burst = (d, t) => {
+    tone(d, t, 'sine', 110, 34, 0.85, 0.35); nburst(d, t, 'lowpass', 1200, 0.8, 0.6, 0.25, 0.002);
+    for (let i = 0; i < 6; i++) nburst(d, t + 0.01 + i * 0.022 + Math.random() * 0.02, 'bandpass', 900 + Math.random() * 1600, 4, 0.2, 0.05, 0.001);
+    nburst(d, t, 'highpass', 3500, 0.9, 0.22, 0.08, 0.001);
+  };
+  SFX.thorn_ring = (d, t) => {
+    const f = nburst(d, t, 'bandpass', 500, 1.4, 0.4, 0.35, 0.02); f.frequency.exponentialRampToValueAtTime(2600, t + 0.3);
+    for (let i = 0; i < 10; i++) nburst(d, t + 0.03 + i * 0.025, 'bandpass', 2400 + Math.random() * 2400, 6, 0.1, 0.03, 0.001);
+    tone(d, t, 'sine', 160, 70, 0.3, 0.2);
+  };
+  // projétil cortado pela arma: um tinido de vidro e um estalo
+  SFX.proj_break = (d, t) => { INST.glass(d, t, 1600 + Math.random() * 500, 0.18, 0.55); nburst(d, t, 'highpass', 3800, 1, 0.22, 0.06, 0.001); tone(d, t, 'triangle', 900, 500, 0.08, 0.08); };
   SFX.choir_hit = (d, t) => { ['D3', 'A3', 'D4', 'F4'].forEach((n) => INST.choir(d, t, A.noteFreq(n), 1.2, 0.9)); };
   SFX.light = (d, t) => { tone(d, t, 'sine', 600, 2400, 0.08, 0.5, 0.2); INST.glass(d, t, A.noteFreq('E6'), 0.6, 0.6); };
   // o Juízo do Rei: um coro grave que sobe durante a preparação (1,6 s) e o estrondo que o fecha

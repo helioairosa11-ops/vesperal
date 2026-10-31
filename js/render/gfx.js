@@ -266,18 +266,31 @@
   // pavor: as margens do ecrã tingem-se de carmesim (um golpe mortal a preparar-se); quem o causa renova G.dread a cada passo
   G.dread = 0;
   let dreadC = null;
-  G.drawDread = function (dt) {
-    if (G.dread <= 0.01) { G.dread = 0; return; }
-    const ctx = G.ctx; G.screenTransform(ctx);
+  const redEdges = () => {
     if (!dreadC) {
       dreadC = document.createElement('canvas'); dreadC.width = 160; dreadC.height = 90;
       const c = dreadC.getContext('2d'), g = c.createRadialGradient(80, 45, 26, 80, 45, 98);
       g.addColorStop(0, 'rgba(120,0,0,0)'); g.addColorStop(0.6, 'rgba(150,6,10,0.35)'); g.addColorStop(1, 'rgba(190,10,20,0.95)');
       c.fillStyle = g; c.fillRect(0, 0, 160, 90);
     }
+    return dreadC;
+  };
+  G.drawDread = function (dt) {
+    if (G.dread <= 0.01) { G.dread = 0; return; }
+    const ctx = G.ctx; G.screenTransform(ctx);
+    redEdges();
     ctx.globalAlpha = U.clamp(G.dread, 0, 1) * (0.82 + 0.18 * Math.sin(performance.now() / 70));
     ctx.imageSmoothingEnabled = true; ctx.drawImage(dreadC, 0, 0, U.VIEW_W, U.VIEW_H); ctx.globalAlpha = 1;
     G.dread = Math.max(0, G.dread - dt * 2.5);
+  };
+  // ferida: as margens do ecrã ficam vermelhas e apagam-se em meio segundo
+  G.hurt = 0;
+  G.drawHurt = function (dt) {
+    if (G.hurt <= 0.01) { G.hurt = 0; return; }
+    const ctx = G.ctx; G.screenTransform(ctx);
+    redEdges();
+    ctx.globalAlpha = Math.min(1, G.hurt) * 0.75; ctx.imageSmoothingEnabled = true; ctx.drawImage(dreadC, 0, 0, U.VIEW_W, U.VIEW_H); ctx.globalAlpha = 1;
+    G.hurt = Math.max(0, G.hurt - dt * 2.2);
   };
   G.drawFlash = function (dt) {
     if (G.flashA <= 0.01) { G.flashA = 0; return; }

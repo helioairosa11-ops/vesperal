@@ -69,7 +69,7 @@
         if (s.lunge !== undefined) this.vx = this.facing * s.lunge * Math.sqrt(this.size);
         if (s.hb) {
           const r = s.hb(this);
-          if (r) this.attackHBs.push(Object.assign(r, { dmg: Math.round(s.dmg * (this.K.dmgMult || 1)), id: a.id, parryable: s.parryable !== false && s.tell !== 'red', unblockable: s.tell === 'red', src: this }));
+          if (r) this.attackHBs.push(Object.assign(r, { dmg: Math.round(s.dmg * (this.K.dmgMult || 1) * (this.dmgScale || 1)), id: a.id, parryable: s.parryable !== false && s.tell !== 'red', unblockable: s.tell === 'red', src: this }));
         }
         if (s.during) s.during(this, this.game, dt);
         if (a.t >= s.act) { a.phase = 'rec'; a.t = 0; }
@@ -122,14 +122,15 @@
       if (hb.spirit && hb.kind === 'spell' && this.nat.spectral) dmg = Math.round(dmg * 1.5);
       if (this.stagger > 0 && this.parried) dmg = Math.round(dmg * 1.5);
       if (this.K.damageMult) dmg = Math.round(dmg * this.K.damageMult(this, hb));
-      this.hp -= dmg; this.flash = 0.12; this.lastHitT = 0;
+      this.hp -= dmg; this.flash = 0.16; this.lastHitT = 0;
       this.aggro = true;
       const heavy = hb.kind === 'heavy' || hb.kind === 'riposte';
       const mat = this.material;
       A.sfx(heavy ? 'hit_heavy' : 'hit'); A.sfx(MAT_SFX[mat] || 'enemy_hurt', { vol: 0.5 });
       if (hb.mat === 'blunt') A.sfx('hit_blunt', { vol: 0.7 });
-      game.hitstop(hb.hitstop || (heavy ? 0.08 : 0.045));
-      G.addShake(heavy ? 0.2 : 0.08);
+      const blunt = hb.mat === 'blunt';
+      game.hitstop((hb.hitstop || (heavy ? 0.085 : 0.05)) + (blunt ? 0.02 : 0));
+      G.addShake((heavy ? 0.24 : 0.1) * (blunt ? 1.6 : 1) * (this.isBoss ? 1.15 : 1));
       const kx = hb.kx || Math.sign(this.cx - game.player.cx) || 1;
       // ponto de contacto: entre a ponta da arma e o centro do alvo
       const hx = hb.tipX !== undefined ? U.clamp(hb.tipX, this.x + 2, this.x + this.w - 2) : this.cx - kx * 4;
