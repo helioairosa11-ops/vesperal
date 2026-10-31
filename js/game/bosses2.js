@@ -882,7 +882,7 @@
             const a = i / n * U.TAU + rot;
             if (Math.abs(Math.atan2(Math.sin(a - gapA), Math.cos(a - gapA))) < 0.46) continue;
             const x = p.cx + Math.cos(a) * R, y = p.cy + Math.sin(a) * R;
-            if (y > fl - 6 || x < e.arena.x0 - 8 || x > e.arena.x1 + 8) continue; // nada dentro do chão nem das paredes
+            if (y + 7 > fl - 2 || x < e.arena.x0 - 8 || x > e.arena.x1 + 8) continue; // nada dentro do chão nem das paredes (a lança tem 14 px)
             // vida curta: param pouco depois de passarem pelo centro (quem saiu pela falha fica a salvo)
             const pr = seraLight({ x: x - 7, y: y - 7, vx: 0, vy: 0, life: R / sp + 0.2, kind: 'lance', ang: Math.atan2(-Math.sin(a), -Math.cos(a)) });
             pr._fv = [-Math.cos(a) * sp, -Math.sin(a) * sp]; g.spawn(pr);

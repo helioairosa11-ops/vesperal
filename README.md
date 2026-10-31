@@ -25,7 +25,7 @@ Metroidvania 2D de fantasia sombria para o navegador. O Desperto acorda numa cov
 - Armadilhas a combinar com a zona: sinos e incensários a balançar, ossos e espinhos que rompem do chão, seteiras, grade levadiça, prensas, lanças nas paredes
 - Esquiva, parry e guarda, armas com ritmos diferentes
 - Português, English, Español e Français
-- Música e sons sintetizados em tempo real (Web Audio), sem ficheiros de áudio
+- Música e sons sintetizados em tempo real (Web Audio), sem ficheiros de áudio — golpes com corpo e saturação, impactos grandes com cauda de reverberação, cada golpe um pouco diferente do anterior e níveis equilibrados entre gestos, impactos e chefes
 - Teclado, comando e ecrã tátil; gravação automática no navegador
 - Ocupa o ecrã todo, sem barras pretas: telemóveis largos, monitores ultralargos e tablets 4:3 veem mais do mundo em vez de faixas vazias
 - Funciona sem internet: tudo vem dentro do jogo, incluindo as fontes

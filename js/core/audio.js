@@ -405,25 +405,38 @@
     const g = gainNode(0); const e = percEnv(g, t, peak, decay, attack); const o = osc(type, f0, t, e);
     if (f1 && f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(1, f1), t + decay); o.connect(g); g.connect(d); return o;
   }
-  SFX.swing = (d, t) => { const f = nburst(d, t, 'bandpass', 900, 1.2, 0.35, 0.16, 0.03); f.frequency.exponentialRampToValueAtTime(3200, t + 0.12); };
-  SFX.swing_heavy = (d, t) => { const f = nburst(d, t, 'bandpass', 300, 1.0, 0.5, 0.3, 0.06); f.frequency.exponentialRampToValueAtTime(1400, t + 0.25); tone(d, t, 'sine', 90, 60, 0.15, 0.25); };
-  SFX.hit = (d, t) => { nburst(d, t, 'lowpass', 2600, 0.8, 0.5, 0.07); tone(d, t, 'sine', 170, 55, 0.5, 0.12); nburst(d, t + 0.01, 'bandpass', 4200, 3, 0.12, 0.05); };
-  SFX.hit_heavy = (d, t) => { nburst(d, t, 'lowpass', 1800, 0.8, 0.7, 0.14); tone(d, t, 'sine', 140, 38, 0.8, 0.22); nburst(d, t, 'bandpass', 3000, 2, 0.2, 0.1); };
+  // saturação suave (dá corpo e "peso" aos impactos) — uma curva por intensidade, guardada
+  const shapeCurves = {};
+  function sat(d, k, lvl) {
+    const ws = c.createWaveShaper(); const key = k || 4;
+    if (!shapeCurves[key]) { const n = 1024, cv = new Float32Array(n); for (let i = 0; i < n; i++) { const x = i * 2 / n - 1; cv[i] = Math.tanh(key * x) / Math.tanh(key); } shapeCurves[key] = cv; }
+    ws.curve = shapeCurves[key]; ws.oversample = '2x';
+    if (lvl !== undefined && lvl !== 1) { const g = gainNode(lvl); ws.connect(g); g.connect(d); } else ws.connect(d);
+    return ws;
+  }
+  // variação de afinação: nenhum golpe soa exatamente igual ao anterior
+  const vr = (a) => 1 + (Math.random() - 0.5) * (a || 0.12);
+  // envio para a reverberação (cauda curta própria dos impactos grandes)
+  function verb(d, t, amt) { if (!A.reverb) return d; const g = gainNode(amt * (A.vol ? A.vol.sfx : 1)); g.connect(A.reverb); const m = gainNode(1); m.connect(d); m.connect(g); return m; }
+  SFX.swing = (d, t) => { const v = vr(0.16); const f = nburst(d, t, 'bandpass', 650 * v, 1.1, 0.95, 0.18, 0.025); f.frequency.exponentialRampToValueAtTime(3800 * v, t + 0.13); nburst(d, t + 0.025, 'highpass', 5400, 0.7, 0.16, 0.09, 0.02); tone(d, t, 'sine', 300 * v, 180, 0.06, 0.1, 0.02); };
+  SFX.swing_heavy = (d, t) => { const v = vr(0.1); const f = nburst(d, t, 'bandpass', 220 * v, 0.9, 0.95, 0.34, 0.07); f.frequency.exponentialRampToValueAtTime(1500 * v, t + 0.27); tone(d, t, 'sine', 96 * v, 52, 0.26, 0.3, 0.05); nburst(d, t + 0.06, 'lowpass', 480, 0.7, 0.22, 0.22, 0.05); };
+  SFX.hit = (d, t) => { const v = vr(0.14), s2 = sat(d, 3, 0.55); nburst(d, t, 'highpass', 3200, 0.7, 0.28, 0.022, 0.001); tone(s2, t, 'sine', 196 * v, 50, 0.72, 0.13, 0.002); nburst(s2, t + 0.003, 'bandpass', 1500 * v, 1.4, 0.42, 0.075, 0.002); nburst(d, t + 0.01, 'lowpass', 760, 0.8, 0.2, 0.12, 0.004); };
+  SFX.hit_heavy = (d, t) => { const v = vr(0.08), s2 = sat(verb(d, t, 0.25), 5, 0.62); nburst(d, t, 'highpass', 2600, 0.7, 0.38, 0.03, 0.001); tone(s2, t, 'sine', 150 * v, 32, 1.0, 0.27, 0.002); tone(s2, t, 'triangle', 300 * v, 78, 0.3, 0.12, 0.002); nburst(s2, t + 0.004, 'bandpass', 1100 * v, 1.2, 0.56, 0.16, 0.002); nburst(d, t + 0.02, 'lowpass', 420, 0.7, 0.34, 0.32, 0.01); };
   // armas e materiais
-  SFX.swing_light = (d, t) => { const f = nburst(d, t, 'bandpass', 1600, 1.6, 0.26, 0.09, 0.015); f.frequency.exponentialRampToValueAtTime(5200, t + 0.07); };
+  SFX.swing_light = (d, t) => { const v = vr(0.18); const f = nburst(d, t, 'bandpass', 1500 * v, 1.6, 0.72, 0.09, 0.012); f.frequency.exponentialRampToValueAtTime(6000 * v, t + 0.07); nburst(d, t + 0.02, 'highpass', 7000, 0.7, 0.12, 0.05, 0.01); };
   SFX.spirit_swing = (d, t) => { const f = nburst(d, t, 'bandpass', 700, 2, 0.3, 0.22, 0.03); f.frequency.exponentialRampToValueAtTime(2600, t + 0.18); INST.glass(d, t + 0.02, 1320 + Math.random() * 120, 0.12, 0.5); };
   SFX.swing_royal = (d, t) => { const f = nburst(d, t, 'bandpass', 240, 0.9, 0.55, 0.34, 0.07); f.frequency.exponentialRampToValueAtTime(1100, t + 0.3); tone(d, t, 'sine', 70, 48, 0.2, 0.32); SFX.fire(d, t + 0.05); };
-  SFX.hit_metal = (d, t) => { tone(d, t, 'square', 1250 + Math.random() * 200, 900, 0.07, 0.16); tone(d, t, 'triangle', 2600 + Math.random() * 400, 2100, 0.05, 0.22); nburst(d, t, 'highpass', 5000, 1, 0.22, 0.07); };
+  SFX.hit_metal = (d, t) => { const v = vr(0.1); tone(d, t, 'square', 1250 * v, 900, 0.07, 0.18); tone(d, t, 'triangle', 2650 * v, 2100, 0.06, 0.32); tone(d, t, 'sine', 4100 * v, 3900, 0.03, 0.4); nburst(d, t, 'highpass', 5000, 1, 0.24, 0.07); };
   SFX.hit_stone = (d, t) => { nburst(d, t, 'lowpass', 1400, 1, 0.45, 0.1); for (let i = 0; i < 3; i++) nburst(d, t + 0.02 + i * 0.03, 'bandpass', 2400 + Math.random() * 1200, 3, 0.12, 0.04); };
   SFX.hit_spirit = (d, t) => { INST.glass(d, t, 1760 * (1 + Math.random() * 0.06), 0.25, 0.5); const f = nburst(d, t, 'bandpass', 1800, 3, 0.18, 0.3, 0.02); f.frequency.exponentialRampToValueAtTime(600, t + 0.3); };
   SFX.hit_glass = (d, t) => { for (let i = 0; i < 4; i++) tone(d, t + Math.random() * 0.06, 'sine', 3000 + Math.random() * 3000, 2400, 0.05, 0.16); nburst(d, t, 'highpass', 4500, 1, 0.2, 0.1); };
   SFX.hit_soft = (d, t) => { nburst(d, t, 'lowpass', 900, 0.8, 0.35, 0.09); tone(d, t, 'sine', 140, 80, 0.2, 0.08); };
   SFX.hit_wood = (d, t) => { nburst(d, t, 'bandpass', 900, 3, 0.4, 0.07); tone(d, t, 'triangle', 220, 160, 0.2, 0.08); };
-  SFX.hit_blunt = (d, t) => { tone(d, t, 'sine', 95, 40, 0.8, 0.22); nburst(d, t, 'lowpass', 700, 0.8, 0.55, 0.16); };
+  SFX.hit_blunt = (d, t) => { const v = vr(0.08), s2 = sat(d, 6, 0.5); tone(s2, t, 'sine', 92 * v, 36, 0.95, 0.26, 0.002); nburst(s2, t, 'lowpass', 760, 0.8, 0.62, 0.18, 0.002); for (let i = 0; i < 3; i++) nburst(d, t + 0.02 + i * 0.03, 'bandpass', 1800 + Math.random() * 1400, 3, 0.12, 0.04, 0.002); };
   SFX.equip = (d, t) => { tone(d, t, 'triangle', 700, 520, 0.08, 0.08); nburst(d, t + 0.04, 'bandpass', 3200, 6, 0.12, 0.06); INST.bell(d, t + 0.08, 880, 0.18, 0.4); };
   SFX.charge_ready = (d, t) => { INST.bell(d, t, 1175, 0.5, 0.7); INST.glass(d, t + 0.03, 2350, 0.25, 0.6); };
-  SFX.hurt = (d, t) => { tone(d, t, 'sawtooth', 220, 70, 0.2, 0.25); nburst(d, t, 'lowpass', 1200, 1, 0.6, 0.2); tone(d, t, 'sine', 90, 40, 0.6, 0.3); };
-  SFX.block = (d, t) => { tone(d, t, 'square', 520, 380, 0.12, 0.12); nburst(d, t, 'bandpass', 2200, 4, 0.3, 0.08); tone(d, t, 'sine', 140, 90, 0.3, 0.12); };
+  SFX.hurt = (d, t) => { const s2 = sat(d, 4, 0.6); nburst(d, t, 'highpass', 2800, 0.7, 0.26, 0.03, 0.001); tone(s2, t, 'sine', 120, 38, 0.8, 0.3, 0.002); nburst(s2, t + 0.004, 'bandpass', 900, 1.1, 0.5, 0.16, 0.003); voice(d, t + 0.01, 230 * vr(0.08), [[0.12, 180]], 0.16, 0.15, [[700, 6, 1], [1150, 8, 0.6]], 0.1); };
+  SFX.block = (d, t) => { const v = vr(0.08); tone(d, t, 'square', 560 * v, 400, 0.1, 0.14); tone(d, t, 'triangle', 1700 * v, 1500, 0.06, 0.24); nburst(d, t, 'bandpass', 2400, 4, 0.32, 0.08); tone(d, t, 'sine', 150, 90, 0.32, 0.12); };
   SFX.shield = (d, t) => { tone(d, t, 'triangle', 300, 260, 0.25, 0.18); nburst(d, t, 'bandpass', 1500, 6, 0.35, 0.12); };
   SFX.parry = (d, t) => {
     // aço contra aço: estalo brilhante, a lâmina a raspar ("shing"), o metal a vibrar em parciais inarmónicos,
@@ -443,9 +456,9 @@
   };
   SFX.parry_tell = (d, t) => { const o = tone(d, t, 'sine', 2100, 3400, 0.09, 0.28, 0.02); tone(d, t + 0.03, 'sine', 4200, 5200, 0.04, 0.2, 0.02); nburst(d, t, 'highpass', 7000, 1, 0.05, 0.25, 0.08); };
   SFX.danger_tell = (d, t) => { [110, 116.5, 164.8].forEach((f) => { const g = gainNode(0); percEnv(g, t, 0.11, 0.5, 0.03); const o = osc('sawtooth', f, t, t + 0.6); const lp = filt('lowpass', 900); o.connect(lp); lp.connect(g); g.connect(d); }); };
-  SFX.dodge = (d, t) => { const f = nburst(d, t, 'lowpass', 600, 1, 0.3, 0.22, 0.05); f.frequency.exponentialRampToValueAtTime(2200, t + 0.15); };
-  SFX.jump = (d, t) => { const f = nburst(d, t, 'bandpass', 500, 1, 0.12, 0.1, 0.01); f.frequency.exponentialRampToValueAtTime(1500, t + 0.1); };
-  SFX.land = (d, t) => { tone(d, t, 'sine', 110, 50, 0.3, 0.1); nburst(d, t, 'lowpass', 900, 1, 0.25, 0.08); };
+  SFX.dodge = (d, t) => { const v = vr(0.12); const f = nburst(d, t, 'bandpass', 380 * v, 1, 0.8, 0.26, 0.05); f.frequency.exponentialRampToValueAtTime(2600 * v, t + 0.18); nburst(d, t + 0.02, 'lowpass', 900, 0.7, 0.22, 0.12, 0.02); for (let i = 0; i < 3; i++) nburst(d, t + 0.02 + i * 0.04, 'bandpass', 1700 + i * 300, 3, 0.08, 0.03, 0.004); };
+  SFX.jump = (d, t) => { const v = vr(0.12); const f = nburst(d, t, 'bandpass', 480 * v, 1, 0.42, 0.11, 0.01); f.frequency.exponentialRampToValueAtTime(1700 * v, t + 0.1); nburst(d, t, 'lowpass', 600, 0.8, 0.2, 0.05, 0.002); };
+  SFX.land = (d, t) => { const v = vr(0.12); tone(d, t, 'sine', 115 * v, 48, 0.34, 0.11, 0.002); nburst(d, t, 'lowpass', 1000, 1, 0.28, 0.08, 0.002); nburst(d, t + 0.015, 'bandpass', 2400, 2, 0.06, 0.05, 0.004); };
   SFX.step_stone = (d, t) => { nburst(d, t, 'bandpass', 1800 + Math.random() * 600, 2, 0.16, 0.05); tone(d, t, 'sine', 90, 60, 0.12, 0.05); };
   SFX.step_wood = (d, t) => { nburst(d, t, 'bandpass', 700 + Math.random() * 200, 3, 0.2, 0.07); tone(d, t, 'triangle', 180, 150, 0.12, 0.06); };
   SFX.step_metal = (d, t) => { tone(d, t, 'square', 900 + Math.random() * 300, 700, 0.03, 0.08); nburst(d, t, 'bandpass', 3000, 6, 0.1, 0.06); };
@@ -485,11 +498,11 @@
   };
   // passada de um bicho enorme: baque surdo e pó
   SFX.step_heavy = (d, t) => { tone(d, t, 'sine', 72, 36, 0.34, 0.18); nburst(d, t, 'lowpass', 420, 0.8, 0.24, 0.14); };
-  SFX.enemy_hurt = (d, t) => { tone(d, t, 'sawtooth', 260, 140, 0.1, 0.12); nburst(d, t, 'lowpass', 2000, 1, 0.25, 0.08); };
-  SFX.enemy_die = (d, t) => { const g = gainNode(0); percEnv(g, t, 0.25, 0.6, 0.02); const o = osc('sawtooth', 160, t, t + 0.7); o.frequency.exponentialRampToValueAtTime(50, t + 0.6); const lp = filt('lowpass', 700); o.connect(lp); lp.connect(g); g.connect(d); const f = nburst(d, t + 0.05, 'highpass', 2000, 0.5, 0.18, 0.9, 0.2); f.frequency.exponentialRampToValueAtTime(7000, t + 0.9); };
-  SFX.boss_hit = (d, t) => { SFX.hit(d, t); tone(d, t, 'sine', 70, 40, 0.4, 0.2); };
-  SFX.boss_die = (d, t) => { tone(d, t, 'sine', 80, 25, 0.9, 2.5); nburst(d, t, 'lowpass', 600, 0.7, 0.8, 2.5, 0.01); const f = nburst(d, t + 0.3, 'highpass', 1500, 0.5, 0.25, 3, 0.8); f.frequency.exponentialRampToValueAtTime(8000, t + 3); };
-  SFX.stagger = (d, t) => { tone(d, t, 'triangle', 660, 220, 0.18, 0.35); nburst(d, t, 'bandpass', 1200, 3, 0.3, 0.2); };
+  SFX.enemy_hurt = (d, t) => { const v = vr(0.2); voice(d, t, 210 * v, [[0.1, 150 * v]], 0.14, 0.13, [[620, 6, 1], [1050, 8, 0.6]], 0.18); nburst(d, t, 'lowpass', 1900, 1, 0.22, 0.08); };
+  SFX.enemy_die = (d, t) => { const v = vr(0.15); voice(d, t, 170 * v, [[0.35, 70]], 0.42, 0.16, [[520, 5, 1], [900, 7, 0.6]], 0.25); const f = nburst(d, t + 0.08, 'highpass', 1800, 0.5, 0.2, 0.9, 0.2); f.frequency.exponentialRampToValueAtTime(7000, t + 0.9); tone(d, t, 'sine', 90, 40, 0.3, 0.3); };
+  SFX.boss_hit = (d, t) => { const g = gainNode(0.62); g.connect(d); SFX.hit_heavy(g, t); tone(sat(d, 4, 0.32), t, 'sine', 68 * vr(0.06), 34, 0.5, 0.24, 0.002); };
+  SFX.boss_die = (d, t) => { const m = verb(d, t, 0.6); tone(m, t, 'sine', 82, 24, 0.8, 2.8); tone(sat(m, 3, 0.55), t, 'sawtooth', 55, 30, 0.25, 2.2); nburst(m, t, 'lowpass', 700, 0.7, 0.7, 2.6, 0.01); const f = nburst(m, t + 0.3, 'highpass', 1500, 0.5, 0.28, 3, 0.8); f.frequency.exponentialRampToValueAtTime(8000, t + 3); ['D3', 'A3', 'D4'].forEach((n, i) => INST.choir(m, t + 0.4 + i * 0.25, A.noteFreq(n), 2.2, 0.55)); for (let i = 0; i < 8; i++) nburst(m, t + 0.2 + i * 0.12 + Math.random() * 0.05, 'bandpass', 900 + Math.random() * 2400, 3, 0.18, 0.08); };
+  SFX.stagger = (d, t) => { tone(d, t, 'triangle', 680, 210, 0.2, 0.38); nburst(d, t, 'bandpass', 1200, 3, 0.32, 0.22); INST.bell(d, t + 0.02, 1320 * vr(0.04), 0.5, 0.35); };
   SFX.heal = (d, t) => { ['C5', 'E5', 'G5', 'C6'].forEach((n, i) => INST.glass(d, t + i * 0.07, A.noteFreq(n), 0.5, 0.9)); const f = nburst(d, t, 'bandpass', 400, 1, 0.12, 0.6, 0.2); f.frequency.exponentialRampToValueAtTime(3000, t + 0.6); };
   SFX.pickup = (d, t) => { ['E5', 'B5'].forEach((n, i) => INST.bell(d, t + i * 0.06, A.noteFreq(n), 0.4, 0.6)); };
   SFX.ash = (d, t) => { INST.glass(d, t, A.noteFreq('A5') * (1 + Math.random() * 0.1), 0.1, 0.4); };
@@ -504,30 +517,30 @@
   SFX.secret = (d, t) => { ['G4', 'D5', 'G5', 'B5', 'D6', 'G6'].forEach((n, i) => INST.glass(d, t + i * 0.08, A.noteFreq(n), 0.6, 0.7)); };
   SFX.break = (d, t) => { for (let i = 0; i < 6; i++) nburst(d, t + i * 0.04 + Math.random() * 0.03, 'lowpass', 600 + Math.random() * 1200, 1, 0.35, 0.12); tone(d, t, 'sine', 100, 35, 0.6, 0.3); };
   SFX.spike = (d, t) => { tone(d, t, 'sawtooth', 1800, 900, 0.05, 0.12); nburst(d, t, 'highpass', 4000, 1, 0.2, 0.08); };
-  SFX.fire = (d, t) => { const f = nburst(d, t, 'bandpass', 300, 0.8, 0.4, 0.5, 0.05); f.frequency.exponentialRampToValueAtTime(1800, t + 0.3); for (let i = 0; i < 5; i++) nburst(d, t + Math.random() * 0.4, 'highpass', 3000, 1, 0.08, 0.02); };
+  SFX.fire = (d, t) => { const f = nburst(d, t, 'bandpass', 280, 0.8, 0.28, 0.55, 0.05); f.frequency.exponentialRampToValueAtTime(1900, t + 0.32); tone(sat(d, 3, 0.4), t, 'sine', 90, 50, 0.25, 0.3, 0.02); for (let i = 0; i < 7; i++) nburst(d, t + Math.random() * 0.45, 'highpass', 2800 + Math.random() * 3000, 1, 0.07, 0.02); };
   SFX.spell = (d, t) => { SFX.fire(d, t); tone(d, t, 'triangle', 300, 900, 0.1, 0.3); };
-  SFX.shoot = (d, t) => { const f = nburst(d, t, 'bandpass', 1200, 2, 0.15, 0.12, 0.01); f.frequency.exponentialRampToValueAtTime(400, t + 0.12); };
+  SFX.shoot = (d, t) => { const v = vr(0.14); const f = nburst(d, t, 'bandpass', 1300 * v, 2, 0.42, 0.13, 0.008); f.frequency.exponentialRampToValueAtTime(380, t + 0.12); tone(d, t, 'triangle', 700 * v, 300, 0.1, 0.08, 0.004); };
   SFX.bolt = (d, t) => { tone(d, t, 'triangle', 600, 200, 0.12, 0.1); nburst(d, t, 'highpass', 3000, 1, 0.12, 0.05); };
   SFX.rest = (d, t) => { const f = nburst(d, t, 'lowpass', 200, 1, 0.5, 0.8, 0.05); f.frequency.exponentialRampToValueAtTime(1500, t + 0.4); ['D4', 'A4', 'F5'].forEach((n) => INST.choir(d, t + 0.2, A.noteFreq(n), 2, 0.6)); };
-  SFX.death = (d, t) => { tone(d, t, 'sine', 120, 30, 0.8, 2); tone(d, t, 'sawtooth', 300, 40, 0.12, 1.8); nburst(d, t, 'lowpass', 500, 1, 0.5, 1.5, 0.01); };
+  SFX.death = (d, t) => { const m = verb(d, t, 0.6); tone(m, t, 'sine', 120, 28, 0.8, 2.2); tone(sat(m, 2), t, 'sawtooth', 300, 38, 0.12, 1.8); nburst(m, t, 'lowpass', 500, 1, 0.5, 1.6, 0.01); voice(m, t + 0.05, 200, [[0.6, 110]], 0.7, 0.18, [[600, 6, 1], [1000, 8, 0.6]], 0.3); INST.choir(m, t + 0.6, A.noteFreq('D3'), 2.2, 0.4); };
   SFX.shade = (d, t) => { const f = nburst(d, t, 'bandpass', 600, 8, 0.3, 1.2, 0.3); f.frequency.exponentialRampToValueAtTime(1600, t + 1); };
-  SFX.roar = (d, t) => { [70, 73, 105].forEach((f0) => { const g = gainNode(0); env(g, t, 1.2, 0.1, 0.9, 0.5, 0.12); const o = osc('sawtooth', f0, t, t + 2); vibrato(o.frequency, t, t + 2, 9, 6, 0.1); const lp = filt('lowpass', 800, 3); o.connect(lp); lp.connect(g); g.connect(d); }); nburst(d, t, 'bandpass', 500, 0.8, 0.4, 1.3, 0.1); };
+  SFX.roar = (d, t) => { const s2 = sat(verb(d, t, 0.35), 3); [70, 73.5, 104].forEach((f0) => { const g = gainNode(0); env(g, t, 1.25, 0.08, 0.9, 0.5, 0.13); const o = osc('sawtooth', f0 * vr(0.06), t, t + 2); o.frequency.linearRampToValueAtTime(f0 * 1.25, t + 0.35); o.frequency.linearRampToValueAtTime(f0 * 0.82, t + 1.4); vibrato(o.frequency, t, t + 2, 9, 7, 0.08); const bp = filt('bandpass', 520, 1.6); o.connect(bp); bp.connect(g); g.connect(s2); }); const f = nburst(s2, t, 'bandpass', 420, 0.8, 0.42, 1.3, 0.08); f.frequency.linearRampToValueAtTime(900, t + 0.4); f.frequency.linearRampToValueAtTime(300, t + 1.3); };
   SFX.bell = (d, t) => { INST.bigbell(d, t, A.noteFreq('C3'), 3, 1); };
   SFX.bell_small = (d, t) => { INST.bell(d, t, A.noteFreq('G5'), 1, 0.8); };
   SFX.thunder = (d, t) => { const n = noiseSrc(t, 4); const lp = filt('lowpass', 300, 0.5); const g = gainNode(0); percEnv(g, t, 0.7, 3.5, 0.05); lp.frequency.setValueAtTime(900, t); lp.frequency.exponentialRampToValueAtTime(120, t + 3); n.connect(lp); lp.connect(g); g.connect(d); };
   SFX.splash = (d, t) => { const f = nburst(d, t, 'bandpass', 700, 1, 0.4, 0.4); f.frequency.exponentialRampToValueAtTime(2500, t + 0.3); };
-  SFX.explode = (d, t) => { tone(d, t, 'sine', 100, 30, 0.9, 0.6); nburst(d, t, 'lowpass', 1400, 0.5, 0.8, 0.7, 0.003); };
+  SFX.explode = (d, t) => { const m = verb(d, t, 0.45), s2 = sat(m, 6, 0.72); tone(s2, t, 'sine', 104, 26, 1.0, 0.7); nburst(s2, t, 'lowpass', 1500, 0.5, 0.85, 0.8, 0.003); const f = nburst(m, t + 0.05, 'bandpass', 2400, 0.7, 0.26, 0.9, 0.05); f.frequency.exponentialRampToValueAtTime(300, t + 0.9); for (let i = 0; i < 10; i++) nburst(d, t + 0.1 + Math.random() * 0.6, 'highpass', 3000, 1, 0.07, 0.02); };
   SFX.glass = (d, t) => { for (let i = 0; i < 8; i++) tone(d, t + Math.random() * 0.15, 'sine', 2500 + Math.random() * 3500, 2000, 0.05, 0.25); nburst(d, t, 'highpass', 4000, 1, 0.3, 0.2); };
   SFX.note = (d, t, o) => { INST.lute(d, t, A.noteFreq(o && o.note ? o.note : 'A4'), 0.3, 1); };
-  SFX.whip = (d, t) => { const f = nburst(d, t, 'bandpass', 2000, 2, 0.3, 0.1, 0.02); f.frequency.exponentialRampToValueAtTime(6000, t + 0.08); };
-  SFX.howl = (d, t) => { const g = gainNode(0); env(g, t, 1.4, 0.3, 0.8, 0.6, 0.14); const o = osc('sawtooth', 330, t, t + 2.2); o.frequency.linearRampToValueAtTime(520, t + 0.6); o.frequency.linearRampToValueAtTime(380, t + 1.6); vibrato(o.frequency, t, t + 2.2, 6, 10, 0.2); const bp = filt('bandpass', 900, 3); o.connect(bp); bp.connect(g); g.connect(d); };
+  SFX.whip = (d, t) => { const v = vr(0.14); const f = nburst(d, t, 'bandpass', 1800 * v, 2, 0.5, 0.1, 0.015); f.frequency.exponentialRampToValueAtTime(6500 * v, t + 0.08); nburst(d, t + 0.085, 'highpass', 4500, 1, 0.45, 0.03, 0.001); };
+  SFX.howl = (d, t) => { const UU = [[480, 5, 1], [900, 6, 0.45], [2400, 8, 0.12]]; voice(d, t, 300 * vr(0.06), [[0.55, 520], [1.3, 500], [1.9, 330]], 1.8, 0.3, UU, 0.05); voice(d, t + 0.18, 250 * vr(0.06), [[0.6, 430], [1.4, 410], [2.0, 280]], 1.7, 0.17, UU, 0); };
   SFX.wind = (d, t) => { const f = nburst(d, t, 'bandpass', 400, 1, 0.4, 1.0, 0.3); f.frequency.exponentialRampToValueAtTime(1200, t + 0.8); };
   SFX.chime = (d, t) => { INST.bell(d, t, A.noteFreq('D6'), 1, 0.6); };
   SFX.charge = (d, t) => { tone(d, t, 'triangle', 200, 800, 0.08, 0.5, 0.3); };
-  SFX.crush = (d, t) => { tone(d, t, 'sine', 90, 30, 0.9, 0.4); nburst(d, t, 'lowpass', 900, 0.6, 0.7, 0.3); };
+  SFX.crush = (d, t) => { const m = verb(d, t, 0.3), s2 = sat(m, 5, 0.7); tone(s2, t, 'sine', 94, 28, 1.0, 0.45, 0.002); nburst(s2, t, 'lowpass', 950, 0.6, 0.75, 0.32, 0.002); for (let i = 0; i < 5; i++) nburst(d, t + 0.03 + i * 0.035 + Math.random() * 0.02, 'bandpass', 700 + Math.random() * 1600, 2.5, 0.16, 0.06, 0.002); };
   SFX.drip = (d, t) => { tone(d, t, 'sine', 1400 + Math.random() * 800, 600, 0.05, 0.12); };
   SFX.crackle = (d, t) => { nburst(d, t, 'highpass', 2500 + Math.random() * 3000, 1, 0.05 + Math.random() * 0.05, 0.015); };
-  SFX.moth = (d, t) => { for (let i = 0; i < 6; i++) nburst(d, t + i * 0.03, 'bandpass', 250, 4, 0.08, 0.03); };
+  SFX.moth = (d, t) => { for (let i = 0; i < 6; i++) { const tt = t + i * 0.032 + Math.random() * 0.006; nburst(d, tt, 'bandpass', 320 + Math.random() * 120, 1.6, 0.34, 0.035, 0.004); tone(d, tt, 'sine', 70, 50, 0.06, 0.03, 0.003); } nburst(d, t, 'highpass', 3000, 0.7, 0.05, 0.22, 0.04); };
   // bichos do mundo: bater de asas, grasnar de corvo, guincho de rato
   SFX.flap = (d, t) => { for (let i = 0; i < 5; i++) nburst(d, t + i * 0.055 + Math.random() * 0.01, 'bandpass', 520 + Math.random() * 160, 2.5, 0.12, 0.04); };
   SFX.caw = (d, t) => { for (let i = 0; i < 2; i++) { const tt = t + i * 0.24; tone(d, tt, 'sawtooth', 620, 430, 0.07, 0.16, 0.01); nburst(d, tt, 'bandpass', 1300, 3, 0.1, 0.15, 0.01); } };

@@ -1453,6 +1453,26 @@ def t_extreme(R, b):
     R.check('chefes extremos sem erros de JavaScript', not errs, errs[:3])
     pg.close()
 
+def t_sfx(R, b):
+    """todos os efeitos sonoros tocam sem erros, nenhum fica mudo e os impactos não rebentam o nível"""
+    pg = b.new_page(viewport={'width': 960, 'height': 540}); errs = []; page_errors(pg, errs)
+    warns = []
+    pg.on('console', lambda m: warns.append(m.text) if m.type in ('warning', 'error') else None)
+    boot(pg); pg.evaluate('VS.Audio.init()'); pg.wait_for_timeout(400)
+    names = pg.evaluate('Object.keys(VS.Audio.SFX)')
+    pg.evaluate("() => { const A = VS.Audio, c = A.ctx; T.an = c.createAnalyser(); T.an.fftSize = 2048; A.buses.sfx.connect(T.an); T.buf = new Float32Array(T.an.fftSize); }")
+    lv = {}
+    for nm in names:
+        lv[nm] = pg.evaluate("""(nm) => new Promise((res) => { const A = VS.Audio; let pk = 0, t0 = performance.now(); A.lastSfx[nm] = 0; A.sfx(nm, { vol: 1 });
+          const iv = setInterval(() => { T.an.getFloatTimeDomainData(T.buf); for (const v of T.buf) { const a = Math.abs(v); if (a > pk) pk = a; } if (performance.now() - t0 > 380) { clearInterval(iv); res(+pk.toFixed(3)); } }, 20); })""", nm)
+        pg.wait_for_timeout(60)
+    mute = [k for k, v in lv.items() if v < 0.003]
+    core = {k: lv[k] for k in ['swing', 'swing_heavy', 'hit', 'hit_heavy', 'boss_hit', 'hurt', 'dodge', 'jump', 'parry', 'crush', 'explode'] if k in lv}
+    R.check('efeitos sonoros: todos tocam sem avisos nem erros', not warns and not errs, (warns + errs)[:3])
+    R.check('efeitos sonoros: nenhum fica mudo (folga de 2 para sons longos que começam devagar)', len(mute) <= 2, {'n': len(lv), 'mudos': mute})
+    R.check('efeitos sonoros: golpes e gestos audíveis e sem picos exagerados', all(0.05 <= v <= 1.3 for v in core.values()), core)
+    pg.close()
+
 def t_turn(R, b):
     """a bater e a carregar para trás, o golpe seguinte sai para trás (teclado, comando/toque pelo mesmo eixo)"""
     pg = b.new_page(viewport={'width': 1280, 'height': 720}); errs = []; page_errors(pg, errs)
@@ -1669,7 +1689,7 @@ def t_feel(R, b):
     pg.close()
 
 TESTS = {'menus': t_menus, 'combat': t_movement_combat, 'world': t_world, 'bosses': t_bosses, 'caedmon': t_caedmon, 'aldric': t_aldric, 'corvin': t_corvin,
-         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach, 'giants': t_giants, 'traps': t_traps, 'structs': t_structs, 'wanderer': t_wanderer, 'custodio': t_custodio, 'desktop': t_desktop, 'bgart': t_bgart, 'turn': t_turn, 'screen': t_screen, 'life': t_life, 'bossfair': t_bossfair, 'feel': t_feel, 'extreme': t_extreme}
+         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach, 'giants': t_giants, 'traps': t_traps, 'structs': t_structs, 'wanderer': t_wanderer, 'custodio': t_custodio, 'desktop': t_desktop, 'bgart': t_bgart, 'turn': t_turn, 'screen': t_screen, 'life': t_life, 'bossfair': t_bossfair, 'feel': t_feel, 'extreme': t_extreme, 'sfx': t_sfx}
 
 
 def main(filters):
