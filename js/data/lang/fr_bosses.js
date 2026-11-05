@@ -92,5 +92,8 @@
     res_strong: 'Résiste à',
     res_armor: 'Armure : retire {n} à chaque coup',
     res_parry_only: 'Les armes le traversent : seule la parade le blesse.',
+    tip_pattern: 'Motif d\'esquive : lis les avertissements au sol et les ouvertures — ça ne se pare pas, ça s\'esquive.',
+    tip_aldric_drain: 'Saignée Royale : si la chaîne t\'attrape, le roi te vole ta vie — esquive ou éloigne-toi pour la briser !',
+    tip_aldric_heal: 'Le roi récupère sa vie — quatre coups (ou deux lourds) l\'interrompent et le renversent !',
   });
 })(window.VS);

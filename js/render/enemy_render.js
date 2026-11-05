@@ -28,6 +28,13 @@
         if (e.K._repelAnim === undefined) e.K._repelAnim = ['atk_overhead', 'atk_slam', 'atk_stomp', 'atk_crush', 'atk_maul', 'atk_hammer', 'atk_burst', 'atk_ring', 'atk_charge', 'atk_scream', 'atk_howl', 'atk_dust', 'atk_thorns'].find(has) || Object.keys(A).find((k) => k.startsWith('atk_')) || null;
         an = e.K._repelAnim;
       }
+      // os padrões de esquiva: pose de conjurar (em ciclo enquanto o padrão dura)
+      if (!an && e.atk.name === '_pattern') {
+        if (e.K._patAnim === undefined) e.K._patAnim = ['atk_cast', 'atk_echo', 'atk_charge', 'atk_burst', 'atk_ring', 'atk_scream', 'atk_howl', 'atk_spores', 'atk_thorns', 'atk_lute'].find(has) || null;
+        an = e.K._patAnim;
+        if (!an) return { anim: 'idle', f: timed('idle') };
+        if (e.atk.phase === 'act') { r.key = an; return { anim: an, f: VS.Assets.phaseFrame(sh, an, 'act', (e.atk.t % 0.5) / 0.5) }; }
+      }
       if (an) {
         const s = e.atk.s, d = e.atk.phase === 'wind' ? s.wind : e.atk.phase === 'act' ? s.act : s.rec;
         r.key = an;

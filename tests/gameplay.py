@@ -509,7 +509,7 @@ def t_bosses(R, b, only=None):
         shot(pg, f'bosses/{bid}')
         frames(pg, 150)
         hpk = pg.evaluate('T.bossEnts().map((e) => [e.hp, e.maxHp])')
-        pg.evaluate('T.releaseAll(); T.hooks = []; T.bossEnts().forEach((e) => e.die(T.g()))')
+        pg.evaluate('T.releaseAll(); T.hooks = []; T.bossEnts().forEach((e) => { if (e.bars) e.bar = e.bars - 1; e.die(T.g()); })')
         done = wait(pg, f'!!VS.state.bosses["{bid}"]', 12)
         wait(pg, f'''(() => {{ const R = VS.Story.REWARDS["{bid}"] || {{}}; return (R.items || []).every(([i]) => T.owns(i)); }})()''', 10)
         rw = pg.evaluate(f'''() => {{ const R = VS.Story.REWARDS["{bid}"] || {{}}; const st = VS.state; const items = (R.items || []).every(([i]) => T.owns(i)); const ab = !R.ability || st.abilities[R.ability]; return {{ items, ab, missing: (R.items || []).filter(([i]) => !T.owns(i)).map(([i]) => i) }}; }}''')
@@ -729,7 +729,7 @@ def t_endings(R, b):
             pg.evaluate('T.S = T.bossEnts()[0]; T.sh = T.S.hp')
             pg.evaluate('T.S.onHit({ dmg: 30, kind: "light", poise: 10 }, T.g())')
             R.check('Seraphine: a espada não a fere fora das janelas de luz', pg.evaluate('T.S.hp') == pg.evaluate('T.sh') or pg.evaluate('T.S.dim > 0'))
-            pg.evaluate('T.bossEnts().forEach((e) => e.die(T.g()))')
+            pg.evaluate('T.bossEnts().forEach((e) => { if (e.bars) e.bar = e.bars - 1; e.die(T.g()); })')
         ok = wait(pg, 'VS.App.mode === "ending"', 20)
         opts = pg.evaluate('T.optsSeen')
         R.check(f'{ending}: opções finais corretas ({opts})', ok and opts is not None and len(opts) == (1 if ending == 'end1' else 2), opts)
@@ -1436,20 +1436,48 @@ def t_extreme(R, b):
     pg.evaluate("(() => { const e = T.S, g = T.g(); e.atk = null; e.cool = 99; g.spawn(new VS.Projectile({ x: T.p().cx + 80, y: T.p().cy - 20, vx: 150, vy: 0, w: 14, h: 14, dmg: 16, kind: 'light', isLight: true, life: 5, solid: false })); e.attack('rewind'); })()"); frames(pg, 45)
     rw = pg.evaluate("(() => { const L = T.g().ents.filter((x) => x instanceof VS.Projectile && x.team === 'enemy' && x.isLight); return { n: L.length, back: L.filter((x) => x.vx < 0).length }; })()")
     R.check('Eco de Seraphine: o tempo desfaz-se (a luz que passou volta para trás)', rw['back'] >= 1, rw)
-    # --- o rei final: muita vida, ecos de quase todos os chefes, mais rápido nas fases finais
+    # --- o rei final: três barras completas, rouba e recupera vida, teletransporta-se, e na última barra tem os poderes de quase todos os chefes
     new_game(pg, slot=2); pg.evaluate('VSDebug.allAbilities(); VSDebug.god(true)')
     warp(pg, 'r7_throne'); place_for_boss(pg, 'r7_throne')
     wait(pg, 'T.bossEnts().length > 0', 6); wait(pg, 'T.bossEnts().length > 0 && !T.bossEnts()[0].intro', 14)
-    info = pg.evaluate("(() => { const e = T.bossEnts()[0]; return { hp: e.maxHp, echoes: Object.keys(e.K.attacks).filter((k) => k.startsWith('echo_')).length }; })()")
-    R.check('rei Aldric: o chefe mais duro (vida >= 2500) com os ecos de 15 guardiões', info['hp'] >= 2500 and info['echoes'] >= 15, info)
+    info = pg.evaluate("(() => { const e = T.bossEnts()[0]; T.A = e; return { hp: e.maxHp, bars: e.bars, bar: e.bar, echoes: Object.keys(e.K.attacks).filter((k) => k.startsWith('echo_')).length }; })()")
+    R.check('rei Aldric: três barras de vida completas e os ecos de 15 guardiões', info['bars'] == 3 and info['bar'] == 0 and info['hp'] == 1200 and info['echoes'] >= 15, info)
+    # 1.ª barra acaba: não morre — ajoelha-se, a barra seguinte enche e ergue-se mais rápido
+    pg.evaluate("(() => { const e = T.A; e.atk = null; e.hp = 0; e.die(T.g()); })()")
+    t1 = pg.evaluate("({ defeated: T.A.defeated, trans: !!T.A.trans, blocked: T.A.onHit({ x: T.A.x, y: T.A.y, w: 10, h: 10, dmg: 50, id: 8801, owner: T.p(), kind: 'light', mat: 'blade' }, T.g()) })")
+    wait(pg, '!T.A.trans', 8)
+    b2 = pg.evaluate("({ phase: T.A.phase, bar: T.A.bar, hp: T.A.hp, max: T.A.maxHp, speed: T.A.atkSpeed, defeated: T.A.defeated })")
+    R.check('rei: a 1.ª barra acaba e ele volta com a 2.ª cheia (invulnerável na passagem, mais rápido)', not t1['defeated'] and t1['trans'] and t1['blocked'] == 'blocked' and b2['phase'] == 1 and b2['hp'] == 1300 and b2['max'] == 1300 and b2['speed'] == 1.2, {'passagem': t1, 'barra2': b2})
+    # roubo de vida: golpes que acertam curam-no; a Sangria Real rouba-te a vida até a partires
+    st = pg.evaluate("""(() => { const e = T.A, g = T.g(), p = T.p(); g.god = false; e.hp = 600; e.K.onHitPlayer(e, { dmg: 20 }, g); const h1 = e.hp;
+        VS.state.hp = 100; e.x = p.cx + 80 - e.w / 2; e.atk = null; e.cool = 99; e.drain = { t: 0, tick: 0 }; T.H0 = e.hp; return { steal: h1 - 600 }; })()""")
+    frames(pg, 40)
+    dr = pg.evaluate("(() => { const e = T.A, g = T.g(); const r = { php: VS.state.hp, gain: e.hp - T.H0 }; e.drain = null; g.god = true; return r; })()")
+    R.check('rei: rouba vida (os golpes curam-no e a corrente drena-te)', st['steal'] >= 20 and dr['php'] < 100 and dr['gain'] > 0, {'golpe': st, 'corrente': dr})
+    # recupera vida a ajoelhar-se; quatro golpes interrompem-no e derrubam-no
+    pg.evaluate("(() => { const e = T.A; e.hp = 700; e.atk = null; e.knock = null; e.attack('communion'); })()")
+    wait(pg, "T.A.healing", 4)
+    frames(pg, 30)
+    hl = pg.evaluate("""(() => { const e = T.A, g = T.g(), gained = e.hp - 700; for (let i = 0; i < 4; i++) e.onHit({ x: e.x, y: e.y, w: 10, h: 10, dmg: 10, id: 8900 + i, owner: T.p(), kind: 'light', mat: 'blade' }, g);
+        return { gained, healing: !!e.healing, knock: !!e.knock }; })()""")
+    R.check('rei: recupera vida ajoelhado e é interrompido (e derrubado) com quatro golpes', hl['gained'] > 0 and not hl['healing'] and hl['knock'], hl)
+    wait(pg, '!T.A.knock', 6)
+    # teletransporte: reaparece nas tuas costas e golpeia logo
+    pg.evaluate("(() => { const e = T.A, p = T.p(); e.knock = null; e.atk = null; e.cool = 99; e.x = Math.min(e.arena.x1 - e.w, p.cx + 300); e.attack('blink'); })()")
+    wait(pg, "T.A.atk && ['sweep', 'overhead', 'grab'].includes(T.A.atk.name)", 4)
+    bl = pg.evaluate("({ d: Math.round(Math.abs(T.A.cx - T.p().cx)), atk: T.A.atk && T.A.atk.name })")
+    R.check('rei: teletransporta-se para junto de ti e golpeia logo a seguir', bl['d'] < 110 and bl['atk'] in ('sweep', 'overhead', 'grab'), bl)
+    # 2.ª barra acaba → 3.ª: a mais longa, quase todos os poderes dos chefes, ainda mais rápido
+    pg.evaluate("(() => { const e = T.A; e.atk = null; e.knock = null; e.hp = 0; e.die(T.g()); })()"); wait(pg, '!T.A.trans', 8)
+    b3 = pg.evaluate("({ phase: T.A.phase, hp: T.A.hp, max: T.A.maxHp, speed: T.A.atkSpeed })")
     ran = []
-    for nm in ['echo_coveiro', 'echo_matilheira', 'echo_automato', 'echo_mariposa', 'echo_sineiro', 'echo_vael', 'echo_gemeos', 'echo_carpideira', 'echo_custodio', 'echo_seraphine']:
-        pg.evaluate("(() => { const e = T.bossEnts()[0]; e.knock = null; e.atk = null; e.cool = 99; e.attack('" + nm + "'); })()")
-        frames(pg, 150)
+    for nm in ['echo_coveiro', 'echo_matilheira', 'echo_automato', 'echo_mariposa', 'echo_sineiro', 'echo_vael', 'echo_gemeos', 'echo_carpideira', 'echo_custodio', 'echo_seraphine', '_pattern']:
+        pg.evaluate("(() => { const e = T.A; e.knock = null; e.atk = null; e.cool = 99; e.attack('" + nm + "'); })()")
+        frames(pg, 120)
         ran.append(nm)
-    pg.evaluate("(() => { const e = T.bossEnts()[0]; e.hp = e.maxHp * 0.3; })()"); frames(pg, 20)
-    sp = pg.evaluate("(() => { const e = T.bossEnts()[0]; return { phase: e.phase, speed: e.atkSpeed }; })()")
-    R.check('rei Aldric: todos os ecos novos correm sem erros e na última fase golpeia mais depressa', len(ran) == 10 and sp['phase'] == 2 and (sp['speed'] or 1) > 1.15 and not errs, {'fase': sp, 'erros': errs[:2]})
+    R.check('rei: 3.ª barra (1500) com os ecos dos chefes e os padrões de fogo, mais rápido, sem erros', b3['phase'] == 2 and b3['max'] == 1500 and b3['speed'] == 1.3 and len(ran) == 11 and not errs, {'barra3': b3, 'erros': errs[:2]})
+    pg.evaluate("(() => { const e = T.A; e.atk = null; e.hp = 0; e.die(T.g()); })()")
+    R.check('rei: no fim da 3.ª barra é vencido', pg.evaluate('T.A.defeated'))
     R.check('chefes extremos sem erros de JavaScript', not errs, errs[:3])
     pg.close()
 
@@ -1515,6 +1543,27 @@ def t_combat2(R, b):
     jt = pg.evaluate("(() => ['item_ab_dashstrike_name', 'tut_counter', 'item_ab_instinct_desc', 'res_weak', 'dt_blunt'].every((k) => VS.t(k) && VS.t(k) !== k))()")
     R.check('textos das habilidades e resistências nas línguas', jt)
     R.check('combate novo sem erros de JavaScript', not errs, errs[:3])
+    pg.close()
+
+def t_patterns(R, b):
+    """padrões de esquiva (estilo bullet hell) dos chefes: cada um corre, cria perigos e acaba sem erros"""
+    pg = b.new_page(viewport={'width': 1280, 'height': 720}); errs = []; page_errors(pg, errs)
+    boot(pg); new_game(pg); pg.evaluate('VSDebug.allAbilities(); VSDebug.god(true)')
+    warp(pg, 'r7_throne')
+    ids = pg.evaluate("Object.keys(VS.Patterns.SPEC)")
+    res = {}
+    for bid in ids:
+        if bid == 'aldric':
+            continue
+        pg.evaluate("""(id) => { T.g().ents.filter((x) => x.isBoss || x instanceof VS.Projectile).forEach((x) => x.remove = true); const p = T.p();
+            const e = new VS.Bosses.Boss(id, { boss: id, x: Math.floor(p.cx / 20) + 7, y: Math.floor((p.bottom - 1) / 20), floor: Math.floor((p.bottom - 1) / 20) + 1 }, T.g()); e.intro = false; T.g().spawn(e); T.B = e; e.cool = 0; e.atk = null; e.attack('_pattern'); T.HZ = 0; }""", bid)
+        wait(pg, "T.B.atk && T.B.atk.phase === 'act'", 4)
+        frames(pg, 70)
+        res[bid] = pg.evaluate("(() => { const g = T.g(); return { run: !!T.B.patRun, type: T.B.patRun && T.B.patRun.spec.type, proj: g.ents.filter((x) => x instanceof VS.Projectile && x.team === 'enemy').length, rings: g.ents.filter((x) => x instanceof VS.Patterns.GapRing).length, warn: !!T.B.colXs, hb: T.B.attackHBs.length }; })()")
+        wait(pg, "!T.B.atk || T.B.atk.name !== '_pattern'", 12)
+    bad = {k: v for k, v in res.items() if not (v['run'] and (v['proj'] or v['rings'] or v['warn'] or v['hb']))}
+    R.check('padrões de esquiva: cada chefe tem o seu e todos criam perigos para esquivar', len(res) >= 12 and not bad, {'mal': bad, 'tipos': {k: v['type'] for k, v in res.items()}})
+    R.check('padrões de esquiva sem erros de JavaScript', not errs, errs[:3])
     pg.close()
 
 def t_turn(R, b):
@@ -1733,7 +1782,7 @@ def t_feel(R, b):
     pg.close()
 
 TESTS = {'menus': t_menus, 'combat': t_movement_combat, 'world': t_world, 'bosses': t_bosses, 'caedmon': t_caedmon, 'aldric': t_aldric, 'corvin': t_corvin,
-         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach, 'giants': t_giants, 'traps': t_traps, 'structs': t_structs, 'wanderer': t_wanderer, 'custodio': t_custodio, 'desktop': t_desktop, 'bgart': t_bgart, 'turn': t_turn, 'screen': t_screen, 'life': t_life, 'bossfair': t_bossfair, 'feel': t_feel, 'extreme': t_extreme, 'sfx': t_sfx, 'combat2': t_combat2}
+         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach, 'giants': t_giants, 'traps': t_traps, 'structs': t_structs, 'wanderer': t_wanderer, 'custodio': t_custodio, 'desktop': t_desktop, 'bgart': t_bgart, 'turn': t_turn, 'screen': t_screen, 'life': t_life, 'bossfair': t_bossfair, 'feel': t_feel, 'extreme': t_extreme, 'sfx': t_sfx, 'combat2': t_combat2, 'patterns': t_patterns}
 
 
 def main(filters):

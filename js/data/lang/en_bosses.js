@@ -92,5 +92,8 @@
     res_strong: 'Resists',
     res_armor: 'Armour: takes {n} off every hit',
     res_parry_only: 'Weapons pass through him: only parries hurt him.',
+    tip_pattern: 'Dodge pattern: read the warnings on the floor and the gaps — it cannot be parried, only dodged.',
+    tip_aldric_drain: 'Royal Bloodletting: if the chain catches you, the king drains your life — dodge or get away to break it!',
+    tip_aldric_heal: 'The king is recovering his life — four hits (or two heavy ones) interrupt him and knock him down!',
   });
 })(window.VS);

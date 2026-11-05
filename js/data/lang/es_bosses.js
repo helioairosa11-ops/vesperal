@@ -92,5 +92,8 @@
     res_strong: 'Resiste',
     res_armor: 'Armadura: resta {n} a cada golpe',
     res_parry_only: 'Las armas lo atraviesan: solo el parry lo hiere.',
+    tip_pattern: 'Patrón de esquiva: lee los avisos del suelo y los huecos — no se para, se esquiva.',
+    tip_aldric_drain: 'Sangría Real: si la cadena te atrapa, el rey te roba la vida — ¡esquiva o aléjate para romperla!',
+    tip_aldric_heal: 'El rey está recuperando vida — ¡cuatro golpes (o dos fuertes) lo interrumpen y lo derriban!',
   });
 })(window.VS);

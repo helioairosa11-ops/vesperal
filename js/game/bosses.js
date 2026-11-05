@@ -63,6 +63,16 @@
       // martelado sem parar: responde com a onda de choque assim que estiver livre
       this.pressure = Math.max(0, this.pressure - dt * 0.9);
       if (this.pressure >= (this.K.repelAt || 4.5) && !this.atk && !(this.stagger > 0) && this.K.attacks._repel && !exposedOf(this)) this.attack('_repel');
+      // padrões de esquiva (js/game/patterns.js): de tempos a tempos, quando está livre
+      const PS = this.K.pattern;
+      if (PS && this.K.attacks._pattern) {
+        const p0 = Array.isArray(PS) ? PS[0] : PS;
+        if (this.patT === undefined) this.patT = U.rand(5, 8);
+        this.patT -= dt;
+        if (this.patT <= 0 && !this.atk && !(this.stagger > 0) && !exposedOf(this) && !this.trans && this.cool <= 0.35 && this.phase >= (p0.phaseMin || 0)) {
+          const ev = p0.every || [12, 15]; this.patT = U.rand(ev[0], ev[1]) / (1 + 0.15 * this.phase); this.attack('_pattern');
+        }
+      }
       super.update(dt, game);
       // nunca sair da arena
       this.x = U.clamp(this.x, 0, game.room.pw - this.w);
@@ -103,6 +113,8 @@
     }
     die(game) {
       if (this.defeated) return;
+      // chefes com várias barras de vida (o rei): a morte de uma barra não é a morte
+      if (this.K.onLethal && this.K.onLethal(this, game)) return;
       this.defeated = true; this.defT = 0; this.atk = null; this.hittable = false; this.contactDmg = 0; this.attackHBs = [];
       this.hp = 0;
       game.ents.forEach((e) => { if (e instanceof VS.Projectile && e.team === 'enemy') e.remove = true; if (e.isEnemy && !e.isBoss && e.summoned) e.die(game); });

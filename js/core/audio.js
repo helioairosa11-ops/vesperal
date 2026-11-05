@@ -596,6 +596,9 @@
     const g = gainNode(0); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.12, t + 0.45); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
     const o = osc('triangle', 220, t, t + 0.62); o.frequency.exponentialRampToValueAtTime(880, t + 0.5); vibrato(o.frequency, t, t + 0.6, 14, 40, 0.05); o.connect(g); g.connect(d);
   };
+  // o rei: a vida a ser roubada (um gole grave e um tinido de sangue) e o teletransporte em brasas
+  SFX.drain = (d, t) => { tone(d, t, 'sine', 160, 70, 0.3, 0.18, 0.01); const f = nburst(d, t, 'bandpass', 600, 3, 0.25, 0.2, 0.02); f.frequency.exponentialRampToValueAtTime(220, t + 0.2); INST.glass(d, t + 0.02, 880 * vr(0.05), 0.2, 0.2); };
+  SFX.blink = (d, t) => { const f = nburst(d, t, 'bandpass', 4000, 1.5, 0.45, 0.3, 0.005); f.frequency.exponentialRampToValueAtTime(500, t + 0.3); tone(sat(d, 3, 0.4), t, 'sine', 120, 60, 0.4, 0.25, 0.003); SFX.fire(d, t + 0.02); };
   // habilidades novas: investida cortante, crescente da Contra-Luz e o Instinto (o mundo a abrandar)
   SFX.dash_slash = (d, t) => { SFX.swing_light(d, t); const f = nburst(d, t, 'bandpass', 900 * vr(0.1), 1.2, 0.7, 0.2, 0.01); f.frequency.exponentialRampToValueAtTime(5200, t + 0.15); tone(d, t + 0.02, 'sine', 420, 160, 0.06, 0.14, 0.01); };
   SFX.crescent = (d, t) => { const f = nburst(d, t, 'bandpass', 2600, 2, 0.6, 0.26, 0.01); f.frequency.exponentialRampToValueAtTime(700, t + 0.25); INST.glass(d, t, 1568, 0.35, 0.5); INST.glass(d, t + 0.03, 2349, 0.3, 0.35); };

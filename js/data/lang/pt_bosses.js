@@ -92,5 +92,8 @@
     res_strong: 'Resiste a',
     res_armor: 'Armadura: tira {n} a cada golpe',
     res_parry_only: 'As armas atravessam-no: só o parry o fere.',
+    tip_pattern: 'Padrão de esquiva: lê os avisos no chão e as aberturas — não se apara, esquiva-se.',
+    tip_aldric_drain: 'A Sangria Real: se a corrente te prender, o rei rouba-te a vida — esquiva-te ou afasta-te para a partir!',
+    tip_aldric_heal: 'O rei está a recuperar vida — quatro golpes (ou dois fortes) interrompem-no e derrubam-no!',
   });
 })(window.VS);

@@ -512,6 +512,13 @@
   const ECHOS_ALL = ECHOS_1.concat(['echo_mariposa', 'echo_gemeos', 'echo_carpideira', 'echo_custodio', 'echo_seraphine']);
   const aldricChain = (e) => { if (e.phase >= 2 && Math.random() < 0.55) e.cool = 0; };
   const tipOf = (e) => (e._f && VS.EnemyRender.point(e, e._f, 'tip')) || { x: e.cx + e.facing * 50, y: e.bottom - 4 };
+  // o rei tem três barras de vida completas (a segunda e a terceira sempre maiores)
+  const ALDRIC_BARS = [1200, 1300, 1500];
+  function aldricHeal(e, n) {
+    if (e.defeated || e.trans) return;
+    e.hp = Math.min(e.maxHp, e.hp + Math.round(n));
+    if (Math.random() < 0.6) G.emit({ x: e.cx + U.rand(-10, 10), y: e.cy - U.rand(0, 20), vx: U.rand(-20, 20), vy: U.rand(-80, -40), life: 0.6, size: U.rand(1.2, 2.2), color: '#ff4050', add: true, shrink: true, layer: 2 });
+  }
   // as ondas do Juízo: uma parede baixa de chama carmesim que corre rente ao chão, para os dois lados, até às paredes da arena
   // (fase final: cada onda bate na parede e volta para trás, mais devagar — vê-se a chegar de longe)
   // (o Projectile guarda x/y tal como os recebe: aqui são o canto superior esquerdo da parede de chama)
@@ -548,7 +555,7 @@
     if (!VS.state.flags.tip_aldric_wall) { VS.state.flags.tip_aldric_wall = 1; VS.UI.toast(VS.t('tip_aldric_wall'), 5); }
   }
   B.def('aldric', {
-    cfg: { w: 32, h: 68, hp: 2600, music: 'b_aldric', heavy: true, phases: [0.66, 0.33], introTime: 2.4, ashCol: '#6a5a50' },
+    cfg: { w: 32, h: 68, hp: 1200, music: 'b_aldric', heavy: true, phases: [], introTime: 2.4, ashCol: '#6a5a50' },
     aggr: [1.55, 1.95, 2.35], repelCol: [255, 120, 60], repelDmg: 18,
     attacks: {
       // varrida horizontal à altura do peito (branco: aparável); na fase 2 encadeia com o corte ascendente
@@ -596,6 +603,35 @@
           const x = e.cx + e.facing * 30; VS.FX.impact(x, e.arena.floor - 2, 'stone', e.facing, 2.2); VS.FX.flare(x, e.arena.floor - 10, 90, [255, 30, 40], 0.6);
           aldricJudgeWave(e, g, x, e.phase >= 2 ? 1 : 0);
         } },
+      // TELETRANSPORTE (barras 2 e 3): desfaz-se em brasas e reaparece nas tuas costas, já a golpear
+      blink: { wind: 0.42, act: 0.1, rec: 0.04, tell: null, sfx: false,
+        onWind(e) { A.sfx('fire', { vol: 0.5 }); G.burst(e.cx, e.cy, 20, { color: '#ff7030', speed: 120, life: 0.45, size: 1.8, add: true }); },
+        onAct(e, g) {
+          const p = g.player, back = -(p.facing || 1); let x = p.cx + back * 64;
+          if (x < e.arena.x0 + 30 || x > e.arena.x1 - 30) x = p.cx - back * 64;
+          G.burst(e.cx, e.cy, 24, { color: '#ff6020', speed: 160, life: 0.5, size: 2, add: true });
+          e.x = U.clamp(x - e.w / 2, e.arena.x0, e.arena.x1 - e.w); e.y = e.arena.floor - e.h; e.vx = 0; e.vy = 0; e.face();
+          G.burst(e.cx, e.cy, 24, { color: '#ffb040', speed: 160, life: 0.5, size: 2, add: true }); VS.FX.flare(e.cx, e.cy, 40, [255, 120, 50], 0.3); A.sfx('blink');
+        },
+        onEnd(e) { e.cool = 0; e.attack(U.pick(['sweep', 'overhead', 'grab'])); } },
+      // SANGRIA REAL (vermelho, barras 2 e 3): lança uma corrente de sangue — se te prende, rouba-te a vida até a partires
+      bloodchain: { wind: 0.6, act: 0.2, rec: 0.6, tell: 'red', sfx: 'whip',
+        onWind(e) { if (!VS.state.flags.tip_aldric_drain) { VS.state.flags.tip_aldric_drain = 1; VS.UI.toast(VS.t('tip_aldric_drain'), 4.5); } },
+        onAct(e, g) {
+          const h = (e._f && VS.EnemyRender.point(e, e._f, 'heart')) || { x: e.cx, y: e.cy - 10 }, p = g.player, an = Math.atan2(p.cy - h.y, p.cx - h.x);
+          g.spawn(P({ x: h.x - 7, y: h.y - 7, vx: Math.cos(an) * 540, vy: Math.sin(an) * 540, w: 14, h: 14, dmg: 8, kind: 'bloodchain', color: '#ff2030', life: 0.8, solid: true, parryable: false, reflectable: false, unblockable: true,
+            onHitPlayer() { if (!e.defeated && !e.trans) { e.drain = { t: 0, tick: 0 }; A.sfx('drain'); } } }));
+        } },
+      // COMUNHÃO DA CHAMA (barras 2 e 3): ajoelha-se e recupera vida — quatro golpes (ou dois fortes) interrompem-no e derrubam-no
+      communion: { wind: 0.5, act: 2.4, rec: 0.5, tell: null, sfx: false, armor: true,
+        onWind(e) { A.sfx('charge', { vol: 0.8 }); if (!VS.state.flags.tip_aldric_heal) { VS.state.flags.tip_aldric_heal = 1; VS.UI.toast(VS.t('tip_aldric_heal'), 4.5); } },
+        onAct(e) { e.healing = { hits: 0, tick: 0 }; A.sfx('choir_hit', { vol: 0.6 }); },
+        during(e, g, dt) {
+          const H = e.healing; e.vx = 0; if (!H) return;
+          H.tick += dt; if (H.tick >= 0.25) { H.tick -= 0.25; aldricHeal(e, e.maxHp * 0.025); }
+          if (Math.random() < 0.8) { const an = Math.random() * U.TAU, rr = U.rand(60, 120); G.emit({ x: e.cx + Math.cos(an) * rr, y: e.cy + Math.sin(an) * rr * 0.6, vx: -Math.cos(an) * rr * 2, vy: -Math.sin(an) * rr * 1.2, life: 0.5, size: U.rand(1, 2), color: U.pick(['#ffb040', '#ff7030']), add: true, shrink: true, layer: 2 }); }
+        },
+        onEnd(e) { e.healing = null; } },
       // ecos dos guardiões caídos (fase 2+): ergue a mão livre; a sombra do guardião surge atrás dele
       echo_caedmon: { wind: 0.7, act: 0.22, rec: 0.7, dmg: 24, tell: 'white', hb: (e) => front(e, 6, 36, 80, 20), lunge: 440, onWind(e) { e.echo = 'caedmon'; }, onEnd(e) { e.echo = null; aldricChain(e); } },
       echo_hilde: { wind: 0.6, act: 0.9, rec: 0.5, tell: null, sfx: 'chime', onWind(e) { e.echo = 'hilde'; }, onAct(e, g) { e.anvilX = g.player.cx; },
@@ -709,7 +745,54 @@
         },
         onEnd(e) { e.echo = null; aldricChain(e); } },
     },
+    init(e) { e.bars = 3; e.bar = 0; e.blinkCd = 3; e.drainCd = 6; e.healCd = 12; },
+    // a barra acabou: cai de joelhos, a chama roubada volta-lhe ao peito e ergue-se com a barra seguinte cheia
+    onLethal(e, g) {
+      if (e.bar >= e.bars - 1) return false;
+      e.hpMul = e.hpMul || e.maxHp / ALDRIC_BARS[0];
+      e.bar++; e.hp = 1; e.trans = { t: 0, max: Math.round(ALDRIC_BARS[e.bar] * e.hpMul) };
+      e.atk = null; e.knock = null; e.drain = null; e.healing = null; e.attackHBs = []; e.stagger = 0; e.patRun = null; e.colXs = null;
+      g.ents.forEach((x) => { if (x instanceof VS.Projectile && x.team === 'enemy') x.remove = true; });
+      A.sfx('boss_hit'); A.sfx('stagger'); G.addShake(0.8); G.flash('#ffffff', 0.4); g.hitstop(0.25);
+      VS.UI.bark('boss_aldric', e.bar === 1 ? 'aldric_mid1' : 'aldric_mid2');
+      return true;
+    },
+    onHitBoss(e, hb, g) {
+      if (e.trans) { A.sfx('block', { vol: 0.5 }); return 'blocked'; }
+      // a recuperar vida: golpes fortes (ou quatro golpes) interrompem-no e derrubam-no
+      if (e.healing) { e.healing.hits += hb.kind === 'heavy' || hb.kind === 'riposte' ? 2 : 1; if (e.healing.hits >= 4) { e.healing = null; e.atk = null; e.knock = { t: 0, ph: 'fall' }; A.sfx('stagger'); G.addShake(0.5); VS.FX.stun && VS.FX.stun(e); } }
+      return undefined;
+    },
     think(e, dt, g) {
+      // passagem de barra (invulnerável): de joelhos, a barra enche, ergue-se mais rápido e mais cruel
+      const tr = e.trans;
+      if (tr) {
+        tr.t += dt; e.vx = U.approach(e.vx, 0, 600 * dt); e.atk = null; e.attackHBs = [];
+        if (tr.t > 1.1 && tr.t < 2.6) {
+          e.maxHp = tr.max; e.hp = Math.max(1, Math.round(tr.max * U.clamp((tr.t - 1.1) / 1.5, 0, 1)));
+          const h = (e._f && VS.EnemyRender.point(e, e._f, 'heart')) || { x: e.cx, y: e.cy - 10 };
+          for (let i = 0; i < 3; i++) { const an = Math.random() * U.TAU, rr = U.rand(70, 160), life = U.rand(0.4, 0.6); G.emit({ x: h.x + Math.cos(an) * rr, y: h.y + Math.sin(an) * rr, vx: -Math.cos(an) * rr / life, vy: -Math.sin(an) * rr / life, life, size: U.rand(1, 2.2), color: U.pick(['#ff6020', '#ffb040', '#ff2030']), add: true, shrink: true, layer: 2 }); }
+        }
+        if (tr.t >= 2.6 && !tr.risen) {
+          tr.risen = true; e.hp = e.maxHp = tr.max; e.phase = e.bar; A.setIntensity(e.phase);
+          if (e.K.onPhase) e.K.onPhase(e, g);
+        }
+        if (tr.t > 3.4) { e.trans = null; e.cool = 0.4; e.face(); }
+        return;
+      }
+      // a Sangria Real: preso pela corrente, a vida passa de ti para ele (esquiva-te ou afasta-te para a partir)
+      const D = e.drain;
+      if (D) {
+        D.t += dt; D.tick += dt;
+        const p = g.player, far = Math.hypot(p.cx - e.cx, p.cy - e.cy) > 270;
+        if ((p.action && p.action.type === 'dodge') || far || e.knock || D.t > 1.8) { e.drain = null; A.sfx('proj_break', { vol: 0.7 }); G.burst(p.cx, p.cy, 14, { color: '#ff3040', speed: 140, life: 0.4, size: 1.6, add: true }); }
+        else if (D.tick >= 0.2) {
+          D.tick -= 0.2; const st = g.state;
+          if (!g.god) st.hp = Math.max(1, st.hp - 4);
+          aldricHeal(e, 14); G.hurt = Math.max(G.hurt || 0, 0.35); A.sfx('drain', { vol: 0.5 });
+        }
+      }
+      e.blinkCd -= dt; e.drainCd -= dt; e.healCd -= dt;
       e.judgeCd = Math.max(0, (e.judgeCd === undefined ? 4 : e.judgeCd) - dt);
       if (!e.atk && e.echo) { e.echo = null; e.colXs = null; e.graves = null; e.hounds = null; e.pyre = null; e.vents = null; e.anvilShadow = null; e.halos = null; }
       // derrubado: cai, fica estendido (exposto) e levanta-se apoiado no montante
@@ -730,8 +813,13 @@
       e.face(); const d = Math.abs(e.dx());
       if (e.cool > 0) { e.walk(d > 100 ? e.facing : d < 50 ? -e.facing : 0, e.phase >= 2 ? 80 : 55, dt); return; }
       const r = Math.random();
+      if (e.phase >= 1) {
+        if (e.healCd <= 0 && e.hp < e.maxHp * 0.55) { e.healCd = e.phase >= 2 ? 16 : 20; e.attack('communion'); return; }
+        if (e.drainCd <= 0 && d > 60 && Math.random() < 0.5) { e.drainCd = e.phase >= 2 ? 7 : 9.5; e.attack('bloodchain'); return; }
+        if (e.blinkCd <= 0 && Math.random() < 0.45) { e.blinkCd = e.phase >= 2 ? 3 : 4.5; e.attack('blink'); return; }
+      }
       if (e.phase >= 1 && e.judgeCd <= 0 && Math.random() < 0.5) { e.attack('judgement'); return; }
-      if (e.phase >= 1 && r < (e.phase >= 2 ? 0.42 : 0.32)) {
+      if (e.phase >= 1 && r < (e.phase >= 2 ? 0.45 : 0.22)) {
         const pool = e.phase >= 2 ? ECHOS_ALL : ECHOS_1; let nm = U.pick(pool); if (nm === e.lastEcho) nm = U.pick(pool);
         e.lastEcho = nm; e.attack(nm); return;
       }
@@ -742,12 +830,20 @@
       else e.attack(r < 0.5 ? 'charge' : 'leap');
       if (e.phase >= 2) e.cool = 0.12;
     },
-    onHitPlayer(e, hb, g) { if (e.atk && e.atk.name === 'charge') e.chargeHit = true; },
+    // roubo de vida: nas barras 2 e 3, cada golpe que te acerta cura-o
+    onHitPlayer(e, hb, g) {
+      if (e.atk && e.atk.name === 'charge') e.chargeHit = true;
+      if (e.phase >= 1 && !g.god && hb && hb.dmg && hb.dmg < 999) { aldricHeal(e, hb.dmg * (e.phase >= 2 ? 2 : 1.5)); const p = g.player; for (let i = 0; i < 8; i++) G.emit({ x: p.cx + U.rand(-6, 6), y: p.cy + U.rand(-10, 10), vx: (e.cx - p.cx) * U.rand(1.2, 2), vy: (e.cy - 20 - p.cy) * U.rand(1.2, 2) - 30, life: 0.5, size: U.rand(1, 2), color: '#ff2a3a', add: true, shrink: true, layer: 2 }); }
+    },
     // derrubado é o momento de castigar
     damageMult(e) { return e.knock && e.knock.ph !== 'getup' ? 1.6 : 1; },
     // poses especiais: entrada (ajoelhado diante do trono), investida a correr, derrubado, ecos
     animState(e, sh) {
       if (e.intro) return { anim: 'kneel_rise', idx: Math.min(5, Math.max(0, (e.introT - 0.6) / 1.6) * 6) };
+      // passagem de barra: ajoelha-se, fica de joelhos enquanto a chama volta e ergue-se
+      const tr = e.trans;
+      if (tr) return { anim: 'kneel_rise', idx: tr.t < 0.6 ? 5 * (1 - tr.t / 0.6) : tr.t < 2.6 ? 0 : Math.min(5, (tr.t - 2.6) / 0.8 * 6) };
+      if (e.atk && e.atk.name === 'communion') return { anim: 'kneel_rise', idx: e.atk.phase === 'wind' ? 5 * (1 - e.atk.t / e.atk.s.wind) : e.atk.phase === 'act' ? 0 : Math.min(5, e.atk.t / e.atk.s.rec * 6) };
       const kn = e.knock;
       if (kn) return kn.ph === 'fall' ? { anim: 'knock_fall', idx: Math.min(6, kn.t / 0.7 * 7) } : kn.ph === 'down' ? { anim: 'knock_down' } : { anim: 'knock_getup', idx: Math.min(7, kn.t / 0.9 * 8) };
       const a = e.atk; if (!a) return null;
@@ -758,7 +854,18 @@
       if (a.name === 'echo_caedmon') { const d = a.phase === 'wind' ? a.s.wind : a.phase === 'act' ? a.s.act : a.s.rec; return { anim: 'atk_thrust', phase: a.phase, k: a.t / d }; }
       return null;
     },
+    alpha: (e) => { const a = e.atk; if (!a || a.name !== 'blink') return 1; return a.phase === 'wind' ? Math.max(0, 1 - a.t / a.s.wind) : 1; },
     drawFront(ctx, e) {
+      // a corrente da Sangria Real: do peito do rei até ti, com a vida a correr por ela
+      if (e.drain && e.game) {
+        const p = e.game.player, h = (e._f && VS.EnemyRender.point(e, e._f, 'heart')) || { x: e.cx, y: e.cy - 10 }, t = e.t || 0;
+        ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round';
+        for (const [w, a2] of [[5, 0.25], [2, 0.8]]) { ctx.strokeStyle = `rgba(255,40,60,${a2})`; ctx.lineWidth = w; ctx.beginPath(); for (let i = 0; i <= 16; i++) { const u = i / 16, x = U.lerp(h.x, p.cx, u), y = U.lerp(h.y, p.cy, u) + Math.sin(u * 14 + t * 20) * 3 * Math.sin(u * Math.PI); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } ctx.stroke(); }
+        for (let i = 0; i < 4; i++) { const u = ((t * 1.6 + i / 4) % 1), x = U.lerp(p.cx, h.x, u), y = U.lerp(p.cy, h.y, u); ctx.fillStyle = 'rgba(255,200,200,0.9)'; ctx.beginPath(); ctx.arc(x, y, 2, 0, U.TAU); ctx.fill(); }
+        ctx.restore();
+      }
+      // a recuperar vida: um círculo de chama a girar à volta dele
+      if (e.healing) { const t = e.t || 0, cx = e.cx, fy = e.bottom; ctx.save(); ctx.globalCompositeOperation = 'lighter'; for (let i = 0; i < 10; i++) { const an = t * 3 + i / 10 * U.TAU, x = cx + Math.cos(an) * 46, y = fy - 30 + Math.sin(an) * 14; VS.Sprites.glow(ctx, x, y, 9, '#ff7030', 0.6); } ctx.restore(); }
       const a = e.atk; if (!a || a.name !== 'judgement' || a.phase !== 'wind') return;
       const k = Math.min(1, a.t / a.s.wind), T2 = tipOf(e), fl = 0.85 + 0.15 * Math.sin(e.t * 40);
       ctx.save(); ctx.globalCompositeOperation = 'lighter';
@@ -825,11 +932,10 @@
       VS.EnemyRender.ghost(ctx, e, ECHO_COL[e.echo], (e.echo === 'corvin' || e.echo === 'ozias' ? 0.2 : 0.3) * k, -e.facing * (10 + 14 * k), -4 * k);
     },
     onPhase(e, g) {
-      A.sfx('roar'); G.addShake(0.6); e.cool = 0.3; e.atkSpeed = [1, 1.1, 1.2][Math.min(2, e.phase)];
+      A.sfx('roar'); G.addShake(0.6); e.cool = 0.3; e.atkSpeed = [1, 1.2, 1.3][Math.min(2, e.phase)];
       const h = VS.EnemyRender.point(e, e._f, 'heart') || { x: e.cx, y: e.cy - 10 };
       VS.FX.flare(h.x, h.y, 60, [255, 120, 40], 0.5); G.flash('#ff6020', 0.35);
       if (e.phase === 2) { firePool(g, 50, e.arena.floor, 60, 999); firePool(g, g.room.pw - 50, e.arena.floor, 60, 999); }
-      VS.UI.bark('boss_aldric', e.phase === 1 ? 'aldric_mid1' : 'aldric_mid2');
     },
     preLines: () => [{ s: 'boss_aldric', k: 'aldric_pre1' }, { s: 'boss_aldric', k: 'aldric_pre2' }, { s: 'boss_aldric', k: 'aldric_pre3' }],
     smearCol: [255, 170, 90],

@@ -209,6 +209,14 @@
       ctx.fillStyle = '#fff4c8'; ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(-4, -1.1); ctx.lineTo(-4, 1.1); ctx.closePath(); ctx.fill();
       ctx.restore(); return;
     }
+    if (k === 'bloodchain') { // ponta da Sangria Real: arpão de sangue com elos atrás
+      ctx.save(); ctx.translate(x, y); ctx.rotate(Math.atan2(pr.vy, pr.vx));
+      S.glow(ctx, 0, 0, 14, '#ff2030', 0.6);
+      ctx.strokeStyle = 'rgba(200,20,40,0.85)'; ctx.lineWidth = 1.4; for (let i = 1; i <= 4; i++) { ctx.beginPath(); ctx.ellipse(-i * 6, 0, 2.6, 1.6, 0, 0, U.TAU); ctx.stroke(); }
+      ctx.fillStyle = '#ff4050'; ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(-2, -4.5); ctx.lineTo(1, 0); ctx.lineTo(-2, 4.5); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#ffd0d0'; ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(0, -1.4); ctx.lineTo(0, 1.4); ctx.closePath(); ctx.fill();
+      ctx.restore(); return;
+    }
     if (k === 'crescent') { // crescente de luz da Contra-Luz (aponta para onde voa)
       const d = pr.vx >= 0 ? 1 : -1, a = Math.min(1, pr.life / 0.2);
       ctx.save(); ctx.translate(x, y); ctx.scale(d, 1);

@@ -354,6 +354,7 @@
         for (let xx = x; xx < x + w; xx += mw) { const ww = Math.min(mw, x + w - xx); ctx.drawImage(im, 0, 0, im.width * (ww / mw), im.height, xx, y, ww, mh); }
         const [lw] = HM('hud_boss_l'); hud(ctx, 'hud_boss_l', x - lw + 1, y - 4); hud(ctx, 'hud_boss_r', x + w - 1, y - 4);
       } else { ctx.strokeStyle = '#6a5a50'; ctx.lineWidth = 0.8; ctx.strokeRect(x - 1.5, y + 1.9, w + 3, 7); }
+      if (b.bars > 1) for (let i = 0; i < b.bars; i++) { const px = U.SCREEN_W / 2 + (i - (b.bars - 1) / 2) * 13, py = y + 15; ctx.save(); ctx.translate(px, py); ctx.rotate(Math.PI / 4); ctx.fillStyle = i >= (b.bar || 0) ? '#d8303a' : 'rgba(30,16,20,0.9)'; ctx.fillRect(-3, -3, 6, 6); ctx.strokeStyle = '#d8b890'; ctx.lineWidth = 0.8; ctx.strokeRect(-3, -3, 6, 6); ctx.restore(); }
       if (b.postureMax) { ctx.fillStyle = 'rgba(8,6,10,0.85)'; ctx.fillRect(x + w * 0.2, y + 11, w * 0.6, 2.4); ctx.fillStyle = b.posture >= b.postureMax ? '#ffffff' : '#e8c060'; ctx.fillRect(x + w * 0.2, y + 11, w * 0.6 * Math.min(1, b.posture / b.postureMax), 2.4); }
     }
     ctx.textAlign = 'left';
