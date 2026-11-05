@@ -1,4 +1,8 @@
+<p align="center"><img src="marketing/github/icone_v_256.png" width="160" alt="Vesperal"></p>
+
 # Vesperal: A Última Chama
+
+<p align="center"><img src="marketing/github/capa_1280x640.jpg" alt="Vesperal: A Última Chama — a Cidade de Cinza ao anoitecer"></p>
 
 > **Versão em desenvolvimento.** O jogo ainda não está terminado: falta o teste completo de uma partida do início ao fim (no computador e no telemóvel) e os últimos acertos de dificuldade e de fluidez.
 
@@ -46,6 +50,14 @@ Metroidvania 2D de fantasia sombria para o navegador. O Desperto acorda numa cov
 - Ocupa o ecrã todo, sem barras pretas: telemóveis largos, monitores ultralargos e tablets 4:3 veem mais do mundo em vez de faixas vazias
 - Funciona sem internet: tudo vem dentro do jogo, incluindo as fontes
 - Versão de computador para a Steam (pasta `desktop/`): ecrã inteiro, "Sair do jogo" no menu, gravações na pasta da aplicação
+
+## Imagens
+
+| | |
+|---|---|
+| ![A Cidade de Cinza](marketing/github/capturas/01_cidade_de_cinza.jpg) | ![O Bastião das Vigias, sob a tempestade](marketing/github/capturas/02_bastiao_tempestade.jpg) |
+| ![Os Jardins Afogados](marketing/github/capturas/03_jardins_afogados.jpg) | ![A Torre dos Sinos](marketing/github/capturas/04_torre_dos_sinos.jpg) |
+| ![O Custódio de Ouro](marketing/github/capturas/05_custodio_de_ouro.jpg) | ![A Carpideira](marketing/github/capturas/06_a_carpideira.jpg) |
 
 ## Jogar
 

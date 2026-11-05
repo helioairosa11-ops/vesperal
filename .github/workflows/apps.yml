@@ -103,6 +103,8 @@ jobs:
         run: |
           ls -la out
           cat > notas.md <<'NOTES'
+          ![Vesperal: A Última Chama](https://raw.githubusercontent.com/helioairosa11-ops/vesperal/main/marketing/github/capa_1280x640.jpg)
+
           **Vesperal: A Última Chama — versão de teste** (o jogo ainda está em desenvolvimento).
 
           ### Windows
