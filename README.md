@@ -23,7 +23,9 @@ Metroidvania 2D de fantasia sombria para o navegador. O Desperto acorda numa cov
 - Mundo vivo: nos fundos passa a procissão na ponte, voam bandos de aves, caem relâmpagos, tremem tochas e pirilampos; nas salas há corvos, pombas, ratos, morcegos e peixes que fogem quando o Desperto se aproxima, e a erva do primeiro plano dobra-se ao vento
 - Construções de cada região atrás da ação (casas, calvário, túmulos, torre de vigia, trabuquete, fornalha, grua, fonte, pérgula, sinos, engrenagens, retábulo, órgão, arcada, estátua do rei)
 - Armadilhas a combinar com a zona: sinos e incensários a balançar, ossos e espinhos que rompem do chão, seteiras, grade levadiça, prensas, lanças nas paredes
-- Esquiva, parry e guarda, armas com ritmos diferentes
+- Esquiva, parry e guarda, armas com ritmos diferentes e dano equilibrado (cada uma com o seu papel: rápida, longa, pesada, espiritual)
+- Cada chefe tem a sua vida e as suas resistências (vulnerável ou resistente a lâminas, impacto, espírito ou centelhas, alguns com armadura) — vê-se no Diário
+- Habilidades novas: Investida Cortante (atacar a meio da esquiva), Contra-Luz (a riposta depois do parry solta um crescente de luz) e Instinto (a esquiva no último instante abranda o mundo)
 - Português, English, Español e Français
 - Música e sons sintetizados em tempo real (Web Audio), sem ficheiros de áudio — golpes com corpo e saturação, impactos grandes com cauda de reverberação, cada golpe um pouco diferente do anterior e níveis equilibrados entre gestos, impactos e chefes
 - Teclado, comando e ecrã tátil; gravação automática no navegador

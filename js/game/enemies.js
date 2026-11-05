@@ -119,10 +119,12 @@
         return 'blocked';
       }
       let dmg = hb.dmg;
-      if (hb.weapon && VS.weaponVs) dmg = Math.round(dmg * VS.weaponVs(hb.weapon, this));
+      if (this.res && VS.dmgType) dmg = Math.round(dmg * VS.bossResMult(this.res, VS.dmgType(hb)));
+      else if (hb.weapon && VS.weaponVs) dmg = Math.round(dmg * VS.weaponVs(hb.weapon, this));
       if (hb.spirit && hb.kind === 'spell' && this.nat.spectral) dmg = Math.round(dmg * 1.5);
       if (this.stagger > 0 && this.parried) dmg = Math.round(dmg * 1.5);
       if (this.K.damageMult) dmg = Math.round(dmg * this.K.damageMult(this, hb));
+      if (this.res && this.res.def && hb.kind !== 'reflect') dmg = Math.max(Math.round(dmg * 0.4), dmg - this.res.def);
       this.hp -= dmg; this.flash = 0.16; this.lastHitT = 0;
       this.aggro = true;
       const heavy = hb.kind === 'heavy' || hb.kind === 'riposte';

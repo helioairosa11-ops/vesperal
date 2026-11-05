@@ -38,6 +38,12 @@
       this.defeated = false; this.defT = 0; this.z = 4; this.cool = 1.2;
       this.room = game.room; this.spawn = d;
       this.pressure = 0; this.dmgScale = 1;
+      // vida e resistências próprias de cada chefe (js/data/weapons.js); na Nova Partida+ mais vida
+      const RS = VS.BOSS_RES && VS.BOSS_RES[id];
+      this.res = RS || null;
+      if (RS && RS.hp) this.hp = this.maxHp = RS.hp;
+      const ng = VS.state && VS.state.ngp ? VS.state.ngp : 0;
+      if (ng) this.hp = this.maxHp = Math.round(this.maxHp * (1 + 0.45 * Math.min(ng, 3)));
       this.arena = { x0: T * 2, x1: game.room.pw - T * 2, floor: (d.floor !== undefined ? d.floor : d.y + 1) * T };
     }
     update(dt, game) {

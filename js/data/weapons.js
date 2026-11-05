@@ -14,7 +14,7 @@
     down: { wind: 0.04, act: 0.14, rec: 0.15, mult: 1, poise: 12, knock: 80, pogo: true },
     crouch: { wind: 0.05, act: 0.09, rec: 0.2, mult: 0.9, poise: 8, knock: 120 },
     riposte: { wind: 0.05, act: 0.12, rec: 0.3, kind: 'riposte', mult: 1, poise: 80, knock: 320, hitstop: 0.16, lunge: 260 },
-    heavy: { wind: 0.36, act: 0.14, rec: 0.38, kind: 'heavy', mult: 1, poise: 45, lunge: 190, knock: 340, hitstop: 0.1 },
+    heavy: { wind: 0.36, act: 0.14, rec: 0.38, kind: 'heavy', mult: 1.2, poise: 45, lunge: 190, knock: 340, hitstop: 0.1 },
   };
   // NAVALHAS — muito rápidas, alcance curto, combo de quatro
   M.facas = {
@@ -28,7 +28,7 @@
     down: { wind: 0.03, act: 0.1, rec: 0.12, mult: 0.6, poise: 8, knock: 60, pogo: true },
     crouch: { wind: 0.03, act: 0.07, rec: 0.14, mult: 0.55, poise: 6, knock: 80 },
     riposte: { wind: 0.04, act: 0.14, rec: 0.26, kind: 'riposte', mult: 0.8, poise: 60, knock: 260, hitstop: 0.12, lunge: 280, multi: 3 },
-    heavy: { wind: 0.24, act: 0.18, rec: 0.3, kind: 'heavy', mult: 0.7, poise: 30, lunge: 330, knock: 220, hitstop: 0.06, multi: 3 },
+    heavy: { wind: 0.24, act: 0.18, rec: 0.3, kind: 'heavy', mult: 0.45, poise: 30, lunge: 330, knock: 220, hitstop: 0.06, multi: 3 },
   };
   // MALHO — lento, enorme impacto e equilíbrio; parte guardas e armaduras
   M.malho = {
@@ -39,7 +39,7 @@
     down: { wind: 0.1, act: 0.16, rec: 0.2, mult: 1.1, poise: 40, knock: 200, pogo: true },
     crouch: { wind: 0.18, act: 0.12, rec: 0.3, mult: 0.9, poise: 30, knock: 260 },
     riposte: { wind: 0.08, act: 0.14, rec: 0.36, kind: 'riposte', mult: 1.2, poise: 100, knock: 380, hitstop: 0.18, lunge: 160 },
-    heavy: { wind: 0.5, act: 0.16, rec: 0.5, kind: 'heavy', mult: 1.25, poise: 70, lunge: 120, knock: 420, hitstop: 0.14, shock: true },
+    heavy: { wind: 0.5, act: 0.16, rec: 0.5, kind: 'heavy', mult: 0.9, poise: 70, lunge: 120, knock: 420, hitstop: 0.14, shock: true },
   };
   // ALABARDA — alcance longo: estocada, varrimento, golpe de cima
   M.haste = {
@@ -51,7 +51,7 @@
     down: { wind: 0.06, act: 0.16, rec: 0.18, mult: 1, poise: 14, knock: 90, pogo: true },
     crouch: { wind: 0.08, act: 0.1, rec: 0.22, mult: 0.95, poise: 10, knock: 150 },
     riposte: { wind: 0.06, act: 0.14, rec: 0.32, kind: 'riposte', mult: 1.1, poise: 80, knock: 340, hitstop: 0.16, lunge: 260 },
-    heavy: { wind: 0.3, act: 0.3, rec: 0.4, kind: 'heavy', mult: 1, poise: 40, lunge: 60, knock: 300, hitstop: 0.09, multi: 2, both: true },
+    heavy: { wind: 0.3, act: 0.3, rec: 0.4, kind: 'heavy', mult: 0.6, poise: 40, lunge: 60, knock: 300, hitstop: 0.09, multi: 2, both: true },
   };
   // LÂMINA DO ESPÍRITO — golpes amplos e flutuantes; o terceiro e o carregado libertam uma onda espiritual
   M.espirito = {
@@ -76,17 +76,17 @@
     down: { wind: 0.1, act: 0.16, rec: 0.2, mult: 1.1, poise: 36, knock: 200, pogo: true },
     crouch: { wind: 0.16, act: 0.12, rec: 0.3, mult: 0.9, poise: 28, knock: 240 },
     riposte: { wind: 0.08, act: 0.15, rec: 0.36, kind: 'riposte', mult: 1.2, poise: 100, knock: 400, hitstop: 0.18, lunge: 180 },
-    heavy: { wind: 0.5, act: 0.18, rec: 0.5, kind: 'heavy', mult: 1.3, poise: 70, lunge: 160, knock: 420, hitstop: 0.14, both: true },
+    heavy: { wind: 0.5, act: 0.18, rec: 0.5, kind: 'heavy', mult: 0.95, poise: 70, lunge: 160, knock: 420, hitstop: 0.14, both: true },
   };
 
   // armas: dmg = multiplicador sobre o dano base da lâmina temperada; speed = multiplicador de ritmo
   const W = {
     desperto: { cls: 'espada', dmg: 1.0, speed: 1.0, trail: 'steel', sfx: ['swing', 'swing_heavy'], mat: 'blade', start: true },
-    navalhas: { cls: 'facas', dmg: 0.62, speed: 1.0, trail: 'quick', sfx: ['swing_light', 'swing'], mat: 'blade', dual: true },
-    malho: { cls: 'malho', dmg: 2.0, speed: 1.0, trail: 'heavy', sfx: ['swing_heavy', 'swing_heavy'], mat: 'blunt', armorBreak: true, guardBreak: true },
+    navalhas: { cls: 'facas', dmg: 0.74, speed: 1.0, trail: 'quick', sfx: ['swing_light', 'swing'], mat: 'blade', dual: true },
+    malho: { cls: 'malho', dmg: 1.85, speed: 1.0, trail: 'heavy', sfx: ['swing_heavy', 'swing_heavy'], mat: 'blunt', armorBreak: true, guardBreak: true },
     alabarda: { cls: 'haste', dmg: 1.15, speed: 1.0, trail: 'long', sfx: ['swing', 'swing_heavy'], mat: 'blade', long: true },
-    espirito: { cls: 'espirito', dmg: 0.9, speed: 1.0, trail: 'spirit', sfx: ['spirit_swing', 'spirit_swing'], mat: 'spirit', spirit: true },
-    montante: { cls: 'montante', dmg: 2.3, speed: 1.0, trail: 'royal', sfx: ['swing_heavy', 'swing_royal'], mat: 'blade', armorBreak: true },
+    espirito: { cls: 'espirito', dmg: 1.0, speed: 1.0, trail: 'spirit', sfx: ['spirit_swing', 'spirit_swing'], mat: 'spirit', spirit: true },
+    montante: { cls: 'montante', dmg: 1.95, speed: 1.0, trail: 'royal', sfx: ['swing_heavy', 'swing_royal'], mat: 'blade', armorBreak: true },
   };
   // natureza de cada inimigo/chefe: material (efeitos e sons do golpe) e traços que mudam o dano das armas
   //   spectral: espectros e luz (Lâmina do Espírito ×1.7, restantes ×0.75)
@@ -117,6 +117,37 @@
     if (t.flying && w.long) k *= 1.2;
     return k;
   };
+  // ---------- chefes: cada um com a sua vida e as suas resistências ----------
+  // res: multiplicador por tipo de dano — blade (lâminas: espada, navalhas, alabarda, montante), blunt (Malho, mergulho,
+  // ondas de choque), spirit (Lâmina do Espírito, ondas e crescentes de luz), spell (centelhas). Projéteis devolvidos não mudam.
+  // def: armadura — tira um tanto fixo a cada golpe (castiga os golpes leves e rápidos; nunca mais de 60%)
+  VS.BOSS_RES = {
+    coveiro: { hp: 640, res: { blunt: 1.2, spell: 1.25 } },
+    matilheira: { hp: 800, res: { blade: 1.15, blunt: 0.85, spell: 1.25 } },
+    caedmon: { hp: 840, def: 1, res: { blade: 0.85, blunt: 1.35, spirit: 0.9, spell: 1.15 } },
+    automato: { hp: 960, def: 2, res: { blade: 0.75, blunt: 1.5, spirit: 0.8, spell: 1.3 } },
+    hilde: { hp: 1350, res: { blunt: 0.8, spirit: 1.15, spell: 0.5 } },
+    mariposa: { hp: 900, res: { blade: 1.2, blunt: 0.8, spell: 1.45 } },
+    elowen: { hp: 1400, res: { blade: 1.25, blunt: 0.75, spirit: 1.3, spell: 1.35 } },
+    sineiro: { hp: 1000, def: 2, res: { blade: 0.85, blunt: 1.35, spell: 0.9 } },
+    corvin: { hp: 1250, res: { blade: 1.1, spell: 1.2 } },
+    vael: { hp: 1150, def: 1, res: { blade: 0.85, blunt: 0.9, spirit: 1.5, spell: 0.5 } },
+    ozias: { hp: 1550, def: 1, res: { blade: 0.9, spirit: 1.35, spell: 0.7 } },
+    gemeo_a: { hp: 720, def: 3, res: { blade: 0.8, blunt: 1.4, spirit: 0.85, spell: 1.1 } },
+    gemeo_b: { hp: 820, def: 3, res: { blade: 0.8, blunt: 1.4, spirit: 0.85, spell: 1.1 } },
+    carpideira: { hp: 1400, res: { blade: 1.1, blunt: 0.9, spirit: 1.3, spell: 1.4 } },
+    custodio: { hp: 1700, res: {} },
+    seraphine: { hp: 1600, res: { blunt: 0.85, spirit: 1.25 } },
+    aldric: { def: 2, res: { blade: 0.9, blunt: 1.25, spell: 0.6 } },
+  };
+  // tipo de dano de um golpe da protagonista
+  VS.dmgType = function (hb) {
+    const pr = hb.proj;
+    if (pr) { if (pr.dtype) return pr.dtype; if (hb.kind === 'spell') return 'spell'; if (pr.kind === 'spiritwave') return 'spirit'; if (pr.kind === 'shockwave') return 'blunt'; return 'reflect'; }
+    if (hb.kind === 'spell') return 'spell';
+    return hb.mat || 'blunt'; // sem arma (o mergulho a pique) conta como impacto
+  };
+  VS.bossResMult = (res, type) => (res && res.res && res.res[type]) || 1;
   VS.WEAPON_MOVES = M;
   VS.WEAPONS = W;
 })(window.VS);

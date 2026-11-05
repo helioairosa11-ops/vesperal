@@ -53,7 +53,7 @@
     get st() { return VS.state; }
     get dir() { return this.facing; }
     get busy() { return !!this.action; }
-    get canAct() { const a = this.action; return !a || (a.phase === 'rec' && a.t > a.rec * 0.2) || (a.type === 'attack' && a.phase === 'wind'); }
+    get canAct() { const a = this.action; return !a || (a.phase === 'rec' && a.t > a.rec * 0.2) || (a.type === 'attack' && a.phase === 'wind') || (a.type === 'dodge' && this.st.abilities.dashstrike && a.t > 0.03); }
 
     // ---------- ciclo ----------
     update(dt, game) {
@@ -111,6 +111,7 @@
       const a = this.action;
       if (a) {
         if (a.type === 'dodge') { target = this.vx; acc = 0; }
+        else if (a.dash && a.phase !== 'rec') { this.vx = target = a.dir * 380; acc = 0; }
         else if (a.type === 'attack' || a.type === 'heavy') {
           if (this.onGround) {
             const late = a.phase === 'rec' && a.t > a.rec * 0.3, free = late ? 0.8 : a.type === 'heavy' ? 0.12 : 0.3;
@@ -257,6 +258,8 @@
       if (!In.down('jump') && this.vy < 0 && this.jumping && !this.inWater) { this.vy *= C.JUMP_CUT; this.jumping = false; }
       if (this.vy >= 0) this.jumping = false;
 
+      // INVESTIDA CORTANTE: atacar a meio da esquiva corta tudo pelo caminho, sem perder a invulnerabilidade
+      if (a && a.type === 'dodge') { if (st.abilities.dashstrike && a.t > 0.03 && In.buffered('attack', 0.12)) { In.consume('attack'); this.startDashStrike(game, a); } return; }
       if (a && a.type !== 'attack' && a.type !== 'heavy' && !(a.type === 'parry' && !a.guard)) return;
       // esquiva
       if (In.buffered('dodge', 0.1) && this.dodgeCd <= 0) {
@@ -312,6 +315,15 @@
       this.smear = []; this.trail.length = 0;
       if (name === 'riposte') this.riposteT = 0;
       if (name === 'heavy') { VS.Audio.sfx('charge', { vol: 0.5 }); }
+    }
+    startDashStrike(game, dg) {
+      const mv = this.moves(), nm = mv.l3 ? 'l3' : 'l2', dir = dg.dir || this.facing;
+      this.facing = dir; this.startAttack(nm, game);
+      const a = this.action;
+      a.dash = true; a.dir = dir; a.air = !this.onGround; a.wind = 0.03; a.act = 0.17; a.rec = 0.22;
+      a.d = Object.assign({}, a.d, { mult: 1.5, poise: 34, knock: 240, hitstop: 0.05, lunge: 0, next: null, multi: 0 });
+      this.combo = null; this.comboT = 0; this.iframes = Math.max(this.iframes, 0.24);
+      VS.Audio.sfx('dash_slash');
     }
     startPlunge(game) {
       this.action = { type: 'plunge', t: 0, hover: true, id: VS.Entity.newAttackId(), phase: 'act' };
@@ -370,6 +382,10 @@
       const st = this.st;
       if (a.type === 'attack' || a.type === 'heavy') {
         const d = a.d;
+        if (a.dash && a.phase !== 'rec') { // a investida corta a direito: sem cair, com rasto de luz
+          if (a.air) this.vy = 0;
+          if (Math.random() < 0.9) VS.Gfx.emit({ x: this.cx - a.dir * U.rand(4, 14), y: this.y + U.rand(4, this.h - 2), vx: -a.dir * U.rand(180, 300), vy: 0, drag: 6, life: U.rand(0.12, 0.2), size: U.rand(2, 3.4), color: U.pick(['#ffe0b0', '#ffb070', '#ffffff']), add: true, kind: 'line', layer: 2 });
+        }
         // virar: na antecipação e no fim da recuperação vira-se para onde se carrega (sem isto, a bater e a carregar
         // para trás, continuava a bater para a frente, porque cada golpe novo começava ainda dentro do anterior)
         if (a.phase === 'wind' || (a.phase === 'rec' && a.t > a.rec * 0.3)) this.turnToInput(ax);
@@ -390,6 +406,7 @@
           VS.Audio.sfx(a.type === 'heavy' || d.kind === 'riposte' || d.mult >= 1.3 ? wsfx[1] : wsfx[0], { vol: 0.8 });
           a.prevAngle = this.swordAngle; a.prevBlade = null;
           if (d.wave) this.spiritWave(game, a);
+          if (a.name === 'riposte' && st.abilities.counter) this.lightCrescent(game);
         } else if (a.phase === 'act') {
           if (d.multi && a.t > (a.act / d.multi) * (a.hits + 1)) { a.hits++; a.id = VS.Entity.newAttackId(); }
           this.buildAttackHitbox(a, game);
@@ -515,6 +532,12 @@
       game.spawn(new VS.Projectile({ x: this.cx + this.dir * 14, y: this.cy - 4, vx: this.dir * 300, vy: 0, w: 14, h: 22, team: 'player', dmg: Math.round(st.damage('light') * 0.7 * (a.charged ? 1.6 : 1)), kind: 'spiritwave', color: '#c8b0ff', life: 0.55, pierce: 3, poise: 18, knock: 160, spirit: true, solid: false }));
       VS.Audio.sfx('spirit_swing', { vol: 0.6 });
     }
+    // Contra-Luz: depois de um parry, a riposta solta um crescente de luz que atravessa até três inimigos
+    lightCrescent(game) {
+      const st = this.st;
+      game.spawn(new VS.Projectile({ x: this.cx + this.dir * 14 - 10, y: this.cy - 20, vx: this.dir * 430, vy: 0, w: 20, h: 32, team: 'player', dmg: Math.round(st.damage('riposte') * 0.45), kind: 'crescent', dtype: 'spirit', color: '#ffe8b0', life: 0.55, pierce: 2, poise: 40, knock: 220, solid: false }));
+      VS.Audio.sfx('crescent');
+    }
     // Malho: o golpe carregado abre ondas de choque no chão
     shockwave(game, a) {
       const st = this.st;
@@ -580,6 +603,7 @@
     perfectDodge(game) {
       if (this.action.perfect) return; this.action.perfect = true;
       VS.Gfx.burst(this.cx, this.cy, 10, { color: '#d0c0ff', speed: 60, life: 0.4, size: 1.4, add: true });
+      if (this.st.abilities.instinct && game && game.instinct) game.instinct();
     }
     takeDamage(dmg, kdir, game, hb) {
       const st = this.st;

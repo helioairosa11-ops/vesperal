@@ -112,7 +112,7 @@
       } else if (k === 'consumables') {
         Object.keys(st.items).filter((id) => VS.ITEMS[id] && VS.ITEMS[id].cat === 'consumable').forEach((id) => entries.push({ id, label: t('item_' + id + '_name') + ' ×' + st.count(id), icon: VS.Icons.svg(id), act: () => M.useConsumable(id, render) }));
       } else if (k === 'key') {
-        const ab = { dash: 'ab_dash', spell: 'ab_spell', wall: 'ab_wall', forge: 'ab_forge', double: 'ab_double', veil: 'ab_veil' };
+        const ab = { dash: 'ab_dash', spell: 'ab_spell', wall: 'ab_wall', forge: 'ab_forge', double: 'ab_double', veil: 'ab_veil', dashstrike: 'ab_dashstrike', counter: 'ab_counter', instinct: 'ab_instinct' };
         for (const a in ab) if (st.abilities[a]) entries.push({ id: ab[a], label: t('item_' + ab[a] + '_name'), icon: VS.Icons.svg(ab[a]) });
         Object.keys(st.items).filter((id) => VS.ITEMS[id] && VS.ITEMS[id].cat === 'key').forEach((id) => entries.push({ id, label: t('item_' + id + '_name'), icon: VS.Icons.svg(id), act: VS.ITEMS[id].letter ? () => VS.UI.letter(id) : null }));
         if (st.count('ash_steel')) entries.push({ id: 'ash_steel', label: t('item_ash_steel_name') + ' ×' + st.count('ash_steel'), icon: VS.Icons.svg('ash_steel') });
@@ -278,7 +278,7 @@
       if (k === 'chronicles') VS.LORE.chronicles.forEach((c) => { if (c.cond(st)) entries.push({ title: t(c.key + '_t'), text: t(c.key) }); });
       if (k === 'inscriptions') VS.LORE.inscriptions.forEach((id, i) => { if (st.inscriptions[id]) entries.push({ title: t('ins_label', { n: i + 1 }) + ' — ' + t('ins_' + id + '_t'), text: t('ins_' + id) }); });
       if (k === 'letters') ['letter_1', 'letter_2', 'letter_3'].forEach((id) => { if (st.has(id)) entries.push({ title: t('item_' + id + '_name'), text: t(id + '_text') }); });
-      if (k === 'bosses') VS.LORE.bosses.forEach((b) => { if (st.bosses[b]) entries.push({ title: t('boss_' + b), text: t('bossj_' + b) }); });
+      if (k === 'bosses') VS.LORE.bosses.forEach((b) => { if (st.bosses[b]) entries.push({ title: t('boss_' + b), text: t('bossj_' + b) + resText(b) }); });
       if (k === 'bestiary') Object.keys(VS.Enemies.KINDS).filter((kd) => !kd.startsWith('b_')).forEach((kind) => { if (st.bestiary[kind]) entries.push({ title: t('en_' + kind), text: t('enj_' + kind) + '\n\n' + t('j_kills', { n: st.bestiary[kind] }) }); });
       const totals = { inscriptions: VS.LORE.inscriptions.length, letters: 3, bosses: VS.LORE.bosses.length, bestiary: Object.keys(VS.Enemies.KINDS).filter((kd) => !kd.startsWith('b_')).length };
       if (totals[k]) list.appendChild(h('div', 'j-count', esc(t('j_found', { n: entries.length, m: totals[k] }))));
@@ -292,6 +292,19 @@
     UI.open(panel); render();
     A.sfx('ui_open');
   };
+
+  // resistências de um chefe, para o Diário
+  function resText(b) {
+    const R = VS.BOSS_RES && VS.BOSS_RES[b === 'gemeos' ? 'gemeo_a' : b]; if (!R) return '';
+    if (b === 'custodio') return '\n\n' + t('res_parry_only');
+    const weak = [], strong = [];
+    for (const k of ['blade', 'blunt', 'spirit', 'spell']) { const v = (R.res || {})[k] || 1; if (v >= 1.1) weak.push(t('dt_' + k)); else if (v <= 0.9) strong.push(t('dt_' + k)); }
+    let s = '';
+    if (weak.length) s += '\n\n' + t('res_weak') + ': ' + weak.join(', ');
+    if (strong.length) s += (s ? '\n' : '\n\n') + t('res_strong') + ': ' + strong.join(', ');
+    if (R.def) s += (s ? '\n' : '\n\n') + t('res_armor', { n: R.def });
+    return s;
+  }
 
   // ================= DEFINIÇÕES =================
   const S_TABS = ['general', 'video', 'audio', 'controls', 'touch', 'access', 'data'];

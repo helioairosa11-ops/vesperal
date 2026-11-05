@@ -88,6 +88,29 @@
       c.save(); c.globalAlpha = 0.85; K.paint(c, v, A.mat('#c8c0d8', { light: '#ffffff', shadow: '#7a7090' }), { depth: S * 0.5 }); c.restore();
       c.save(); c.clip(v); for (let i = 0; i < 5; i++) L(c, [[9 + i * 4, 6], [8.6 + i * 4, 24]], 0.2, A.rgba('#5a5070', 0.4)); c.restore();
       const tear = A.path((q) => { q.M(14, 11); q.L(18, 10); q.L(17, 16); q.L(15, 15); q.Z(); }, S); c.save(); c.globalCompositeOperation = 'destination-out'; c.fill(tear); c.restore(); } },
+    ab_dashstrike: { cat: 'ability', draw(c) { // lâmina em investida: rasto de velocidade e brasas atrás
+      for (let i = 0; i < 5; i++) L(c, [[3 + i * 0.6, 12 + i * 2.4], [13 - i * 0.5, 12 + i * 2.4]], 0.45, A.rgba(i % 2 ? '#ffb070' : '#fff0d0', 0.75 - i * 0.1));
+      glowAt(c, 22, 16, 9, '#ffb060', 0.45);
+      T(c, [[9, 22], [27, 9]], [1.5, 0.35], M.steel, { depth: S * 0.35, hlw: S * 0.25 });
+      L(c, [[10, 21.4], [26.4, 9.4]], 0.25, A.rgba('#ffffff', 0.8));
+      P(c, [[6.4, 21.6], [9.6, 25.0], [10.6, 23.8], [7.6, 20.6]], M.gold, { depth: S * 0.3 });
+      T(c, [[5.2, 25.6], [8.2, 22.4]], [0.8, 0.8], M.leather, { flat: true });
+      for (let i = 0; i < 5; i++) D(c, 12 + i * 3.2 + (i % 2), 26 - i * 0.6, 0.55 - i * 0.05, i % 2 ? '#ffd090' : '#ff8a40'); } },
+    ab_counter: { cat: 'ability', draw(c) { // crescente de luz a soltar-se de uma lâmina aparada
+      glowAt(c, 18, 16, 12, '#ffe0a0', 0.6);
+      const cr = A.path((q) => { q.M(14, 4); q.Q(30, 16, 14, 28); q.Q(22, 16, 14, 4); q.Z(); }, S);
+      K.paint(c, cr, A.mat('#ffe2a8', { light: '#ffffff', shadow: '#c89040' }), { depth: S * 0.4 });
+      T(c, [[5, 25], [13, 9]], [1.2, 0.3], M.steel, { depth: S * 0.3, hlw: S * 0.2 });
+      P(c, [[3.4, 22.6], [7.4, 24.4], [7.0, 25.6], [3.0, 23.8]], M.gold, { depth: S * 0.25 });
+      for (let i = 0; i < 6; i++) { const a = -1.2 + i * 0.5; L(c, [[12 + Math.cos(a) * 2, 11 + Math.sin(a) * 2], [12 + Math.cos(a) * 5, 11 + Math.sin(a) * 5]], 0.3, '#fff4d0'); } } },
+    ab_instinct: { cat: 'ability', draw(c) { // ampulheta de cinza com a areia suspensa e luz azulada
+      glowAt(c, 16, 16, 12, '#a8c0ff', 0.55);
+      P(c, [[8, 4], [24, 4], [23, 6], [9, 6]], M.wood, { depth: S * 0.3 }); P(c, [[8, 26], [24, 26], [23, 28], [9, 28]], M.wood, { depth: S * 0.3 });
+      for (const x of [9.4, 22.6]) T(c, [[x, 6], [x, 26]], [0.6, 0.6], M.wood, { flat: true });
+      const gl = A.path((q) => { q.M(10.5, 6.5); q.L(21.5, 6.5); q.Q(21, 13, 16.8, 16); q.Q(21, 19, 21.5, 25.5); q.L(10.5, 25.5); q.Q(11, 19, 15.2, 16); q.Q(11, 13, 10.5, 6.5); q.Z(); }, S);
+      c.save(); c.globalAlpha = 0.55; K.paint(c, gl, M.glass, { depth: S * 0.3 }); c.restore();
+      P(c, [[12, 8.5], [20, 8.5], [16, 13.5]], M.ash, { depth: S * 0.2 }); P(c, [[11.6, 25], [20.4, 25], [18, 22], [14, 22]], M.ash, { depth: S * 0.2 });
+      for (let i = 0; i < 5; i++) D(c, 16 + (i % 2 ? 0.5 : -0.5), 15 + i * 1.3, 0.45, '#e8e0d8'); } },
     // ---------------- chaves
     chalice: { cat: 'key', draw(c) { this.cup(c, false); }, cup(c, mended) {
       P(c, [[9, 6], [23, 6], [22, 12], [18, 16], [14, 16], [10, 12]], M.silver, { depth: S * 0.7, hlw: S * 0.35 });

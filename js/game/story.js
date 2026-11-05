@@ -6,13 +6,13 @@
 
   S.REWARDS = {
     coveiro: { ability: 'dash', ash: 300 },
-    matilheira: { items: [['ash_heart', 1], ['w_navalhas', 1]], ash: 400 },
+    matilheira: { items: [['ash_heart', 1], ['w_navalhas', 1]], ability: 'dashstrike', ash: 400 },
     caedmon: { items: [['ember_1', 1], ['r_captain', 1]], ability: 'wall', ash: 800 },
     automato: { items: [['relic_slot', 1], ['ash_steel', 2], ['w_malho', 1]], ash: 600 },
     hilde: { items: [['ember_2', 1], ['hilde_hammer', 1]], ability: 'forge', ash: 1000 },
     mariposa: { ability: 'double', ash: 600 },
-    elowen: { items: [['ember_3', 1], ['candle_fragment', 1], ['elowen_lullaby', 1]], ash: 1100 },
-    sineiro: { items: [['ash_heart', 1], ['helm_sino', 1]], ash: 800 },
+    elowen: { items: [['ember_3', 1], ['candle_fragment', 1], ['elowen_lullaby', 1]], ability: 'counter', ash: 1100 },
+    sineiro: { items: [['ash_heart', 1], ['helm_sino', 1]], ability: 'instinct', ash: 800 },
     corvin: { items: [['ember_4', 1]], ability: 'veil', ash: 1300 },
     vael: { items: [['candle_fragment', 1], ['r_ember', 1]], ash: 1000 },
     ozias: { items: [['ember_5', 1]], ash: 1500 },

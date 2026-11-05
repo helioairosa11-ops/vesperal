@@ -11,6 +11,9 @@
   def('ab_forge', { cat: 'ability', icon: 'hammer' });
   def('ab_double', { cat: 'ability', icon: 'wings' });
   def('ab_veil', { cat: 'ability', icon: 'veil' });
+  def('ab_dashstrike', { cat: 'ability', icon: 'feather_ash' });
+  def('ab_counter', { cat: 'ability', icon: 'spark' });
+  def('ab_instinct', { cat: 'ability', icon: 'veil' });
   // Brasas do Lume
   for (let i = 1; i <= 6; i++) def('ember_' + i, { cat: 'key', icon: 'ember', ember: i });
   // Cartas da rainha
@@ -58,7 +61,7 @@
   for (const w of ['desperto', 'navalhas', 'malho', 'alabarda', 'espirito', 'montante']) def('w_' + w, { cat: 'weapon', weapon: w, png: 'weapons/icon_w_' + w + '.png' });
   // Trajes (aparências do Desperto)
   // ícones pintados no ateliê (tools/art/icons.js → assets/icons/<id>.png) para todos os objetos
-  const PAINTED = ['ab_dash', 'ab_spell', 'ab_wall', 'ab_forge', 'ab_double', 'ab_veil', 'ember_1', 'ember_2', 'ember_3', 'ember_4', 'ember_5', 'ember_6', 'letter_1', 'letter_2', 'letter_3', 'chalice', 'chalice_mended', 'ossuary_key', 'bastion_key', 'palace_seal', 'hilde_hammer', 'teodoro_medal', 'ozias_testament', 'elowen_lullaby', 'ash_steel', 'candle_fragment', 'ash_heart', 'relic_slot', 'oil', 'incense', 'salt', 'feather', 'r_rosary', 'r_amber', 'r_raven_eye', 'r_heron', 'r_captain', 'r_ember', 'r_hrolf_hammer', 'r_chalice_shard', 'r_ione_ribbon', 'r_hairshirt', 'r_anchor', 'r_lantern', 'r_hilde_blade'];
+  const PAINTED = ['ab_dash', 'ab_spell', 'ab_wall', 'ab_forge', 'ab_double', 'ab_veil', 'ab_dashstrike', 'ab_counter', 'ab_instinct', 'ember_1', 'ember_2', 'ember_3', 'ember_4', 'ember_5', 'ember_6', 'letter_1', 'letter_2', 'letter_3', 'chalice', 'chalice_mended', 'ossuary_key', 'bastion_key', 'palace_seal', 'hilde_hammer', 'teodoro_medal', 'ozias_testament', 'elowen_lullaby', 'ash_steel', 'candle_fragment', 'ash_heart', 'relic_slot', 'oil', 'incense', 'salt', 'feather', 'r_rosary', 'r_amber', 'r_raven_eye', 'r_heron', 'r_captain', 'r_ember', 'r_hrolf_hammer', 'r_chalice_shard', 'r_ione_ribbon', 'r_hairshirt', 'r_anchor', 'r_lantern', 'r_hilde_blade'];
   PAINTED.forEach((id) => { if (I[id]) I[id].png = 'icons/' + id + '.png'; });
   def('look_capuz', { cat: 'outfit', look: 'capuz', png: 'icons/look_capuz.png' });
   def('helm_sino', { cat: 'outfit', look: 'sino', png: 'icons/look_sino.png' });

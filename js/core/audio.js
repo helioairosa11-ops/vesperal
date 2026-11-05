@@ -596,6 +596,10 @@
     const g = gainNode(0); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.12, t + 0.45); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
     const o = osc('triangle', 220, t, t + 0.62); o.frequency.exponentialRampToValueAtTime(880, t + 0.5); vibrato(o.frequency, t, t + 0.6, 14, 40, 0.05); o.connect(g); g.connect(d);
   };
+  // habilidades novas: investida cortante, crescente da Contra-Luz e o Instinto (o mundo a abrandar)
+  SFX.dash_slash = (d, t) => { SFX.swing_light(d, t); const f = nburst(d, t, 'bandpass', 900 * vr(0.1), 1.2, 0.7, 0.2, 0.01); f.frequency.exponentialRampToValueAtTime(5200, t + 0.15); tone(d, t + 0.02, 'sine', 420, 160, 0.06, 0.14, 0.01); };
+  SFX.crescent = (d, t) => { const f = nburst(d, t, 'bandpass', 2600, 2, 0.6, 0.26, 0.01); f.frequency.exponentialRampToValueAtTime(700, t + 0.25); INST.glass(d, t, 1568, 0.35, 0.5); INST.glass(d, t + 0.03, 2349, 0.3, 0.35); };
+  SFX.instinct = (d, t) => { tone(d, t, 'sine', 72, 48, 0.6, 0.2, 0.004); tone(d, t + 0.24, 'sine', 68, 44, 0.45, 0.22, 0.004); const f = nburst(d, t, 'bandpass', 3200, 2, 0.3, 0.7, 0.01); f.frequency.exponentialRampToValueAtTime(260, t + 0.7); INST.glass(d, t + 0.02, 2093, 0.7, 0.4); };
   // projétil cortado pela arma: um tinido de vidro e um estalo
   SFX.proj_break = (d, t) => { INST.glass(d, t, 1600 + Math.random() * 500, 0.18, 0.55); nburst(d, t, 'highpass', 3800, 1, 0.22, 0.06, 0.001); tone(d, t, 'triangle', 900, 500, 0.08, 0.08); };
   SFX.choir_hit = (d, t) => { ['D3', 'A3', 'D4', 'F4'].forEach((n) => INST.choir(d, t, A.noteFreq(n), 1.2, 0.9)); };

@@ -116,7 +116,10 @@
       if (this.stop > 0) { this.stop -= dt; G.updateParticles(dt * 0.2); VS.FX.update(dt * 0.35); return; }
       const p = this.player;
       p.update(dt, this);
-      for (const e of this.ents) if (!e.remove) e.update(dt, this);
+      // Instinto: depois de uma esquiva perfeita o mundo abranda (a protagonista não)
+      if (this.slowCd > 0) this.slowCd -= dt;
+      let edt = dt; if (this.slowT > 0) { this.slowT -= dt; edt = dt * (this.slowT > 0.25 ? 0.3 : U.lerp(1, 0.3, this.slowT / 0.25)); }
+      for (const e of this.ents) if (!e.remove) e.update(edt, this);
       if (VS.Wanderer) VS.Wanderer.update(this, dt);
       if (VS.Ambient) VS.Ambient.update(this, dt);
       this.resolveHits();
@@ -223,6 +226,12 @@
       }
     }
 
+    instinct() {
+      if (this.slowT > 0 || this.slowCd > 0) return;
+      this.slowT = 1.6; this.slowCd = 5; G.instinctT = 1.6;
+      VS.Audio.sfx('instinct'); G.flash('#b8c8ff', 0.18);
+      VS.FX.ring && VS.FX.ring(this.player.cx, this.player.cy, 34, 34, [190, 205, 255], 0.5, 3);
+    }
     onParry(hb, p) {
       const src = hb.src || hb.owner;
       VS.Audio.sfx('parry'); this.hitstop(0.14); G.addShake(0.25); G.flash('#ffffff', 0.35);
@@ -558,6 +567,8 @@
         ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = Math.min(1, G.timeTint) * 0.12; ctx.fillStyle = '#c8d8ff'; ctx.fillRect(0, 0, G.canvas.width, G.canvas.height); ctx.restore();
         G.timeTint = Math.max(0, G.timeTint - dt * 3);
       }
+      // Instinto: o mundo arrefece (azulado, bordas escuras) enquanto anda devagar
+      if (G.instinctT > 0) { const k = Math.min(1, G.instinctT / 0.3); ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 0.14 * k; ctx.fillStyle = '#6a86ff'; ctx.fillRect(0, 0, G.canvas.width, G.canvas.height); ctx.restore(); G.instinctT = Math.max(0, G.instinctT - dt); }
       if (G.rewindTint > 0.01) { ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = Math.min(1, G.rewindTint) * 0.26; ctx.fillStyle = '#8a64e0'; ctx.fillRect(0, 0, G.canvas.width, G.canvas.height); ctx.restore(); G.rewindTint = Math.max(0, G.rewindTint - dt * 0.9); }
       G.screenTransform(ctx);
       G.vignette(0.55, R.tint);

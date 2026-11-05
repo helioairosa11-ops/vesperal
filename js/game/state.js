@@ -15,7 +15,7 @@
         restRoom: 'r1_wake', restId: null,
         hp: 100, flasks: 3, lume: 0, ash: 0,
         shade: null,
-        abilities: { dash: false, spell: false, wall: false, forge: false, double: false, veil: false, impulse: false, climb: false },
+        abilities: { dash: false, spell: false, wall: false, forge: false, double: false, veil: false, impulse: false, climb: false, dashstrike: false, counter: false, instinct: false },
         weapon: 0, weaponId: 'desperto', weapons: ['desperto'], look: 'capuz',
         items: {},
         relics: [], equipped: [], relicSlots: 2,
@@ -37,6 +37,8 @@
       const f = GameState.fresh();
       for (const k of Object.keys(f)) this[k] = o[k] !== undefined ? o[k] : f[k];
       this.abilities = Object.assign(f.abilities, o.abilities || {});
+      // habilidades novas dadas por chefes que esta gravação já venceu
+      for (const [b, ab] of [['matilheira', 'dashstrike'], ['elowen', 'counter'], ['sineiro', 'instinct']]) if (this.bosses && this.bosses[b]) this.abilities[ab] = true;
       this.quests = Object.assign(f.quests, o.quests || {});
       if (!this.weapons || !this.weapons.length) this.weapons = ['desperto'];
       if (!VS.WEAPONS || !VS.WEAPONS[this.weaponId]) this.weaponId = 'desperto';

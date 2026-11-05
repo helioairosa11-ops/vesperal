@@ -209,6 +209,15 @@
       ctx.fillStyle = '#fff4c8'; ctx.beginPath(); ctx.moveTo(10, 0); ctx.lineTo(-4, -1.1); ctx.lineTo(-4, 1.1); ctx.closePath(); ctx.fill();
       ctx.restore(); return;
     }
+    if (k === 'crescent') { // crescente de luz da Contra-Luz (aponta para onde voa)
+      const d = pr.vx >= 0 ? 1 : -1, a = Math.min(1, pr.life / 0.2);
+      ctx.save(); ctx.translate(x, y); ctx.scale(d, 1);
+      S.glow(ctx, 0, 0, 22, '#ffd890', 0.5 * a);
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.fillStyle = `rgba(255,236,190,${(0.85 * a).toFixed(3)})`; ctx.beginPath(); ctx.moveTo(-3, -17); ctx.quadraticCurveTo(15, 0, -3, 17); ctx.quadraticCurveTo(6, 0, -3, -17); ctx.fill();
+      ctx.fillStyle = `rgba(255,255,255,${(0.9 * a).toFixed(3)})`; ctx.beginPath(); ctx.moveTo(0, -12); ctx.quadraticCurveTo(10, 0, 0, 12); ctx.quadraticCurveTo(5, 0, 0, -12); ctx.fill();
+      ctx.restore(); return;
+    }
     if (k === 'lance') { // lança de luz (Eco de Seraphine): aponta para onde vai voar, mesmo parada no tempo
       const ang = pr.vx || pr.vy ? Math.atan2(pr.vy, pr.vx) : (pr.ang || 0);
       ctx.save(); ctx.translate(x, y); ctx.rotate(ang);

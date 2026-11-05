@@ -1473,6 +1473,50 @@ def t_sfx(R, b):
     R.check('efeitos sonoros: golpes e gestos audíveis e sem picos exagerados', all(0.05 <= v <= 1.3 for v in core.values()), core)
     pg.close()
 
+def t_combat2(R, b):
+    """armas equilibradas, chefes com vida e resistências próprias, e as habilidades novas da protagonista"""
+    pg = b.new_page(viewport={'width': 1280, 'height': 720}); errs = []; page_errors(pg, errs)
+    boot(pg); new_game(pg); pg.evaluate('VSDebug.allAbilities(); VSDebug.god(true)')
+    # dano por segundo da sequência normal e do golpe pesado de cada arma (dano-base 1)
+    dps = pg.evaluate("""(() => { const out = {}; for (const id in VS.WEAPONS) { const w = VS.WEAPONS[id], M = VS.WEAPON_MOVES[w.cls];
+        let t = 0, m = 0, k = 'l1'; while (k) { const d = M[k]; t += d.wind + d.act + d.rec; m += d.mult * (d.multi || 1); k = d.next; }
+        const h = M.heavy, ht = h.wind + h.act + h.rec, hm = h.mult * 2.1 * (h.multi || 1);
+        out[id] = { light: +(m / t * w.dmg).toFixed(2), heavy: +(hm / ht * w.dmg).toFixed(2) }; } return out; })()""")
+    ok = all(2.0 <= v['light'] <= 2.9 and 0.95 <= v['heavy'] / v['light'] <= 1.45 for v in dps.values())
+    R.check('armas equilibradas: sequência normal entre 2,0 e 2,9 de dano/s e o pesado até 1,45× a normal', ok, dps)
+    res = pg.evaluate("(() => { const R = VS.BOSS_RES; const sig = new Set(Object.values(R).map((r) => JSON.stringify(r.res) + (r.def || 0))); return { n: Object.keys(R).length, distinct: sig.size, hp: Object.fromEntries(Object.entries(R).map(([k, v]) => [k, v.hp || 0])) }; })()")
+    R.check('chefes com resistências diferentes (perfis distintos)', res['distinct'] >= 14, res)
+    # o Autómato: o Malho fere-o muito mais do que a espada; a armadura tira a cada golpe
+    dm = pg.evaluate("""(() => { const g = T.g(), p = T.p(); const d = { boss: 'automato', x: Math.floor(p.cx / 20) + 8, y: Math.floor((p.bottom - 1) / 20) };
+        const e = new VS.Bosses.Boss('automato', d, g); e.intro = false; e.game = g; const hb = (mat, dmg) => ({ x: e.x, y: e.y, w: 10, h: 10, dmg, id: VS.Entity.newAttackId(), owner: p, kind: 'light', mat, weapon: {} });
+        const h0 = e.hp; e.onHit(hb('blade', 30), g); const h1 = e.hp; e.onHit(hb('blunt', 30), g); const h2 = e.hp;
+        return { maxHp: e.maxHp, blade: h0 - h1, blunt: h1 - h2, journal: (() => { const b = VS.state.bosses.automato; return null; })() }; })()""")
+    R.check('Autómato: 960 de vida; o impacto fere-o o dobro das lâminas (armadura incluída)', dm['maxHp'] == 960 and dm['blunt'] > dm['blade'] * 1.7, dm)
+    # INVESTIDA CORTANTE: esquiva + ataque → golpe em investida, invulnerável
+    pg.evaluate("(() => { const p = T.p(); p.action = null; p.dodgeCd = 0; })()")
+    pg.evaluate("T.tap('KeyL', 2)"); frames(pg, 4); pg.evaluate("T.tap('KeyJ', 3)"); frames(pg, 3)
+    ds = pg.evaluate("(() => { const a = T.p().action; return { dash: !!(a && a.dash), type: a && a.type, iframes: +T.p().iframes.toFixed(2) }; })()")
+    R.check('Investida Cortante: atacar a meio da esquiva dá um golpe em investida invulnerável', ds['dash'] and ds['iframes'] > 0, ds)
+    frames(pg, 40)
+    # CONTRA-LUZ: a riposta (ataque depois do parry) solta um crescente de luz
+    pg.evaluate("(() => { const p = T.p(); p.action = null; p.riposteT = 1; })()"); pg.evaluate("T.tap('KeyJ', 3)")
+    cr = wait(pg, "T.g().ents.some((x) => x instanceof VS.Projectile && x.kind === 'crescent' && x.team === 'player')", 3)
+    R.check('Contra-Luz: a riposta depois do parry solta um crescente de luz', cr)
+    frames(pg, 40)
+    # INSTINTO: esquiva perfeita → o mundo abranda (projéteis mais lentos); a protagonista não
+    sl = pg.evaluate("""(() => { const g = T.g(), p = T.p(); p.action = { type: 'dodge', t: 0.1, dur: 0.34, inv: true, dir: 1 }; g.slowCd = 0; g.slowT = 0; p.perfectDodge(g);
+        const pr = new VS.Projectile({ x: p.cx + 200, y: p.cy - 60, vx: -100, vy: 0, w: 8, h: 8, dmg: 1, life: 5, solid: false }); g.spawn(pr); T.PR = pr; T.PX = pr.x; T.PT = g.time; return { slowT: g.slowT }; })()""")
+    frames(pg, 20)
+    mv = pg.evaluate("(() => { const dt = T.g().time - T.PT; return { speed: Math.round((T.PX - T.PR.x) / Math.max(0.001, dt)), slowT: +T.g().slowT.toFixed(2) }; })()")
+    R.check('Instinto: a esquiva perfeita abranda o mundo (um projétil de 100 px/s anda a menos de metade)', sl['slowT'] > 1 and 0 < mv['speed'] < 50, {'inicio': sl, 'depois': mv})
+    # gravações antigas: quem já venceu esses chefes recebe as habilidades novas
+    mg = pg.evaluate("(() => { const s = new VS.GameState(); s.load({ bosses: { matilheira: true, elowen: true, sineiro: true }, abilities: {} }); return [s.abilities.dashstrike, s.abilities.counter, s.abilities.instinct]; })()")
+    R.check('gravações antigas recebem as habilidades dos chefes já vencidos', mg == [True, True, True], mg)
+    jt = pg.evaluate("(() => ['item_ab_dashstrike_name', 'tut_counter', 'item_ab_instinct_desc', 'res_weak', 'dt_blunt'].every((k) => VS.t(k) && VS.t(k) !== k))()")
+    R.check('textos das habilidades e resistências nas línguas', jt)
+    R.check('combate novo sem erros de JavaScript', not errs, errs[:3])
+    pg.close()
+
 def t_turn(R, b):
     """a bater e a carregar para trás, o golpe seguinte sai para trás (teclado, comando/toque pelo mesmo eixo)"""
     pg = b.new_page(viewport={'width': 1280, 'height': 720}); errs = []; page_errors(pg, errs)
@@ -1689,7 +1733,7 @@ def t_feel(R, b):
     pg.close()
 
 TESTS = {'menus': t_menus, 'combat': t_movement_combat, 'world': t_world, 'bosses': t_bosses, 'caedmon': t_caedmon, 'aldric': t_aldric, 'corvin': t_corvin,
-         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach, 'giants': t_giants, 'traps': t_traps, 'structs': t_structs, 'wanderer': t_wanderer, 'custodio': t_custodio, 'desktop': t_desktop, 'bgart': t_bgart, 'turn': t_turn, 'screen': t_screen, 'life': t_life, 'bossfair': t_bossfair, 'feel': t_feel, 'extreme': t_extreme, 'sfx': t_sfx}
+         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach, 'giants': t_giants, 'traps': t_traps, 'structs': t_structs, 'wanderer': t_wanderer, 'custodio': t_custodio, 'desktop': t_desktop, 'bgart': t_bgart, 'turn': t_turn, 'screen': t_screen, 'life': t_life, 'bossfair': t_bossfair, 'feel': t_feel, 'extreme': t_extreme, 'sfx': t_sfx, 'combat2': t_combat2}
 
 
 def main(filters):
