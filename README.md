@@ -2,6 +2,16 @@
 
 > **Versão em desenvolvimento.** O jogo ainda não está terminado: falta o teste completo de uma partida do início ao fim (no computador e no telemóvel) e os últimos acertos de dificuldade e de fluidez.
 
+## Descarregar o jogo (versão de teste)
+
+| Sistema | Ficheiro |
+|---|---|
+| **Windows** — instalador | [Vesperal-0.22.0-instalador-windows.exe](https://github.com/helioairosa11-ops/vesperal/releases/download/v0.22.0/Vesperal-0.22.0-instalador-windows.exe) (160 MB) |
+| **Windows** — portátil (não instala nada, é só abrir) | [Vesperal-0.22.0-windows-portatil.exe](https://github.com/helioairosa11-ops/vesperal/releases/download/v0.22.0/Vesperal-0.22.0-windows-portatil.exe) (159 MB) |
+| **Android** | [Vesperal-0.22.0-android.apk](https://github.com/helioairosa11-ops/vesperal/releases/download/v0.22.0/Vesperal-0.22.0-android.apk) (86 MB) |
+
+Todas as versões estão em [Releases](https://github.com/helioairosa11-ops/vesperal/releases). No Windows, como o ficheiro não tem assinatura digital, pode aparecer "O Windows protegeu o computador": carrega em **Mais informações** e depois em **Executar mesmo assim**. No Android, deixa o telemóvel instalar apps de fontes desconhecidas quando ele pedir.
+
 Metroidvania 2D de fantasia sombria para o navegador. O Desperto acorda numa cova de cinza, sem nome nem memória, com uma pequena chama no peito, e atravessa uma cidade morta até ao trono de Aldric.
 
 - 7 regiões ligadas num só mapa, com altares de brasas, paredes falsas e passagens secretas
