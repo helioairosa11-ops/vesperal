@@ -1,10 +1,12 @@
 # Cria o Vesperal para Windows (.exe) e Android (.apk) nas máquinas do GitHub e põe-nos numa "Release" para descarregar.
-# Corre ao enviar uma etiqueta v* (p.ex. v0.22.0) ou à mão, em Actions → "Criar Windows e Android" → Run workflow.
+# Corre quando muda a versão (desktop/package.json ou android-app/package.json) ou à mão, em Actions →
+# "Criar Windows e Android" → Run workflow. A Release chama-se v<versão> (a de desktop/package.json).
 name: Criar Windows e Android
 
 on:
   push:
-    tags: ['v*']
+    branches: [main]
+    paths: ['desktop/package.json', 'android-app/package.json', '.github/workflows/apps.yml']
   workflow_dispatch:
 
 permissions:
@@ -72,7 +74,8 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
-          cp app/build/outputs/apk/debug/app-debug.apk "../Vesperal-${GITHUB_REF_NAME#v}-android.apk"
+          V=$(node -p "require('../../desktop/package.json').version")
+          cp app/build/outputs/apk/debug/app-debug.apk "../Vesperal-$V-android.apk"
       - uses: actions/upload-artifact@v4
         with:
           name: android
@@ -83,8 +86,8 @@ jobs:
     name: Publicar para descarregar
     needs: [windows, android]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           path: out
@@ -108,4 +111,9 @@ jobs:
 
           As gravações ficam no próprio aparelho.
           NOTES
-          gh release create "$GITHUB_REF_NAME" out/* --repo "$GITHUB_REPOSITORY" --title "Vesperal $GITHUB_REF_NAME (versão de teste)" --notes-file notas.md --prerelease
+          TAG="v$(node -p "require('./desktop/package.json').version")"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" out/* --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" out/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Vesperal $TAG (versão de teste)" --notes-file notas.md --prerelease
+          fi

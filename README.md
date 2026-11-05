@@ -41,7 +41,7 @@ Metroidvania 2D de fantasia sombria para o navegador. O Desperto acorda numa cov
 
 O jogo é uma página estática: não precisa de instalação nem de servidor próprio.
 
-- **Descarregar (Windows e Android, sem navegador):** em [Releases](https://github.com/helioairosa11-ops/vesperal/releases) — no Windows o instalador (`...-instalador-windows.exe`) ou o portátil (`...-windows-portatil.exe`, é só abrir); no Android o `.apk` (o telemóvel pede para permitir instalar apps desconhecidas). Os ficheiros são criados automaticamente pelo GitHub Actions (`.github/workflows/apps.yml`) sempre que se envia uma etiqueta `v*`.
+- **Descarregar (Windows e Android, sem navegador):** em [Releases](https://github.com/helioairosa11-ops/vesperal/releases) — no Windows o instalador (`...-instalador-windows.exe`) ou o portátil (`...-windows-portatil.exe`, é só abrir); no Android o `.apk` (o telemóvel pede para permitir instalar apps desconhecidas). Os ficheiros são criados automaticamente pelo GitHub Actions (`.github/workflows/apps.yml`) sempre que muda a versão do jogo.
 - **Online:** https://helioairosa11-ops.github.io/vesperal/ (GitHub Pages, publicado a partir da branch `gh-pages`).
 - **No computador:** descarrega o repositório e abre o `index.html` no navegador (ou serve a pasta com `python3 -m http.server 8000` e abre `http://localhost:8000`).
 - **Versão de computador / Steam:** ver [`desktop/LEIA-ME-STEAM.md`](desktop/LEIA-ME-STEAM.md) — com o Node.js instalado, `npm install` e `npm run steam:windows` dentro de `desktop/` criam o `Vesperal.exe`.
