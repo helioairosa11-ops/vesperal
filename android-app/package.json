@@ -1,0 +1,17 @@
+{
+  "name": "vesperal-android",
+  "version": "0.22.0",
+  "private": true,
+  "description": "Vesperal: A Última Chama — versão Android (Capacitor: o jogo dentro de uma app, sem navegador)",
+  "license": "CC-BY-NC-SA-4.0",
+  "scripts": {
+    "copiar-jogo": "node scripts/copiar-jogo.js"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/core": "^6.2.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0"
+  }
+}

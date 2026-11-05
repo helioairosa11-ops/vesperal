@@ -1,0 +1,6 @@
+{
+  "appId": "pt.lourencemanuel.vesperal",
+  "appName": "Vesperal",
+  "webDir": "www",
+  "android": { "backgroundColor": "#000000", "allowMixedContent": false }
+}
