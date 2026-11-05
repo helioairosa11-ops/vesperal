@@ -71,7 +71,12 @@ jobs:
           done
       - name: Compilar o APK
         working-directory: android-app/android
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_DEBUG_KEYSTORE }}
         run: |
+          # com a chave guardada no segredo ANDROID_DEBUG_KEYSTORE, cada versão nova instala-se por cima da anterior
+          # (sem ela o APK é assinado com uma chave nova e é preciso desinstalar a versão antiga primeiro)
+          if [ -n "$KEYSTORE_B64" ]; then mkdir -p ~/.android && echo "$KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore; fi
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
           V=$(node -p "require('../../desktop/package.json').version")
