@@ -20,6 +20,9 @@
       this.gravity = this.flying ? 0 : 1350; this.cool = U.rand(0.3, 1.2); this.aggro = false; this.anim = 0;
       this.contactDmg = c.contact || 0;
       this.nat = (VS.NATURE && (VS.NATURE[kind] || VS.NATURE[K.base])) || {};
+      // Nova Partida+: inimigos comuns com mais vida e golpes mais fortes (os chefes têm regras próprias)
+      const ng = !K.boss && VS.state && VS.state.ngp ? Math.min(VS.state.ngp, 3) : 0;
+      if (ng) { this.hp = this.maxHp = Math.round(this.maxHp * (1 + 0.5 * ng)); this.dmgScale = 1 + 0.25 * ng; this.contactDmg = Math.round(this.contactDmg * (1 + 0.25 * ng)); }
       if (K.init) K.init(this, d);
     }
     // material do corpo (efeitos e sons dos golpes)
@@ -125,6 +128,7 @@
       if (this.stagger > 0 && this.parried) dmg = Math.round(dmg * 1.5);
       if (this.K.damageMult) dmg = Math.round(dmg * this.K.damageMult(this, hb));
       if (this.res && this.res.def && hb.kind !== 'reflect') dmg = Math.max(Math.round(dmg * 0.4), dmg - this.res.def);
+      if (this.isBoss && VS.state) dmg = Math.round(dmg * VS.state.fx('bossDamage', 1));
       this.hp -= dmg; this.flash = 0.16; this.lastHitT = 0;
       this.aggro = true;
       const heavy = hb.kind === 'heavy' || hb.kind === 'riposte';

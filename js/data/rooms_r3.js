@@ -14,6 +14,8 @@
     b.e('trap', 26, 32, { k: 'vent', len: 5, period: 3, off: 1 });
     b.enemy('smelter', 19, 20); b.enemy('slag', 10, 32);
     b.e('urn', 4, 32);
+    // parede falsa: a sala secreta do Sino Perdido
+    b.fake(b.W - 2, 30, b.W - 1, 32);
   });
 
   // Grande Fundição
@@ -83,5 +85,12 @@
     b.item('candle_fragment', 22, 13);
     b.e('inscription', 8, 13, { id: 'i17' });
     b.e('urn', 14, 13); b.e('urn', 26, 13);
+  });
+
+  // sala secreta (atrás de uma parede falsa em r3_shaft): um dos Sinos Perdidos da Torre das Provações
+  R('r3_bellcell', { region: 'r3', x: 12, y: 4, interior: true, dark: 0.6 }, (b) => {
+    b.fill(); b.carve(5, 9, 26, 14); b.carve(0, 12, 5, 14);
+    b.solid(14, 14, 17, 14); b.item('lost_bell', 15, 13);
+    b.e('urn', 8, 14); b.e('urn', 23, 14); b.e('urn', 25, 14);
   });
 })(window.VS);

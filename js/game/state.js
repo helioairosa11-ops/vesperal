@@ -25,7 +25,7 @@
         visited: {}, altars: {}, shortcuts: {},
         quests: { hrolf: 0, maren: 0, teodoro: 0 },
         buffs: {},
-        deaths: 0, ending: null, finalSave: false,
+        deaths: 0, ending: null, finalSave: false, ngp: 0,
       };
     }
     serialize() {

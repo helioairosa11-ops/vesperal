@@ -602,7 +602,7 @@ def t_corvin(R, b):
     # lá em cima, do chão os golpes e feitiços são desviados — mas as notas devolvidas com o parry ferem-no
     low = pg.evaluate('''() => { const B = T.bossEnts()[0], g = T.g(), hp = B.hp; const r1 = B.onHit({ x: B.x, y: B.y, w: 10, h: 10, dmg: 30, id: 7771, owner: T.p() }, g); const r2 = B.onHit({ x: B.x, y: B.y, w: 10, h: 10, dmg: 30, id: 7772, owner: T.p(), proj: {} }, g); const d0 = B.hp - hp; const r3 = B.onHit({ x: B.x, y: B.y, w: 10, h: 10, dmg: 26, id: 7773, owner: T.p(), proj: { kind: 'note' }, kind: 'reflect' }, g); return { r1, r2, dhp: d0, r3, dnote: hp - B.hp, py: Math.round(T.p().bottom / 20), perch: B.perchI, mode: B.mode }; }''')
     R.check('Corvin: do chão (e com projéteis) não se lhe faz dano, mas as notas devolvidas ferem-no', low['r1'] == 'blocked' and low['r2'] == 'blocked' and low['dhp'] == 0 and low['dnote'] > 0, low)
-    up = pg.evaluate('''() => { const B = T.bossEnts()[0], g = T.g(), p = T.p(); const P = B.perches[B.perchI]; p.x = B.cx - 26 - p.w / 2; p.y = P.y - p.h - 1; p.vy = 0; const hp = B.hp, i0 = B.perchI; let n = 0; for (let k = 0; k < 6; k++) { const r = B.onHit({ x: B.x, y: B.y, w: 10, h: 10, dmg: 20, id: 7800 + k, owner: p }, g); if (r !== 'blocked' && r !== false) n++; } return { dhp: hp - B.hp, hits: n, i0 }; }''')
+    up = pg.evaluate('''() => { const B = T.bossEnts()[0], g = T.g(), p = T.p(); B.atk = null; B.patT = 999; B.patRun = null; const P = B.perches[B.perchI]; p.x = B.cx - 26 - p.w / 2; p.y = P.y - p.h - 1; p.vy = 0; const hp = B.hp, i0 = B.perchI; let n = 0; for (let k = 0; k < 6; k++) { const r = B.onHit({ x: B.x, y: B.y, w: 10, h: 10, dmg: 20, id: 7800 + k, owner: p }, g); if (r !== 'blocked' && r !== false) n++; } return { dhp: hp - B.hp, hits: n, i0 }; }''')
     frames(pg, 30)
     moved = pg.evaluate('T.bossEnts()[0].perchI')
     R.check('Corvin: no balcão dele os golpes ferem e, depois de vários, salta para outro balcão', up['dhp'] > 0 and moved != up['i0'], {**up, 'perch_after': moved})
@@ -1566,6 +1566,63 @@ def t_patterns(R, b):
     R.check('padrões de esquiva sem erros de JavaScript', not errs, errs[:3])
     pg.close()
 
+def t_trials(R, b):
+    """Torre das Provações (portal, provas de esquiva, ecos dos chefes), Sinos Perdidos nas salas secretas e Nova Partida+"""
+    pg = b.new_page(viewport={'width': 1280, 'height': 720}); errs = []; page_errors(pg, errs)
+    boot(pg); new_game(pg, slot=2); pg.evaluate('VSDebug.allAbilities(); VSDebug.god(true)')
+    warp(pg, 'r1_sanct')
+    gate = pg.evaluate("(() => { const g = T.g(), e = g.ents.find((x) => x.to === 'r1_trials'); if (!e) return null; e.interact(g); return g.room.id; })()")
+    frames(pg, 10)
+    inside = pg.evaluate("(() => ({ room: T.g().room.id, bell: T.g().ents.some((x) => x.promptKey && x.promptKey() === 'act_trial_bell'), back: T.g().ents.some((x) => x.to === 'r1_sanct') }))()")
+    shot(pg, 'trials_tower')
+    R.check('o portal do Santuário leva à Torre das Provações (sino e portal de volta)', gate == 'r1_trials' and inside['bell'] and inside['back'], inside)
+    # prova de esquiva I: a Voz lança os padrões e, aguentando até ao fim, dá a recompensa
+    ash0 = pg.evaluate('VS.state.ash')
+    pg.evaluate("VS.Trials.startDodge(T.g(), VS.Trials.DODGE[0])")
+    wait(pg, "T.g().ents.some((x) => x.isVoice && x.patRun)", 6)
+    frames(pg, 30); shot(pg, 'trials_dodge')
+    pg.evaluate("(() => { const v = T.g().ents.find((x) => x.isVoice); if (v) { v.idx = v.tier.seq.length - 2; } })()")
+    done = wait(pg, "!T.g().ents.some((x) => x.isVoice) && VS.state.flags.trials && VS.state.flags.trials.dodge[1]", 25)
+    R.check('prova de esquiva: a Voz lança os padrões e, no fim, a prova fica feita com recompensa', done and pg.evaluate('VS.state.ash') >= ash0 + 1000, {'feita': done})
+    # eco do Coveiro: na sala dele, vida ×1,5; vencido, volta à torre sem repetir as recompensas da história
+    pg.evaluate("VS.state.bosses.coveiro = true; VS.state.abilities.dash = true")
+    pg.evaluate("VS.Trials.startEcho(T.g(), 'coveiro')")
+    wait(pg, "T.bossEnts().length > 0", 6)
+    ec = pg.evaluate("(() => { const e = T.bossEnts()[0]; return { room: T.g().room.id, hp: e.maxHp, echo: !!e.echoTrial }; })()")
+    wait(pg, "T.bossEnts().length > 0 && !T.bossEnts()[0].intro", 12)
+    pg.evaluate("T.autoDlg = true; T.bossEnts().forEach((e) => e.die(T.g()))")
+    back = wait(pg, "T.g().room.id === 'r1_trials'", 12)
+    R.check('eco de um chefe: na sala dele com 1,5× a vida; vencido, conta e volta-se à torre', ec['room'] == 'r1_coveiro' and ec['hp'] == 960 and ec['echo'] and back and pg.evaluate("!!VS.state.flags.trials.echoes.coveiro"), ec)
+    # Sinos Perdidos: seis salas secretas atrás de paredes falsas, cada uma com um sino
+    rooms = pg.evaluate("Object.keys(VS.ROOMS).filter((k) => k.endsWith('_bellcell')).map((k) => [k, VS.ROOMS[k].ents.some((e) => e.t === 'item' && e.item === 'lost_bell')])")
+    R.check('seis salas secretas novas, cada uma com um Sino Perdido', len(rooms) == 6 and all(r[1] for r in rooms), rooms)
+    # entrar numa a partir da sala vizinha: partir a parede falsa e atravessar
+    warp(pg, 'r1_coveiro')
+    pg.evaluate("(() => { const g = T.g(), r = g.room; for (let y = 0; y < r.h; y++) for (let x = r.w - 2; x < r.w; x++) if (r.tile(x, y) === 'F') { g.breakWall(x, y); return; } })()")
+    pg.evaluate("(() => { const p = T.p(), r = T.g().room; p.x = (r.w - 4) * 20; p.y = 14 * 20 - p.h; p.vx = 0; })()")
+    pg.evaluate("T.key('KeyD', true)")
+    into = wait(pg, "T.g().room.id === 'r1_bellcell'", 6)
+    pg.evaluate("T.key('KeyD', false)")
+    pg.evaluate("(() => { const p = T.p(); p.x = 15 * 20; p.y = 13 * 20 - p.h; })()"); frames(pg, 20)
+    pg.evaluate("T.tap('KeyE', 3)")
+    got = wait(pg, "VS.state.count('lost_bell') >= 1", 6)
+    shot(pg, 'trials_bellcell')
+    R.check('a parede falsa abre para a sala secreta e o sino apanha-se', into and got, {'entrou': into, 'sino': got})
+    pg.evaluate("VS.state.give('lost_bell', 2)"); warp(pg, 'r1_trials')
+    pg.evaluate("VS.Trials.returnBells(T.g())"); frames(pg, 160)
+    bl = pg.evaluate("({ bells: VS.state.flags.trials.bells, relic: VS.state.relics.includes('r_tower_bell') })")
+    R.check('devolver três sinos à torre dá o Sino da Torre', bl['bells'] == 3 and bl['relic'], bl)
+    # Nova Partida+: numa gravação com um final; fica com o que se ganhou e os inimigos ficam mais fortes
+    pg.evaluate("(() => { VS.state.flags.ending_end1 = true; VS.state.weapon = 3; VS.state.hearts = 4; T.g().save(); })()"); frames(pg, 5)
+    pg.evaluate("VS.Trials.newGamePlus(VS.slot)"); frames(pg, 60)
+    pg.evaluate("T.autoDlg = true"); wait(pg, "VS.App.mode === 'game' && VS.state.ngp === 1", 10)
+    ng = pg.evaluate("(() => { const st = VS.state; return { ngp: st.ngp, weapon: st.weapon, hearts: st.hearts, dash: st.abilities.dash, bosses: Object.keys(st.bosses).length, relic: st.relics.includes('r_tower_bell') }; })()")
+    warp(pg, 'r1_street'); frames(pg, 10)
+    hpk = pg.evaluate("(() => { const e = T.g().ents.find((x) => x.isEnemy && x.kind === 'husk'); return e ? { hp: e.maxHp, base: e.c.hp, dmg: e.dmgScale } : null; })()")
+    R.check('Nova Partida+: recomeça a história com armas, vida, relíquias e habilidades; inimigos mais fortes', ng['ngp'] == 1 and ng['weapon'] == 3 and ng['hearts'] == 4 and ng['dash'] and ng['bosses'] == 0 and ng['relic'] and hpk and hpk['hp'] > hpk['base'], {'estado': ng, 'inimigo': hpk})
+    R.check('Torre, sinos e Nova Partida+ sem erros de JavaScript', not errs, errs[:3])
+    pg.close()
+
 def t_turn(R, b):
     """a bater e a carregar para trás, o golpe seguinte sai para trás (teclado, comando/toque pelo mesmo eixo)"""
     pg = b.new_page(viewport={'width': 1280, 'height': 720}); errs = []; page_errors(pg, errs)
@@ -1782,7 +1839,7 @@ def t_feel(R, b):
     pg.close()
 
 TESTS = {'menus': t_menus, 'combat': t_movement_combat, 'world': t_world, 'bosses': t_bosses, 'caedmon': t_caedmon, 'aldric': t_aldric, 'corvin': t_corvin,
-         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach, 'giants': t_giants, 'traps': t_traps, 'structs': t_structs, 'wanderer': t_wanderer, 'custodio': t_custodio, 'desktop': t_desktop, 'bgart': t_bgart, 'turn': t_turn, 'screen': t_screen, 'life': t_life, 'bossfair': t_bossfair, 'feel': t_feel, 'extreme': t_extreme, 'sfx': t_sfx, 'combat2': t_combat2, 'patterns': t_patterns}
+         'quests': t_quests, 'endings': t_endings, 'save': t_save, 'lang': t_lang, 'touch': t_touch, 'gamepad': t_gamepad, 'perf': t_perf, 'parry': t_parry, 'weak': t_weak, 'judge': t_judge, 'moves': t_moves, 'reach': t_reach, 'giants': t_giants, 'traps': t_traps, 'structs': t_structs, 'wanderer': t_wanderer, 'custodio': t_custodio, 'desktop': t_desktop, 'bgart': t_bgart, 'turn': t_turn, 'screen': t_screen, 'life': t_life, 'bossfair': t_bossfair, 'feel': t_feel, 'extreme': t_extreme, 'sfx': t_sfx, 'combat2': t_combat2, 'patterns': t_patterns, 'trials': t_trials}
 
 
 def main(filters):

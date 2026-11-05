@@ -40,6 +40,8 @@
     b.e('inscription', 26, 32, { id: 'i33' });
     b.enemy('courtier', 16, 20); b.enemy('torch', 6, 32);
     b.prop('portrait', 10, 6);
+    // parede falsa: a sala secreta do Sino Perdido
+    b.fake(0, 6, 1, 8);
   });
 
   // Galeria dos Retratos
@@ -86,5 +88,12 @@
     b.e('npc', 26, 14, { id: 'ione', face: 1, cond: (s) => !!s.bosses.aldric && !s.ending });
     b.e('inscription', 88, 14, { id: 'i35' });
     b.prop('chandelier', 30, 2); b.prop('chandelier', 60, 2);
+  });
+
+  // sala secreta (atrás de uma parede falsa em r7_chambers): um dos Sinos Perdidos da Torre das Provações
+  R('r7_bellcell', { region: 'r7', x: -6, y: -2, interior: true, dark: 0.6 }, (b) => {
+    b.fill(); b.carve(5, 3, 26, 8); b.carve(26, 6, 31, 8);
+    b.solid(14, 8, 17, 8); b.item('lost_bell', 15, 7);
+    b.e('urn', 8, 8); b.e('urn', 23, 8); b.e('urn', 25, 8);
   });
 })(window.VS);

@@ -36,7 +36,7 @@
       if (meta) {
         const d = meta.data, reg = VS.ROOMS[d.room] ? VS.ROOMS[d.room].region : 'r1';
         const st = new VS.GameState(); st.load(d);
-        b.innerHTML = `<div class="slot-n">${i + 1}</div><div class="slot-body"><div class="slot-region">${esc(t('reg_' + reg))}</div><div class="slot-info">${esc(t('slot_info', { time: U.fmtTime(d.playTime), embers: st.embers, pct: st.completion() }))}</div></div>`;
+        b.innerHTML = `<div class="slot-n">${i + 1}</div><div class="slot-body"><div class="slot-region">${esc(t('reg_' + reg))}${d.ngp ? ' · ' + esc(t('ngp_badge', { n: d.ngp })) : ''}</div><div class="slot-info">${esc(t('slot_info', { time: U.fmtTime(d.playTime), embers: st.embers, pct: st.completion() }))}</div></div>`;
         b.onclick = () => M.slotActions(i, panel);
       } else {
         b.innerHTML = `<div class="slot-n">${i + 1}</div><div class="slot-body"><div class="slot-region empty">${esc(t('slot_empty'))}</div></div>`;
@@ -47,8 +47,11 @@
     UI.open(panel);
   };
   M.slotActions = function (i, parent) {
+    const meta = VS.Save.meta(i), dd = meta && meta.data;
+    const ngp = VS.Trials && VS.Trials.hasEnding(dd) ? [{ label: t('slot_ngp', { n: (dd.ngp || 0) + 1 }), action: () => UI.confirm(t('confirm_ngp'), () => { UI.closeAll(); VS.Trials.newGamePlus(i); }) }] : [];
     const p = UI.menu({ title: t('slot_n', { n: i + 1 }), items: [
       { label: t('slot_load'), action: () => { UI.closeAll(); VS.App.loadSlot(i); } },
+      ...ngp,
       { label: t('slot_new'), action: () => UI.confirm(t('confirm_overwrite'), () => { UI.closeAll(); VS.Save.erase(i); VS.App.newGame(i); }) },
       { label: t('slot_erase'), action: () => UI.confirm(t('confirm_erase'), () => { VS.Save.erase(i); UI.close(p); UI.close(parent); M.slots(); }) },
       { label: t('back'), action: () => UI.close(p) },

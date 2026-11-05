@@ -111,6 +111,27 @@
       c.save(); c.globalAlpha = 0.55; K.paint(c, gl, M.glass, { depth: S * 0.3 }); c.restore();
       P(c, [[12, 8.5], [20, 8.5], [16, 13.5]], M.ash, { depth: S * 0.2 }); P(c, [[11.6, 25], [20.4, 25], [18, 22], [14, 22]], M.ash, { depth: S * 0.2 });
       for (let i = 0; i < 5; i++) D(c, 16 + (i % 2 ? 0.5 : -0.5), 15 + i * 1.3, 0.45, '#e8e0d8'); } },
+    lost_bell: { cat: 'quest', draw(c) { // sino pequeno de bronze, rachado, com a argola gasta
+      glowAt(c, 16, 17, 10, '#ffd080', 0.4);
+      T(c, [[13.6, 6.4], [16, 4.4], [18.4, 6.4]], [0.8, 0.8, 0.8], M.amber, { depth: S * 0.2, flat: true });
+      const b = A.path((q) => { q.M(12.6, 8); q.Q(9.6, 10.5, 9.6, 17); q.Q(9.4, 22, 6.6, 24.6); q.L(25.4, 24.6); q.Q(22.6, 22, 22.4, 17); q.Q(22.4, 10.5, 19.4, 8); q.Z(); }, S);
+      K.paint(c, b, A.mat('#b07a34', { light: '#f0c878', shadow: '#5e3a14', deep: '#2a1806' }), { depth: S * 0.6, hlw: S * 0.3 });
+      L(c, [[8, 23.4], [24, 23.4]], 0.5, A.rgba('#ffe0a0', 0.7));
+      L(c, [[17.6, 9.6], [16.4, 13.2], [18.2, 15.6], [16.8, 19]], 0.3, A.rgba('#2a1806', 0.85));
+      circle(c, 16, 26.2, 1.6, M.iron, { depth: S * 0.2 }); } },
+    r_tower_bell: { cat: 'relic', draw(c) { // sino de prata da torre num cordão, com um brilho azulado
+      relicCord(c); glowAt(c, 16, 19, 10, '#a8c0ff', 0.55);
+      const b = A.path((q) => { q.M(13.4, 11.6); q.Q(11, 14, 11, 19); q.Q(10.8, 23, 8.6, 25); q.L(23.4, 25); q.Q(21.2, 23, 21, 19); q.Q(21, 14, 18.6, 11.6); q.Z(); }, S);
+      K.paint(c, b, M.silver, { depth: S * 0.5, hlw: S * 0.3 });
+      L(c, [[10, 23.8], [22, 23.8]], 0.4, A.rgba('#ffffff', 0.7)); circle(c, 16, 26.4, 1.3, M.iron, { depth: S * 0.2 });
+      for (let i = 0; i < 3; i++) { c.save(); c.globalAlpha = 0.5 - i * 0.14; L(c, [[24 + i * 2, 16 - i], [25.6 + i * 2, 19], [24 + i * 2, 22 + i]], 0.3, '#c8d8ff'); c.restore(); } } },
+    r_echo_crown: { cat: 'relic', draw(c) { // coroa de cinza com ecos de luz à volta (os guardiões vencidos outra vez)
+      glowAt(c, 16, 17, 12, '#ffcf80', 0.45);
+      for (let i = 0; i < 3; i++) { c.save(); c.globalAlpha = 0.35 - i * 0.1; c.lineWidth = S * 0.3; c.strokeStyle = '#ffe8b0'; c.beginPath(); c.ellipse(16 * S, 19 * S, (10 + i * 2.6) * S, (5 + i * 1.4) * S, 0, 0, Math.PI * 2); c.stroke(); c.restore(); }
+      P(c, [[8, 23], [24, 23], [25, 12], [21, 17], [19, 9], [16, 15], [13, 9], [11, 17], [7, 12]], M.ash, { depth: S * 0.6, hlw: S * 0.3 });
+      P(c, [[8, 23], [24, 23], [24, 20.6], [8, 20.6]], M.gold, { depth: S * 0.3 });
+      for (const x of [11, 16, 21]) circle(c, x, 21.8, 0.9, A.mat('#c02030', { light: '#ff8080' }), { depth: S * 0.1 });
+      for (const [x, y] of [[7, 12], [13, 9], [19, 9], [25, 12], [16, 15]]) D(c, x, y, 0.8, '#ffe0a0'); } },
     // ---------------- chaves
     chalice: { cat: 'key', draw(c) { this.cup(c, false); }, cup(c, mended) {
       P(c, [[9, 6], [23, 6], [22, 12], [18, 16], [14, 16], [10, 12]], M.silver, { depth: S * 0.7, hlw: S * 0.35 });

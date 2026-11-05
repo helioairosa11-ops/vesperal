@@ -337,6 +337,7 @@
       bxf -= 18;
     }
     // relógio opcional
+    if (st.ngp) { ctx.textAlign = 'right'; ctx.font = UI.font(9); ctx.fillStyle = 'rgba(255,200,140,0.75)'; ctx.fillText(VS.t('ngp_badge', { n: st.ngp }), U.SCREEN_W - 12, VS.settings.showTimer ? 26 : 14); ctx.textAlign = 'left'; }
     if (VS.settings.showTimer) { ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(230,220,210,0.7)'; ctx.font = UI.font(10); ctx.fillText(U.fmtTime(st.playTime), U.SCREEN_W - 12, 14); }
     // ---- barra do chefe
     if (UI.boss && !UI.boss.dead) {

@@ -48,6 +48,8 @@
     b.e('trap', 23, 4, { k: 'grate', len: 9.6, period: 3.4 });
     b.e('inscription', 6, 14, { id: 'i10' });
     b.prop('crate', 4, 14); b.prop('crate', 27, 14);
+    // parede falsa: a sala secreta do Sino Perdido
+    b.fake(b.W - 2, 12, b.W - 1, 14);
   });
 
   // Ameias — o caminho para a Atalaia
@@ -95,5 +97,12 @@
     b.e('inscription', 26, 14, { id: 'i12' });
     b.enemy('husk', 14, 12); b.enemy('husk', 22, 12);
     b.e('urn', 52, 14);
+  });
+
+  // sala secreta (atrás de uma parede falsa em r2_armory): um dos Sinos Perdidos da Torre das Provações
+  R('r2_bellcell', { region: 'r2', x: 13, y: 1, interior: true, dark: 0.6 }, (b) => {
+    b.fill(); b.carve(5, 9, 26, 14); b.carve(0, 12, 5, 14);
+    b.solid(14, 14, 17, 14); b.item('lost_bell', 15, 13);
+    b.e('urn', 8, 14); b.e('urn', 23, 14); b.e('urn', 25, 14);
   });
 })(window.VS);

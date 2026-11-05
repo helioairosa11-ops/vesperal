@@ -36,6 +36,7 @@
     b.exitL(10, 14); b.exitR(10, 14);
     b.solid(10, 14, 21, 14);
     b.e('altar', 15, 13, { id: 'a_sanct', name: 'altar_sanct' });
+    b.e('trialgate', 20, 13, { to: 'r1_trials' });
     b.e('lastflame', 15, 4);
     b.e('npc', 23, 14, { id: 'ione', cond: (s) => !s.bosses.aldric || !!s.ending });
     // a Maren muda-se para o Santuário com a primeira brasa — ou logo que o irmão lá chega (o reencontro é aqui)
@@ -116,6 +117,8 @@
     b.plat(54, 61, 12); b.plat(56, 59, 9); b.plat(54, 61, 6); b.plat(56, 59, 3);
     b.e('boss', 30, 14, { boss: 'coveiro', trigger: 10 });
     b.prop('grave', 20, 14); b.prop('grave', 40, 14);
+    // parede falsa: a sala secreta do Sino Perdido
+    b.fake(b.W - 2, 12, b.W - 1, 14);
   });
 
   // Campanário Baixo — sobe para a Torre dos Sinos (salto duplo)
@@ -157,5 +160,20 @@
     b.e('trap', 31, 14, { k: 'bones', period: 2.6 }); b.e('trap', 41, 14, { k: 'bones', period: 2.6, off: 1.3 });
     b.enemy('courtier', 40, 10); b.enemy('husk', 26, 14); b.enemy('husk_big', 46, 14); b.enemy('crawler', 36, 14);
     b.e('urn', 18, 14); b.e('urn', 56, 14);
+  });
+
+  // Torre das Provações — só se chega pelo portal do Santuário: o grande sino, a arena da Voz
+  R('r1_trials', { region: 'sanct', x: 0, y: 4, area: 'reg_trials', interior: true, dark: 0.35, noEnemies: true }, (b) => {
+    b.fill(); b.carve(2, 2, 29, 14);
+    b.e('trialgate', 3, 14, { to: 'r1_sanct' });
+    b.e('trialbell', 7, 14);
+    b.plat(12, 15, 10); b.plat(20, 23, 10);
+  });
+
+  // sala secreta (atrás de uma parede falsa em r1_coveiro): um dos Sinos Perdidos da Torre das Provações
+  R('r1_bellcell', { region: 'r1', x: 5, y: 2, interior: true, dark: 0.6 }, (b) => {
+    b.fill(); b.carve(5, 9, 26, 14); b.carve(0, 12, 5, 14);
+    b.solid(14, 14, 17, 14); b.item('lost_bell', 15, 13);
+    b.e('urn', 8, 14); b.e('urn', 23, 14); b.e('urn', 25, 14);
   });
 })(window.VS);

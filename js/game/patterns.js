@@ -157,7 +157,7 @@
     mariposa: { type: 'spiral', kind: 'scale', color: '#f0e0ff', arms: 3, dmg: 12, every: [10, 13] },
     elowen: { type: 'grid', color: '#9fffd0', cycles: 3, thorn: true, dmg: 15, every: [12, 15] },
     sineiro: { type: 'rings', color: [255, 214, 120], rings: 3, dmg: 15, every: [10, 13] },
-    corvin: { type: 'spiral', kind: 'note', color: '#ffd070', arms: 4, dmg: 13, every: [11, 14] },
+    corvin: { type: 'rings', color: [255, 208, 112], rings: 3, dmg: 13, sfx: 'note', every: [11, 14] }, // ondas do alaúde (as notas dele seguem o compasso)
     vael: { type: 'wall', kind: 'fire', color: '#ff5020', walls: 3, dmg: 16, every: [10, 13] },
     ozias: { type: 'grid', color: '#fff0c0', cycles: 4, light: true, dmg: 16, every: [10, 13] },
     gemeo_a: { type: 'rain', kind: 'ingot', color: '#c0c8d8', warnCol: '#d0d8e8', waves: 3, dmg: 15, every: [14, 18] },

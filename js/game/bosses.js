@@ -44,6 +44,9 @@
       if (RS && RS.hp) this.hp = this.maxHp = RS.hp;
       const ng = VS.state && VS.state.ngp ? VS.state.ngp : 0;
       if (ng) this.hp = this.maxHp = Math.round(this.maxHp * (1 + 0.45 * Math.min(ng, 3)));
+      this.ngMul = 1 + 0.2 * Math.min(ng, 3);
+      // eco na Torre das Provações: vida ×1,5 e mais fúria
+      if (game.trial && game.trial.kind === 'echo') { this.hp = this.maxHp = Math.round(this.maxHp * 1.5); this.ngMul *= 1.15; this.echoTrial = true; }
       this.arena = { x0: T * 2, x1: game.room.pw - T * 2, floor: (d.floor !== undefined ? d.floor : d.y + 1) * T };
     }
     update(dt, game) {
@@ -57,8 +60,8 @@
         if (this.K.onPhase) this.K.onPhase(this, game, this.phase);
       }
       // cada fase bate um pouco mais forte e espera menos entre golpes
-      this.dmgScale = 1 + 0.12 * this.phase;
-      const ag = (this.K.aggr || AGGR)[Math.min(this.phase, 2)] || 1;
+      this.dmgScale = (1 + 0.12 * this.phase) * (this.ngMul || 1);
+      const ag = ((this.K.aggr || AGGR)[Math.min(this.phase, 2)] || 1) * (this.ngMul > 1 ? 1 + (this.ngMul - 1) * 0.6 : 1);
       if (this.cool > 0) this.cool -= dt * (ag - 1);
       // martelado sem parar: responde com a onda de choque assim que estiver livre
       this.pressure = Math.max(0, this.pressure - dt * 0.9);
@@ -131,6 +134,7 @@
       if (this.defT > 2.4 && !this.finished) {
         this.finished = true; this.remove = true;
         const st = VS.state;
+        if (game.trial && game.trial.kind === 'echo' && VS.Trials) { game.endBoss(this); VS.Trials.echoWon(game, this.bossId); return; }
         st.bosses[this.bossId] = true;
         VS.FX.flare(this.cx, this.cy, 40, [255, 220, 160], 0.5);
         for (let i = 0; i < 40; i++) G.emit({ x: this.cx + U.rand(-this.w / 2, this.w / 2), y: this.cy + U.rand(-this.h / 2, this.h / 2), vx: U.rand(-80, 80), vy: U.rand(-160, -40), drag: 1.4, life: U.rand(0.8, 1.6), size: U.rand(0.8, 1.6), color: U.pick(['#ffd090', '#ff9a40', '#fff4d0']), add: true, shrink: true, layer: 2 });

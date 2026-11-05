@@ -79,5 +79,14 @@
     b.e('inscription', 12, 32, { id: 'i26' });
     b.e('inscription', 42, 32, { id: 'i44' });
     b.e('trigger', 56, 27, { h: 6, hint: 'hint_veil' });
+    // parede falsa: a sala secreta do Sino Perdido
+    b.fake(0, 7, 1, 9);
+  });
+
+  // sala secreta (atrás de uma parede falsa em r5_crown): um dos Sinos Perdidos da Torre das Provações
+  R('r5_bellcell', { region: 'r5', x: 1, y: -5, interior: true, dark: 0.6 }, (b) => {
+    b.fill(); b.carve(5, 4, 26, 9); b.carve(26, 7, 31, 9);
+    b.solid(14, 9, 17, 9); b.item('lost_bell', 15, 8);
+    b.e('urn', 8, 9); b.e('urn', 23, 9); b.e('urn', 25, 9);
   });
 })(window.VS);

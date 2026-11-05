@@ -55,6 +55,8 @@
     b.e('inscription', 8, 32, { id: 'i21' });
     b.enemy('moth', 14, 16); b.enemy('moth', 20, 6);
     b.prop('candles', 23, 8); b.prop('pot', 4, 32);
+    // parede falsa: a sala secreta do Sino Perdido
+    b.fake(0, 30, 1, 32);
   });
 
   // Raízes Submersas
@@ -95,5 +97,12 @@
     b.e('boss', 38, 14, { boss: 'elowen', trigger: 22 });
     b.prop('reeds', 6, 14); b.prop('reeds', 56, 14);
     b.e('inscription', 8, 14, { id: 'i42' });
+  });
+
+  // sala secreta (atrás de uma parede falsa em r4_nursery): um dos Sinos Perdidos da Torre das Provações
+  R('r4_bellcell', { region: 'r4', x: -9, y: 1, interior: true, dark: 0.6 }, (b) => {
+    b.fill(); b.carve(5, 9, 26, 14); b.carve(26, 12, 31, 14);
+    b.solid(14, 14, 17, 14); b.item('lost_bell', 15, 13);
+    b.e('urn', 8, 14); b.e('urn', 23, 14); b.e('urn', 25, 14);
   });
 })(window.VS);

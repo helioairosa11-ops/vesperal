@@ -18,6 +18,9 @@ Metroidvania 2D de fantasia sombria para o navegador. O Desperto acorda numa cov
 - A Carpideira, chefe errante: aparece em salas ao acaso (ouve-se o choro antes de a ver) e grita de sofrimento — o grito sai em ondas que só a esquiva atravessa; pode-se fugir dela, e volta com a vida que tinha
 - Inimigos gigantes, um por região — maiores, mais lentos a armar o golpe e muito mais duros; os inimigos com garras também são maiores
 - Missões dos NPC e 3 finais
+- Torre das Provações (portal no Santuário): provas de esquiva em três níveis e os Ecos dos Guardiões — os chefes outra vez, nas salas deles, com mais vida e mais fúria — com recompensas; morrer lá não custa cinza
+- Os Sinos Perdidos: seis salas secretas novas, uma por região, atrás de paredes falsas; devolver os sinos à torre dá relíquias novas (Sino da Torre, Coroa dos Ecos)
+- Nova Partida+ depois de um final: a história recomeça com as armas, as relíquias, as habilidades e a vida que ganhaste; inimigos e chefes muito mais fortes
 - Todo o mapa percorre-se a saltar (com o salto duplo e a investida quando os ganhas); trepar paredes é um atalho opcional
 - Plataformas sempre presas a alguma coisa (mísulas, correntes, cordas ou prumos), com estilos diferentes em cada região
 - Fundos pintados em paralaxe, um mundo por região, no espírito barroco e penitente: a Mãe das Dores colossal com as sete espadas e a catedral contra o poente, com a procissão a passar na ponte; o Vigia de lanterna erguida na tempestade; a santa de pedra afundada nos Jardins; o braço com o círio aceso acima das nuvens; a Virgem da lua; o sol negro sobre o palácio. O fundo continua de sala para sala

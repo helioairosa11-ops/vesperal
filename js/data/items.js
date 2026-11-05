@@ -31,6 +31,7 @@
   def('teodoro_medal', { cat: 'quest', icon: 'medal' });
   def('ozias_testament', { cat: 'quest', icon: 'scroll' });
   def('elowen_lullaby', { cat: 'quest', icon: 'scroll' });
+  def('lost_bell', { cat: 'quest', icon: 'bell', max: 6 });
   // Materiais (consumidos ao apanhar ou ao melhorar)
   def('ash_steel', { cat: 'material', icon: 'ingot' });
   def('candle_fragment', { cat: 'material', icon: 'candle', instant: true });
@@ -56,12 +57,14 @@
   relic('r_anchor', { noKnockback: true });
   relic('r_lantern', { lightRadius: 1.6, lumeRegen: 1.5 });
   relic('r_hilde_blade', { damage: 1.1 });
+  relic('r_tower_bell', { instinctTime: 1.5, perfectLume: true });
+  relic('r_echo_crown', { bossDamage: 1.15 });
 
   // Armas (ícones pintados no ateliê) — ao apanhar entram no arsenal (ver js/data/weapons.js)
   for (const w of ['desperto', 'navalhas', 'malho', 'alabarda', 'espirito', 'montante']) def('w_' + w, { cat: 'weapon', weapon: w, png: 'weapons/icon_w_' + w + '.png' });
   // Trajes (aparências do Desperto)
   // ícones pintados no ateliê (tools/art/icons.js → assets/icons/<id>.png) para todos os objetos
-  const PAINTED = ['ab_dash', 'ab_spell', 'ab_wall', 'ab_forge', 'ab_double', 'ab_veil', 'ab_dashstrike', 'ab_counter', 'ab_instinct', 'ember_1', 'ember_2', 'ember_3', 'ember_4', 'ember_5', 'ember_6', 'letter_1', 'letter_2', 'letter_3', 'chalice', 'chalice_mended', 'ossuary_key', 'bastion_key', 'palace_seal', 'hilde_hammer', 'teodoro_medal', 'ozias_testament', 'elowen_lullaby', 'ash_steel', 'candle_fragment', 'ash_heart', 'relic_slot', 'oil', 'incense', 'salt', 'feather', 'r_rosary', 'r_amber', 'r_raven_eye', 'r_heron', 'r_captain', 'r_ember', 'r_hrolf_hammer', 'r_chalice_shard', 'r_ione_ribbon', 'r_hairshirt', 'r_anchor', 'r_lantern', 'r_hilde_blade'];
+  const PAINTED = ['ab_dash', 'ab_spell', 'ab_wall', 'ab_forge', 'ab_double', 'ab_veil', 'ab_dashstrike', 'ab_counter', 'ab_instinct', 'ember_1', 'ember_2', 'ember_3', 'ember_4', 'ember_5', 'ember_6', 'letter_1', 'letter_2', 'letter_3', 'chalice', 'chalice_mended', 'ossuary_key', 'bastion_key', 'palace_seal', 'hilde_hammer', 'teodoro_medal', 'ozias_testament', 'elowen_lullaby', 'ash_steel', 'candle_fragment', 'ash_heart', 'relic_slot', 'oil', 'incense', 'salt', 'feather', 'r_rosary', 'r_amber', 'r_raven_eye', 'r_heron', 'r_captain', 'r_ember', 'r_hrolf_hammer', 'r_chalice_shard', 'r_ione_ribbon', 'r_hairshirt', 'r_anchor', 'r_lantern', 'r_hilde_blade', 'lost_bell', 'r_tower_bell', 'r_echo_crown'];
   PAINTED.forEach((id) => { if (I[id]) I[id].png = 'icons/' + id + '.png'; });
   def('look_capuz', { cat: 'outfit', look: 'capuz', png: 'icons/look_capuz.png' });
   def('helm_sino', { cat: 'outfit', look: 'sino', png: 'icons/look_sino.png' });

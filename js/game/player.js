@@ -604,6 +604,7 @@
       if (this.action.perfect) return; this.action.perfect = true;
       VS.Gfx.burst(this.cx, this.cy, 10, { color: '#d0c0ff', speed: 60, life: 0.4, size: 1.4, add: true });
       if (this.st.abilities.instinct && game && game.instinct) game.instinct();
+      if (this.st.fx('perfectLume', false)) this.st.lume = Math.min(100, this.st.lume + 15);
     }
     takeDamage(dmg, kdir, game, hb) {
       const st = this.st;

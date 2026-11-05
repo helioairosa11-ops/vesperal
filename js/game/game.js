@@ -228,7 +228,7 @@
 
     instinct() {
       if (this.slowT > 0 || this.slowCd > 0) return;
-      this.slowT = 1.6; this.slowCd = 5; G.instinctT = 1.6;
+      this.slowT = 1.6 * this.state.fx('instinctTime', 1); this.slowCd = 5; G.instinctT = this.slowT;
       VS.Audio.sfx('instinct'); G.flash('#b8c8ff', 0.18);
       VS.FX.ring && VS.FX.ring(this.player.cx, this.player.cy, 34, 34, [190, 205, 255], 0.5, 3);
     }
@@ -344,6 +344,7 @@
     }
     onPlayerDeath() {
       const st = this.state, p = this.player;
+      if (this.trial && VS.Trials) { st.deaths++; VS.Trials.onDeath(this); return; }
       st.deaths++;
       // eco: a cinza fica onde caíste (o eco anterior perde-se)
       if (st.ash > 0) st.shade = { room: this.room.id, x: p.lastSafe.x, y: p.lastSafe.y, ash: st.ash };
