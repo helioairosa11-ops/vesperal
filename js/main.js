@@ -138,6 +138,24 @@
   App.drawMenuBg = function (ctx, dt) {
     const R = VS.REGIONS.r1, t = App.menuT, SW = U.SCREEN_W, SH = U.SCREEN_H;
     G.time += dt;
+    // ilustração pintada do menu (assets/bg/menu.jpg): santuário em ruínas, altar com a chama e a viajante
+    const art = VS.Assets.img('bg/menu.jpg');
+    if (VS.Assets.ok(art) && !(VS.settings && VS.settings.bgArt === false)) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = true;
+      const cw = G.canvas.width, ch = G.canvas.height, z = 1.04 + 0.02 * Math.sin(t * 0.05);
+      const k = Math.max(cw / art.width, ch / art.height) * z, w = art.width * k, h = art.height * k;
+      const x = (cw - w) * 0.62, y = (ch - h) * 0.55;
+      ctx.drawImage(art, x, y, w, h);
+      // a chama do altar respira
+      const fx = x + w * 0.637, fy = y + h * 0.6, fl = 0.5 + 0.12 * Math.sin(t * 7) + 0.08 * Math.sin(t * 13.1);
+      ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = fl * 0.55;
+      const gs = h * 0.3; ctx.drawImage(G.glowSprite('#ff8c3c'), fx - gs, fy - gs, gs * 2, gs * 2); ctx.restore();
+      // coluna escura do lado do título e dos botões
+      if (!App._menuArtG || App._menuArtG.w !== cw) { const g = ctx.createLinearGradient(0, 0, cw * 0.62, 0); g.addColorStop(0, 'rgba(5,4,6,0.72)'); g.addColorStop(0.65, 'rgba(5,4,6,0.3)'); g.addColorStop(1, 'rgba(5,4,6,0)'); App._menuArtG = { w: cw, g }; }
+      ctx.fillStyle = App._menuArtG.g; ctx.fillRect(0, 0, cw * 0.62, ch);
+      G.hudTransform(ctx);
+      return;
+    }
     // a fogueira e a viajante ficam ancoradas à direita (nos ecrãs mais largos, o fundo estende-se para a esquerda)
     const gy = SH - 34, ox = SW - 640, bx = 476 + ox, by = gy - 14;
     // planos distantes, chão e silhuetas: numa imagem de resolução reduzida (como no jogo) — uma só passagem
