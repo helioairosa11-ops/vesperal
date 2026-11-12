@@ -8,7 +8,7 @@
   M.main = function () {
     UI.closeAll();
     const el = h('div', 'panel mainmenu');
-    el.innerHTML = `<div class="logo"><div class="logo-title">VESPERAL</div><div class="logo-orn"><i></i><b></b><i></i></div><div class="logo-sub">${esc(t('subtitle'))}</div></div><div class="menu-list"></div><div class="mm-credit">Lourence Manuel</div><div class="mm-foot">${esc(t('mm_hint'))}</div>`;
+    el.innerHTML = `<div class="logo"><img class="logo-v" src="assets/ui/logo_v.png" alt=""><div class="logo-title">VESPERAL</div><div class="logo-orn"><i></i><b></b><i></i></div><div class="logo-sub">${esc(t('subtitle'))}</div></div><div class="menu-list"></div><div class="mm-credit">Lourence Manuel</div><div class="mm-foot">${esc(t('mm_hint'))}</div>`;
     const list = el.querySelector('.menu-list');
     const prof = VS.Save.loadProfile();
     const add = (label, fn, dis) => { const b = h('button', 'btn', esc(label)); b.dataset.nav = 1; if (dis) { b.disabled = true; b.classList.add('disabled'); } b.onclick = () => { A.init(); fn(); }; list.appendChild(b); };
