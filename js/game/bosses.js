@@ -129,7 +129,7 @@
       this.parryLast = this.anim; this.parryN = (this.parryN || 0) + 1;
       if (this.parryN >= (this.phase >= 1 ? 4 : 3)) {
         this.parryN = 0; this.atk = null; this.attackHBs = []; this.vx = 0;
-        this.stagger = 2.4; this.parried = true; this.dazed = true;
+        this.stagger = this.dazeLen = 2.4; this.parried = true; this.dazed = true;
         A.sfx('stagger'); A.sfx('choir_hit'); G.flash('#fff6e0', 0.3); game.hitstop(0.12); VS.FX.stun(this);
       }
     }
@@ -381,6 +381,7 @@
       else if (ph === 1) e.attack(r < 0.35 ? 'cut2a' : r < 0.6 ? 'feint' : r < 0.85 ? 'combo3a' : 'bash');
       else e.attack(r < 0.25 ? 'combo3a' : r < 0.45 ? 'thrust' : r < 0.65 ? 'feint' : r < 0.82 ? 'cut2a' : 'bash');
     },
+    brokenLen: CAED_RIPOSTE_WINDOW,
     init(e) { e.broken = 0; e.shieldHits = 0; },
     preLines: () => [{ s: 'boss_caedmon', k: 'caedmon_pre1' }, { s: 'boss_caedmon', k: 'caedmon_pre2' }],
     // escudo absoluto

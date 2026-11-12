@@ -18,6 +18,15 @@
     const frameAt = (an, k) => VS.Assets.frame(sh, an, k);
     const timed = (an) => { if (r.key !== an) { r.key = an; r.t = 0; } else r.t += dt; return frameAt(an, r.t * A[an].fps); };
     if (e.dead || e.defeated) return { anim: 'death', f: has('death') ? frameAt('death', (e.defeated ? e.defT || 0 : e.deadT || 0) * A.death.fps) : frameAt('idle', 0) };
+    // postura quebrada (3-4 aparos, ou o Caedmon partido): ajoelha-se, fica atordoado e levanta-se
+    const brk = e.dazed && e.stagger > 0 ? { left: e.stagger, len: e.dazeLen || 2.4 } : e.broken > 0 ? { left: e.broken, len: e.K.brokenLen || 2.5 } : null;
+    if (brk && has('kneel')) {
+      const el = brk.len - brk.left, dK = A.kneel.frames.length / A.kneel.fps, dR = has('kneel_rise') ? A.kneel_rise.frames.length / A.kneel_rise.fps : 0;
+      if (el < dK) return { anim: 'kneel', f: frameAt('kneel', Math.min(A.kneel.frames.length - 0.01, el * A.kneel.fps)) };
+      if (dR && brk.left < dR) return { anim: 'kneel_rise', f: frameAt('kneel_rise', Math.min(A.kneel_rise.frames.length - 0.01, (dR - brk.left) * A.kneel_rise.fps)) };
+      if (has('kneel_loop')) return { anim: 'kneel_loop', f: timed('kneel_loop') };
+      return { anim: 'kneel', f: frameAt('kneel', A.kneel.frames.length - 0.01) };
+    }
     if (e.dazed) { if (e.stagger > 0 && has('stagger')) return { anim: 'stagger', f: timed('stagger') }; e.dazed = false; }
     if (e.K.animState) { const s = e.K.animState(e, sh); if (s) { if (s.phase) return { anim: s.anim, f: VS.Assets.phaseFrame(sh, s.anim, s.phase, s.k) }; return { anim: s.anim, f: s.idx !== undefined ? frameAt(s.anim, s.idx) : timed(s.anim) }; } }
     if (e.stagger > 0 && has('stagger')) return { anim: 'stagger', f: timed('stagger') };
