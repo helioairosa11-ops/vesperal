@@ -190,9 +190,26 @@
     }
     return out;
   }
+  // arte nova (hero2): os quadros saltam muito de ângulo, por isso o rasto é uma meia-lua suave que passa
+  // pelas pontas da lâmina (curva entre os pontos médios), mais grossa no fim do golpe e a desvanecer
+  function drawCrescent(ctx, p, style) {
+    const now = p.t, T = p.trail.filter((q) => now - q.t < style.life * 1.4);
+    if (T.length < 2) return;
+    const P = T.map((q) => [q.x1, q.y1]);
+    const path = () => { ctx.beginPath(); ctx.moveTo(P[0][0], P[0][1]); for (let i = 1; i < P.length - 1; i++) { const mx = (P[i][0] + P[i + 1][0]) / 2, my = (P[i][1] + P[i + 1][1]) / 2; ctx.quadraticCurveTo(P[i][0], P[i][1], mx, my); } ctx.lineTo(P[P.length - 1][0], P[P.length - 1][1]); };
+    const age = Math.min(1, (now - T[T.length - 1].t) / style.life), k = 1 - age;
+    const [r, g, b] = style.col;
+    ctx.save(); if (style.add) ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.strokeStyle = `rgba(${r},${g},${b},${style.a * 0.45 * k})`; ctx.lineWidth = 7; path(); ctx.stroke();
+    ctx.strokeStyle = `rgba(${r},${g},${b},${style.a * k})`; ctx.lineWidth = 3.2; path(); ctx.stroke();
+    ctx.strokeStyle = style.edge; ctx.globalAlpha = k; ctx.lineWidth = 1.1; path(); ctx.stroke();
+    ctx.restore();
+  }
   H.drawTrail = function (ctx, p) {
     if (p.trail.length < 2) return;
     const style = TRAILS[(VS.state && VS.state.weaponDef.trail) || 'steel'];
+    const cur = p.anim && p.anim.cur;
+    if (cur && cur.sh.meta && /^hero2/.test(cur.sh.meta.name)) { drawCrescent(ctx, p, style); return; }
     const pts = densify(p.trail);
     const now = p.t;
     ctx.save();

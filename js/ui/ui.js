@@ -320,7 +320,7 @@
     // ---- círios (cura)
     for (let i = 0; i < st.flasksMax; i++) {
       const lit = i < st.flasks, cx = bx + 30 + i * 11, cy = by + 24;
-      if (painted) { hud(ctx, lit ? 'hud_candle_lit' : 'hud_candle_out', cx, cy); if (lit) flame(ctx, cx + 5, cy + 2.8, 0.42, t + i * 1.7, 0.6); else if (Math.sin(t * 2 + i) > 0.6) { ctx.fillStyle = 'rgba(160,150,150,0.25)'; ctx.beginPath(); ctx.arc(cx + 5.2 + Math.sin(t * 3 + i), cy + 7 - ((t * 6 + i * 3) % 6), 1.1, 0, U.TAU); ctx.fill(); } }
+      if (painted) { hud(ctx, lit ? 'hud_candle_lit' : 'hud_candle_out', cx, cy); if (lit) VS.Sprites.glow(ctx, cx + 5, cy + 2, 6, '#ffb050', 0.25 + 0.08 * Math.sin(t * 9 + i)); else if (Math.sin(t * 2 + i) > 0.6) { ctx.fillStyle = 'rgba(160,150,150,0.25)'; ctx.beginPath(); ctx.arc(cx + 5.2 + Math.sin(t * 3 + i), cy + 7 - ((t * 6 + i * 3) % 6), 1.1, 0, U.TAU); ctx.fill(); } }
       else { ctx.fillStyle = lit ? '#e8dcc0' : '#3a3438'; ctx.fillRect(cx + 3, cy + 4, 4, 7); }
     }
     // ---- cinza
