@@ -62,7 +62,8 @@ def run(pg, bid):
         frames(pg, 40); grab(pg, shots, 'pousada (ponto fraco)')
         wait(pg, '!(T.B.resting > 0)', 5); pg.evaluate('T.B.K = Object.assign({}, T.B.K, { think() {} }); T.B.cool = 99; T.B.vy = 0; T.B.y -= 40'); frames(pg, 10)
     pg.evaluate('T.B.lastHitT = 0.04; T.B.flash = 0'); frames(pg, 1); grab(pg, shots, 'ferido'); frames(pg, 20)
-    pg.evaluate('T.B.doStagger(2, T.g(), true)'); frames(pg, 10); grab(pg, shots, 'atordoado')
+    pg.evaluate('(() => { const b = T.B; if (b.postureMax > 0) { b.doStagger(2, T.g(), true); return; } for (let i = 0; i < 4; i++) { b.anim += 0.5; b.onParried(T.g(), {}); } })()')
+    frames(pg, 30); st = pg.evaluate('({ s: T.B.stagger, d: !!T.B.dazed, a: !!T.B.atk })'); print(bid, 'atordoado após aparos:', st); grab(pg, shots, 'atordoado (aparos)')
     pg.evaluate('T.B.stagger = 0; T.B.hp = 0; T.B.die(T.g())'); frames(pg, 40); grab(pg, shots, 'derrota'); frames(pg, 40); grab(pg, shots, 'derrota 2')
     ims = [(lab, Image.open(p)) for lab, p in shots]
     W = max(i.width for _, i in ims); H = max(i.height for _, i in ims)

@@ -5,7 +5,7 @@
 (function (VS) {
   const U = VS.U;
   const ER = {};
-  const name = (e) => 'en_' + (e.sheetName || (e.K && e.K.sheet) || e.kind);
+  const name = (e) => 'en_' + ((e && e.sheetName) || (e.K && e.K.sheet) || e.kind);
   ER.sheet = (e) => VS.Assets.sheet(name(e));
   ER.has = (e) => { const sh = ER.sheet(e); return !!(sh && VS.Assets.ok(sh.img)); };
 
@@ -18,6 +18,7 @@
     const frameAt = (an, k) => VS.Assets.frame(sh, an, k);
     const timed = (an) => { if (r.key !== an) { r.key = an; r.t = 0; } else r.t += dt; return frameAt(an, r.t * A[an].fps); };
     if (e.dead || e.defeated) return { anim: 'death', f: has('death') ? frameAt('death', (e.defeated ? e.defT || 0 : e.deadT || 0) * A.death.fps) : frameAt('idle', 0) };
+    if (e.dazed) { if (e.stagger > 0 && has('stagger')) return { anim: 'stagger', f: timed('stagger') }; e.dazed = false; }
     if (e.K.animState) { const s = e.K.animState(e, sh); if (s) { if (s.phase) return { anim: s.anim, f: VS.Assets.phaseFrame(sh, s.anim, s.phase, s.k) }; return { anim: s.anim, f: s.idx !== undefined ? frameAt(s.anim, s.idx) : timed(s.anim) }; } }
     if (e.stagger > 0 && has('stagger')) return { anim: 'stagger', f: timed('stagger') };
     if (e.atk) {
@@ -80,7 +81,7 @@
   // (duas cópias ligeiramente desfasadas fazem o "desfoque" sem ctx.filter)
   ER.ghost = function (ctx, e, col, alpha, dx, dy) {
     const sh = ER.sheet(e), f = e._f; if (!sh || !f || !VS.Assets.ok(sh.img) || alpha <= 0.01) return;
-    const s = sh.meta.scale, c = VS.Assets.tinted(sh, f, col);
+    const s = f.s || sh.meta.scale, c = VS.Assets.tinted(sh, f, col);
     const sc = scaleOf(e) * 1.06;
     ctx.save(); ctx.translate(e.cx + (dx || 0), (e.K.sheetAnchor === 'center' ? e.cy : e.bottom) + (dy || 0)); ctx.scale(e.facing * sc, sc);
     ctx.globalAlpha *= alpha * 0.55; ctx.globalCompositeOperation = 'lighter';

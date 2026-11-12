@@ -55,16 +55,18 @@
       if (this.defeated) { this.updateDefeat(dt, game); return; }
       // fases por percentagem de vida
       const th = this.c.phases || [];
+      let healNow = false;
       while (this.phase < th.length && this.hp / this.maxHp <= th[this.phase]) {
         this.phase++; A.setIntensity(this.phase);
-        // ao entrar na segunda fase recupera 20% da vida (e troca para a folha da fase 2, se existir)
-        if (this.phase === 1) {
-          this.hp = Math.min(this.maxHp, this.hp + this.maxHp * 0.2);
-          G.burst(this.cx, this.cy, 26, { color: '#ffb050', speed: 140, life: 0.7, size: 2, add: true }); VS.FX.flare(this.cx, this.cy, 46, [255, 170, 80], 0.4);
-          const base = (this.K && this.K.sheet) || this.kind;
-          if (VS.SPRITE_META && VS.SPRITE_META['en_' + base + '_p2']) { this.sheetName = base + '_p2'; VS.Assets.sheet('en_' + base + '_p2'); }
-        }
+        if (this.phase >= 1 && !this.p2Healed) { this.p2Healed = true; healNow = true; }
         if (this.K.onPhase) this.K.onPhase(this, game, this.phase);
+      }
+      // ao entrar na segunda fase recupera 20% da vida (depois de contar as fases) e troca para a folha da fase 2, se existir
+      if (healNow) {
+        this.hp = Math.min(this.maxHp, this.hp + this.maxHp * 0.2);
+        G.burst(this.cx, this.cy, 26, { color: '#ffb050', speed: 140, life: 0.7, size: 2, add: true }); VS.FX.flare(this.cx, this.cy, 46, [255, 170, 80], 0.4);
+        const base = (this.K && this.K.sheet) || this.kind;
+        if (VS.SPRITE_META && VS.SPRITE_META['en_' + base + '_p2']) { this.sheetName = base + '_p2'; VS.Assets.sheet('en_' + base + '_p2'); }
       }
       // cada fase bate um pouco mais forte e espera menos entre golpes
       this.dmgScale = (1 + 0.12 * this.phase) * (this.ngMul || 1);
@@ -117,9 +119,19 @@
       return r;
     }
     onParried(game, hb) {
-      if (this.K.onParried) { this.K.onParried(this, game, hb); return; }
+      if (this.dazed && this.stagger > 0) return;
+      if (this.K.onParried) this.K.onParried(this, game, hb);
       // genérico: interrompe o ataque e abre uma janela curta
-      this.doStagger(this.c.parryStagger || 0.7, game, true); this.vx = -this.facing * 80;
+      else { this.doStagger(this.c.parryStagger || 0.7, game, true); this.vx = -this.facing * 80; }
+      // 3 aparos seguidos (4 na 2.ª fase) deixam o chefe atordoado (o Caedmon tem a sua própria postura)
+      if (this.defeated || this.postureMax > 0) return;
+      if (this.anim - (this.parryLast || -99) > 8) this.parryN = 0;
+      this.parryLast = this.anim; this.parryN = (this.parryN || 0) + 1;
+      if (this.parryN >= (this.phase >= 1 ? 4 : 3)) {
+        this.parryN = 0; this.atk = null; this.attackHBs = []; this.vx = 0;
+        this.stagger = 2.4; this.parried = true; this.dazed = true;
+        A.sfx('stagger'); A.sfx('choir_hit'); G.flash('#fff6e0', 0.3); game.hitstop(0.12); VS.FX.stun(this);
+      }
     }
     die(game) {
       if (this.defeated) return;
@@ -208,7 +220,7 @@
       sweep: { wind: 0.6, act: 0.18, rec: 0.6, dmg: 18, tell: null, sfx: 'swing_heavy', hb: (e) => front(e, -6, 0, 84, 26), lunge: 50,
         during(e, g) { if (Math.random() < 0.7) G.emit({ x: e.cx + e.facing * U.rand(10, 70), y: e.bottom - 1, vx: e.facing * U.rand(40, 120), vy: U.rand(-90, -20), g: 400, life: 0.5, size: U.rand(1, 2), color: U.pick(['#5a4a3a', '#6a5a48']) }); } },
       // terra: enche a pá e atira torrões em arco
-      clods: { wind: 0.65, act: 0.1, rec: 0.7, tell: null, sfx: 'swing', onAct(e, g) { const n = e.phase ? 5 : 3, p = g.player, o = VS.EnemyRender.point(e, e._f, 'tip') || { x: e.cx + e.facing * 30, y: e.y }; for (let i = 0; i < n; i++) { const dx = (p.cx - o.x) * (0.55 + i * 0.25); g.spawn(P({ x: o.x - 5, y: o.y - 5, vx: dx / 1.0, vy: -300 + i * 30, g: 700, w: 10, h: 10, dmg: 12, kind: 'clod', life: 3, light: false, reflectable: false })); } } },
+      clods: { wind: 0.65, act: 0.1, rec: 0.7, tell: null, sfx: 'swing', onAct(e, g) { const n = e.phase ? 3 : 2, p = g.player; for (let i = 0; i < n; i++) { const dir = Math.sign(p.cx - e.cx) || e.facing, fy = e.bottom - 18; g.spawn(P({ x: e.cx + dir * 26 - 5, y: fy - i * 6, vx: dir * (230 + i * 70), vy: -140 - i * 25, g: 650, w: 10, h: 10, dmg: 12, kind: 'clod', life: 3, light: false, reflectable: false })); } } },
       // enterrar-se (vermelho): crava a pá, afunda-se e irrompe debaixo da protagonista
       burrow: { wind: 0.7, act: 1.4, rec: 0.6, dmg: 24, tell: 'red', sfx: 'crush',
         onAct(e, g) { e.underground = true; e.hittable = false; A.sfx('crush'); G.burst(e.cx, e.bottom, 20, { color: '#5a4a3a', speed: 140, angle: -Math.PI / 2, spread: 2, g: 500, life: 0.8, size: 2.4 }); },
@@ -365,7 +377,6 @@
       if (d > 110) { e.walk(e.facing, 90, dt); if (Math.random() < 0.01 && e.phase >= 2) e.attack('thrust'); return; }
       const r = Math.random();
       const ph = e.phase;
-      if (ph >= 1 && (e.volleyCd = (e.volleyCd || 0) - 1) <= 0 && r < 0.3) { e.volleyCd = 5; e.attack('volley'); return; }
       if (ph === 0) e.attack(r < 0.6 ? 'cut' : 'cut2a');
       else if (ph === 1) e.attack(r < 0.35 ? 'cut2a' : r < 0.6 ? 'feint' : r < 0.85 ? 'combo3a' : 'bash');
       else e.attack(r < 0.25 ? 'combo3a' : r < 0.45 ? 'thrust' : r < 0.65 ? 'feint' : r < 0.82 ? 'cut2a' : 'bash');

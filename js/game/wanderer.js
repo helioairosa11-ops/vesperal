@@ -63,7 +63,7 @@
   };
   W.spawn = function (game, tx, ty) {
     const b = VS.Bosses.spawn({ boss: 'carpideira', x: tx, y: ty, floor: ty + 1 }, game);
-    const hp = VS.state.flags.carp_hp; if (hp > 0 && hp < b.maxHp) b.hp = hp;
+    const hp = VS.state.flags.carp_hp; if (hp > 0 && hp < b.maxHp) { b.hp = hp; b.p2Healed = true; }
     b.wanderer = true;
     return b;
   };

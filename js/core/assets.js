@@ -48,7 +48,7 @@
   // desenha o fotograma f de uma folha; a origem (0,0) do ctx é a âncora (pés) da personagem
   Assets.drawFrame = function (ctx, sh, f) {
     if (!sh || !Assets.ok(sh.img) || !f) return false;
-    const s = sh.meta.scale;
+    const s = f.s || sh.meta.scale;
     ctx.drawImage(sh.img, f.x, f.y, f.w, f.h, f.ox, f.oy, f.w / s, f.h / s);
     return true;
   };
@@ -69,14 +69,14 @@
   };
   Assets.drawTinted = function (ctx, sh, f, col) {
     if (!sh || !Assets.ok(sh.img) || !f) return false;
-    const s = sh.meta.scale, c = Assets.tinted(sh, f, col);
+    const s = f.s || sh.meta.scale, c = Assets.tinted(sh, f, col);
     ctx.drawImage(c, 0, 0, c.width, c.height, f.ox, f.oy, c.width / s, c.height / s);
     return true;
   };
   // clarão de dano: o mesmo fotograma por cima em modo aditivo (barato, sem filtros)
   Assets.drawFlash = function (ctx, sh, f, k) {
     if (!sh || !Assets.ok(sh.img) || !f) return false;
-    const s = sh.meta.scale, a = ctx.globalAlpha, op = ctx.globalCompositeOperation;
+    const s = f.s || sh.meta.scale, a = ctx.globalAlpha, op = ctx.globalCompositeOperation;
     ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = a * Math.min(1, k);
     ctx.drawImage(sh.img, f.x, f.y, f.w, f.h, f.ox, f.oy, f.w / s, f.h / s);
     ctx.globalCompositeOperation = op; ctx.globalAlpha = a;
