@@ -612,7 +612,7 @@
           if (!P2.lit) { P2.lit = true; A.sfx('fire'); }
           const mid = (P2.l + P2.r) / 2, sp = e.phase ? 150 : 125;
           if (P2.r - P2.l > 6) { P2.l = Math.min(mid, P2.l + sp * dt); P2.r = Math.max(mid, P2.r - sp * dt); }
-          else if (!P2.boom) { P2.boom = 1; G.addShake(0.45); A.sfx('explode', { vol: 0.6 }); VS.FX.flare(mid, e.arena.floor - 20, 60, [255, 120, 40], 0.45); VS.FX.art('boom', mid, e.arena.floor, { h: 90, life: 0.7, add: false }); G.burst(mid, e.arena.floor - 10, 30, { color: '#ff8030', speed: 220, life: 0.6, size: 2.4, add: true }); }
+          else if (!P2.boom) { P2.boom = 1; G.addShake(0.45); A.sfx('explode', { vol: 0.6 }); VS.FX.flare(mid, e.arena.floor - 20, 60, [255, 120, 40], 0.45); G.burst(mid, e.arena.floor - 10, 30, { color: '#ff8030', speed: 220, life: 0.6, size: 2.4, add: true }); }
           if (P2.boom) { P2.boom += dt; if (P2.boom < 0.3) e.attackHBs.push({ x: mid - 34, y: e.arena.floor - 60, w: 68, h: 60, dmg: 22, id: a.id * 10 + 3, unblockable: true, parryable: false, src: { cx: mid } }); return; }
           for (const [x, k] of [[P2.l, 1], [P2.r, 2]]) {
             e.attackHBs.push({ x: x - 8, y: e.arena.floor - 30, w: 16, h: 30, dmg: 18, id: a.id * 10 + k, unblockable: true, parryable: false, src: { cx: x } });

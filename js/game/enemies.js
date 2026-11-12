@@ -571,7 +571,7 @@
   // --- R7: Archote Vivo ---
   KINDS.torch = {
     cfg: { w: 14, h: 28, hp: 26, poise: 8, ash: 18, ashCol: '#ff6020' },
-    attacks: { burst: { wind: 0.8, act: 0.15, rec: 0.2, dmg: 22, hb: (e) => ({ x: e.cx - 34, y: e.cy - 34, w: 68, h: 60 }), tell: 'red', sfx: 'explode', onAct(e, g) { G.addShake(0.35); VS.FX.art('boom', e.cx, e.y + e.h, { h: 76, life: 0.6, add: false }); G.burst(e.cx, e.cy, 30, { color: '#ff8030', speed: 200, life: 0.6, size: 2.4, add: true }); }, onEnd(e, g) { e.hp = 0; e.die(g); } } },
+    attacks: { burst: { wind: 0.8, act: 0.15, rec: 0.2, dmg: 22, hb: (e) => ({ x: e.cx - 34, y: e.cy - 34, w: 68, h: 60 }), tell: 'red', sfx: 'explode', onAct(e, g) { G.addShake(0.35); G.burst(e.cx, e.cy, 30, { color: '#ff8030', speed: 200, life: 0.6, size: 2.4, add: true }); }, onEnd(e, g) { e.hp = 0; e.die(g); } } },
     think(e, dt, g) {
       if (e.atk) { e.vx = 0; return; }
       if (e.sees(240)) e.aggro = true;

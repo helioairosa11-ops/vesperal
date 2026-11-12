@@ -52,13 +52,6 @@
     for (let i = 0; i < n; i++) G.emit({ x: x + U.rand(-(o.jx || 6), o.jx || 6), y: y + U.rand(-3, 2), vx: U.rand(-1, 1) * (o.speed || 50), vy: U.rand(-30, -6), drag: 3, life: U.rand(0.4, 0.8), size: U.rand(2.5, 4.5), grow: o.grow || 2.4, color: col || '#8a7e70', alpha: o.alpha || 0.5, kind: 'puff' });
   };
 
-  // efeito pintado (assets/sprites/fx_art.png): o = { h: altura no mundo, life, add (mistura aditiva), follow (entidade), dir }
-  FX.art = (name, x, y, o = {}) => {
-    const m = VS.FX_ART && VS.FX_ART[name]; if (!m) return false;
-    add({ type: 'art', name, m, x, y, h: o.h || 40, life: o.life || 0.4, add: o.add !== false, follow: o.follow, oy: o.follow ? y - o.follow.y : 0, ox: o.follow ? x - o.follow.cx : 0, dir: o.dir || 1, loop: o.loop || 0, frames: o.frames, alpha: o.alpha || 1 });
-    return true;
-  };
-
   // ---------------------------------------------------------------- impacto de um golpe
   // o = { x, y, mat (alvo), wmat (arma: blade|blunt|spirit), mark (estilo do corte), ang (direção do golpe), dir, power, heavy }
   FX.hit = function (o) {
@@ -95,7 +88,6 @@
 
   // golpe bloqueado por um escudo/guarda (do inimigo ou do herói)
   FX.block = function (x, y, dir, big) {
-    FX.art('parry', x, y, { h: big ? 30 : 22, life: 0.22, dir: -dir });
     FX.flare(x, y, big ? 16 : 11, [255, 226, 170], 0.1);
     FX.sparks(x, y, big ? 10 : 6, -dir, { speed: 260, up: 0.7 });
     FX.cut(x, y, -Math.PI / 2, { len: big ? 20 : 14, wid: 2.4, bend: dir * 6, core: [255, 248, 230], edge: [255, 200, 120], life: 0.12 });
@@ -103,7 +95,6 @@
 
   // parry: o metal canta — clarão branco-dourado, arco de deflexão, anel de sino e fagulhas em leque
   FX.parry = function (x, y, dir) {
-    FX.art('parry', x, y, { h: 50, life: 0.32, dir });
     FX.flare(x, y, 34, [255, 236, 190], 0.24);
     FX.cut(x, y, -Math.PI / 2 + dir * 0.25, { len: 34, wid: 5, bend: dir * 12, core: [255, 255, 245], edge: [255, 210, 120], life: 0.22 });
     // estrias de luz que se abrem a partir do ponto do parry (curtas, desiguais, sem simetria)
@@ -189,17 +180,6 @@
         const gr = ctx.createRadialGradient(e.x, e.y, 0, e.x, e.y, r);
         gr.addColorStop(0, `rgba(255,255,250,${0.9 * a})`); gr.addColorStop(0.25, rgba(e.col, 0.55 * a)); gr.addColorStop(1, rgba(e.col, 0));
         ctx.fillStyle = gr; ctx.fillRect(e.x - r, e.y - r, r * 2, r * 2);
-      } else if (e.type === 'art') {
-        const im = VS.Assets.img('sprites/fx_art.png'); if (!VS.Assets.ok(im)) continue;
-        const m = e.m, fr = e.frames || [0, m.n], nf = fr[1] - fr[0];
-        const i = fr[0] + (e.loop ? Math.floor((e.t / e.loop) * nf) % nf : Math.min(nf - 1, Math.floor(k * nf)));
-        if (e.follow) { e.x = e.follow.cx + e.ox; e.y = e.follow.y + e.oy; }
-        const s = e.h / m.h, w = m.w * s, h = m.h * s;
-        const fade = e.loop ? Math.min(1, (e.life - e.t) / 0.15, e.t / 0.1) : 1;
-        ctx.globalCompositeOperation = e.add ? 'lighter' : 'source-over'; ctx.globalAlpha = fade * e.alpha;
-        ctx.save(); ctx.translate(e.x, e.y); if (e.dir < 0) ctx.scale(-1, 1);
-        ctx.drawImage(im, i * m.w, m.y, m.w, m.h, -w / 2, m.anchor === 'bottom' ? -h : -h / 2, w, h);
-        ctx.restore(); ctx.globalAlpha = 1;
       } else if (e.type === 'ring') {
         const s = 1 + k * 2.6, a = 1 - k;
         ctx.globalCompositeOperation = 'lighter';

@@ -14,7 +14,7 @@
     // só fica "pronta" depois de descodificada fora do fio principal — desenhá-la pela primeira vez não engasga o jogo
     im.onload = () => { const done = () => { Assets.loaded++; im.ok = true; }; if (im.decode) im.decode().then(done, done); else done(); };
     im.onerror = () => { Assets.loaded++; Assets.failed[path] = true; console.warn('recurso em falta', path); };
-    im.src = ROOT + path + (window.VS_BUILD ? '?v=' + window.VS_BUILD : ''); // versão: obriga o navegador a buscar as imagens novas depois de cada atualização
+    im.src = ROOT + path;
     Assets.imgs[path] = im;
     return im;
   };

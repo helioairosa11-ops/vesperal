@@ -14,10 +14,7 @@
   // devolve { sheet, anim, f (fotograma) }
   H.select = function (p) {
     const suf = VS.state && VS.state.look === 'sino' ? '_sino' : '';
-    // arte nova do herói (hero2*): usada sempre, com qualquer arma e aparência (os golpes das outras armas
-    // ainda usam as poses da espada até haver folhas próprias)
-    const v2 = VS.SPRITE_META && VS.SPRITE_META.hero2 && VS.SPRITE_META.hero2_espada;
-    const a = p.action, base = v2 ? 'hero2' : 'hero' + suf, wc = v2 ? 'hero2_espada' : 'hero_' + cls(p) + suf;
+    const a = p.action, base = 'hero' + suf, wc = 'hero_' + cls(p) + suf;
     const S = (sheet, anim, idx) => ({ sheet, anim, idx });
     const P = (sheet, anim, phase, k) => ({ sheet, anim, phase, k });
     const A = p.anim;
@@ -129,11 +126,8 @@
     if (a && a.type === 'dodge') { const k = Math.sin(Math.min(1, a.t / a.dur) * Math.PI); sx *= 1 + 0.14 * k; sy *= 1 - 0.08 * k; }
     ctx.scale(p.dir * sx, sy);
     const glow = a && a.type === 'heavy' && a.charged ? 0.55 + Math.sin(p.t * 30) * 0.2 : 0;
-    // folhas com a arma já desenhada no quadro (arte em pixel art): os pontos da pega continuam a servir
-    // para os golpes e os rastos, mas a arma separada não se desenha por cima
-    const baked = cur.sh.meta && cur.sh.meta.bakedWeapon;
-    const g = !baked && f.pts && f.pts.grip;
-    const gb = !baked && f.pts && f.pts.gripB;
+    const g = f.pts && f.pts.grip;
+    const gb = f.pts && f.pts.gripB;
     const wd = VS.state && VS.state.weaponDef;
     if (gb && wd && wd.dual) drawWeapon(ctx, p, gb, glow);
     if (g && g[3] === 0) drawWeapon(ctx, p, g, glow);
