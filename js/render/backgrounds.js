@@ -273,10 +273,34 @@
     ctx.fillStyle = g; ctx.fillRect(0, 0, vw, vh);
   };
   // base: deslocamento vertical fixo de todos os planos (o menu assenta-os no chão nos ecrãs mais altos)
+  // pinturas de fundo por região (assets/bg): ficam no plano mais distante, por trás das silhuetas em paralaxe
+  const ART = { city: 'city', sanct: 'sanct', ramparts: 'ramparts', forge: 'forge', garden: 'garden', tower: 'tower', cathedral: 'cathedral', crypt: 'crypt' };
+  const ROOM_ART = { r6_dome: 'dome', r1_trials: 'trials', trials: 'trials', trials_bells: 'trials', trials_dodge: 'trials', trials_echoes: 'trials' };
+  BG.room = null;
+  BG.artFor = function (R) {
+    if (VS.settings && VS.settings.bgArt === false) return null;
+    const key = (BG.room && ROOM_ART[BG.room]) || ART[R.bg];
+    if (!key || !VS.Assets) return null;
+    const im = VS.Assets.img('bg/' + key + '.jpg');
+    return VS.Assets.ok(im) ? im : null;
+  };
+  function drawArt(ctx, im, cam, roomH, vw, vh, base) {
+    // cobre o ecrã com folga para deslizar devagar (paralaxe muito lenta: é o plano mais longe)
+    const k = Math.max(vw * 1.25 / im.width, vh * 1.12 / im.height), w = im.width * k, h = im.height * k;
+    const span = w - vw, px = ((cam.x * 0.035) % (span * 2) + span * 2) % (span * 2);
+    const x = -(px > span ? span * 2 - px : px);
+    const maxY = Math.max(0, roomH - vh), y = -(h - vh) * (maxY > 0 ? Math.min(1, Math.max(0, cam.y / maxY)) : 0.6) + (base || 0) * 0.3;
+    ctx.drawImage(im, x, y, w, h);
+  }
   BG.draw = function (ctx, R, cam, roomH, scale, vw, vh, base) {
     vw = vw || U.VIEW_W; vh = vh || U.VIEW_H;
     const set = BG.get(R);
-    for (const L of set.layers) {
+    const art = BG.artFor(R);
+    if (art) drawArt(ctx, art, cam, roomH, vw, vh, base);
+    for (let li = 0; li < set.layers.length; li++) {
+      const L = set.layers[li];
+      // com pintura: os planos de céu opacos e o mais distante deixam de ser precisos
+      if (art && (li === 0 || L.topRow)) continue;
       const ox = -((cam.x * L.p) % LW);
       // vertical: alinhar a base do padrão com a base da sala, com paralaxe reduzida
       const maxY = Math.max(0, roomH - vh);

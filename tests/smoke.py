@@ -17,7 +17,7 @@ def main():
         pg.goto(URL)
         pg.wait_for_timeout(1500)
         pg.screenshot(path=str(OUT / '01_menu.png'))
-        pg.click('text=Jogar') if pg.locator('text=Jogar').count() else pg.click('text=Play')
+        pg.click('text=Novo Jogo') if pg.locator('text=Novo Jogo').count() else pg.click('text=New Game')
         pg.wait_for_timeout(400)
         pg.locator('.slot').first.click()
         pg.wait_for_timeout(1200)

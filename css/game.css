@@ -255,3 +255,47 @@ input[type=range] { accent-color: #c88a4a; width: min(36vw, 200px); }
 .tabs .tab { position: relative; }
 .tabs .tab.active::after { content: ''; position: absolute; left: 50%; bottom: -6px; width: 7px; height: 7px; transform: translateX(-50%) rotate(45deg); background: var(--ember); box-shadow: 0 0 8px rgba(255,150,70,.7); }
 @media (max-width: 760px) { .inv-grid { grid-template-columns: repeat(4, 1fr); flex-basis: 50% !important; gap: 6px; } }
+
+/* ===== Arte pintada dos painéis (assets/ui) ===== */
+.inventory { background: url("../assets/ui/panel_inv.jpg") center / 100% 100% no-repeat, #1b1716 !important; border: none !important; box-shadow: 0 24px 70px rgba(0,0,0,.85) !important; padding: clamp(22px, 4.2vw, 46px) clamp(26px, 4.6vw, 54px) !important; }
+.inventory .inv-desc { border-left-color: rgba(214,178,120,.22); }
+.inventory .inv-slot { background: url("../assets/ui/slot.png") center / 100% 100% no-repeat; border: none; box-shadow: none; border-radius: 0; }
+.inventory .inv-slot::before { display: none; }
+.inventory .inv-slot.empty { opacity: .8; background: url("../assets/ui/slot.png") center / 100% 100% no-repeat; }
+.inventory .inv-slot.equipped { background-image: url("../assets/ui/slot.png"); box-shadow: 0 0 12px rgba(255,120,40,.28); }
+.inventory .inv-slot.focus, .inventory .inv-slot:hover:not(.empty) { background-image: url("../assets/ui/slot_focus.png"); box-shadow: 0 0 16px rgba(255,170,80,.35); }
+.inventory .inv-slot .is-icon { width: 62%; height: 62%; }
+.inventory .desc-icon { width: 104px; height: 136px; padding: 30px 22px; box-sizing: border-box; background: url("../assets/ui/oval.png") center / contain no-repeat; filter: none; margin: 0 auto 4px; }
+.inventory .desc-icon svg, .inventory .desc-icon img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 10px rgba(255,170,80,.35)); }
+.inventory .desc-icon.big { width: 128px; height: 168px; padding: 36px 26px; }
+.pause { background: url("../assets/ui/pause_frame.jpg") center / 100% 100% no-repeat, #1c1620 !important; border: none !important; box-shadow: 0 24px 70px rgba(0,0,0,.85) !important; aspect-ratio: 888 / 1190; height: min(90vh, 660px); width: auto !important; min-width: 0 !important; padding: 0 12% 4% !important; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden !important; }
+.pause .panel-title { height: 10.5%; margin: 1.6% 0 6.5% !important; padding: 0 !important; display: flex; align-items: center; justify-content: center; background: none !important; font-size: clamp(15px, 2.2vh, 22px); }
+.pause .btn { display: block; width: 100%; margin: 0 0 2.4%; padding: 0; height: clamp(34px, 6.6vh, 48px); background: url("../assets/ui/btn.png") center / 100% 100% no-repeat; border: none; font-size: clamp(13px, 2vh, 17px); }
+.pause .btn.focus, .pause .btn:hover { background: url("../assets/ui/btn_focus.png") center / 100% 100% no-repeat; border: none; text-shadow: 0 0 12px rgba(255,150,70,.55), 0 1px 2px #000; }
+.pause .btn.focus::before { left: 7%; }
+.pause .pause-info { margin-top: auto; font-size: clamp(11px, 1.6vh, 13px); }
+.pause .menu-list { width: 100%; max-width: none; display: block; }
+.pause .btn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 10%; }
+.inventory .desc-icon { width: 92px; height: 120px; padding: 27px 20px; }
+.pause { width: calc(min(90vh, 660px) * 888 / 1190) !important; height: min(90vh, 660px); }
+@media (max-height: 520px) { .pause { width: min(62vw, 420px) !important; height: 94vh; aspect-ratio: auto; padding: 0 10% 3% !important; } .pause .panel-title { height: 12%; margin: 1% 0 3% !important; } .pause .btn { height: 11.5%; margin-bottom: 1.2%; } }
+.pause { padding: 0 calc(min(90vh, 660px) * .085) calc(min(90vh, 660px) * .035) !important; }
+.pause .panel-title { height: calc(min(90vh, 660px) * .085); margin: calc(min(90vh, 660px) * .012) 0 calc(min(90vh, 660px) * .05) !important; }
+.pause .btn { margin: 0 0 calc(min(90vh, 660px) * .02); }
+@media (max-height: 520px) { .pause { padding: 0 6vw 2vh !important; } .pause .panel-title { height: 11vh; margin: 1vh 0 3vh !important; } .pause .btn { height: 10.5vh; margin: 0 0 1.2vh; } }
+
+/* ===== Menu principal como a ilustração (logótipo V, título centrado, botões em letra de livro) ===== */
+.mainmenu { left: 4%; width: min(36vw, 460px); text-align: center; }
+.mainmenu .logo { display: flex; flex-direction: column; align-items: center; margin-bottom: clamp(10px, 4vh, 40px); }
+.mainmenu .logo-v { width: clamp(70px, 12vw, 165px); height: auto; margin-bottom: clamp(4px, 1.2vh, 12px); filter: drop-shadow(0 0 22px rgba(255,170,80,.28)); animation: mmVGlow 4s ease-in-out infinite alternate; }
+@keyframes mmVGlow { from { filter: drop-shadow(0 0 14px rgba(255,170,80,.2)); } to { filter: drop-shadow(0 0 26px rgba(255,170,80,.42)); } }
+.mainmenu .logo-title { font-weight: 500; letter-spacing: .12em; padding-right: 0; margin-right: -.12em; font-size: clamp(36px, 6.2vw, 84px); background: linear-gradient(180deg, #fbefd9 0%, #e8cfa4 55%, #c9a26c 100%); -webkit-background-clip: text; background-clip: text; filter: drop-shadow(0 2px 0 #000) drop-shadow(0 0 14px rgba(255,170,90,.18)); }
+.mainmenu .logo-orn { width: 100%; justify-content: center; }
+.mainmenu .logo-sub { letter-spacing: .18em; color: #e4cfa8; font-size: clamp(13px, 1.7vw, 22px); text-transform: uppercase; }
+.mainmenu .menu-list { width: 100%; align-items: center; gap: clamp(0px, .4vh, 4px); }
+.mainmenu .btn { text-align: center; text-transform: none; font-family: var(--body); letter-spacing: .02em; font-size: clamp(17px, 2.3vw, 30px); padding: clamp(2px, .6vh, 6px) 26px; color: #d9c8ad; }
+.mainmenu .btn::after, .mainmenu .btn.focus::before, .mainmenu .btn:hover::before { display: none; }
+.mainmenu .btn.focus, .mainmenu .btn:hover { background: none; color: #fff2dc; text-shadow: 0 0 16px rgba(255,170,90,.55), 0 1px 2px #000; }
+.mainmenu .btn.focus::after, .mainmenu .btn:hover::after { display: block; content: ''; position: absolute; left: auto; right: 6px; top: 50%; bottom: auto; width: 6px; height: 6px; border-radius: 50%; transform: translateY(-50%); background: #ffb050; box-shadow: 0 0 8px 2px rgba(255,150,60,.7); animation: mmFlame .5s ease-in-out infinite alternate; }
+.mainmenu .mm-credit, .mainmenu .mm-foot { text-align: center; }
+@media (max-height: 420px) { .mainmenu .logo-v { width: 54px; } .mainmenu .btn { font-size: 16px; } }

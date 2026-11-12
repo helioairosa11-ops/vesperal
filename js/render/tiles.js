@@ -29,9 +29,26 @@
   const matCache = {};
   const P = 4 * T;
   function wrap(fn) { for (let ox = -P; ox <= P; ox += P) for (let oy = -P; oy <= P; oy += P) fn(ox, oy); }
+  // textura pintada da pedra (assets/tiles/stone.png): tijolo musgoso das imagens novas, tingido com as cores da região
+  const TEX_TINT = { r1: 0.35, crypt: 0.45, sanct: 0.5, r2: 0.45, r3: 0.6, r4: 0.25, r5: 0.6, r6: 0.6, r7: 0.55 };
+  function textureCanvas(R, s) {
+    const im = VS.Assets.img('tiles/stone.png');
+    if (!VS.Assets.ok(im)) return null;
+    const w = 128, h = Math.round(w * im.height / im.width); // ~5 fiadas em 80 unidades
+    const cv = document.createElement('canvas'); cv.width = Math.round(w * s); cv.height = Math.round(h * s);
+    const c = cv.getContext('2d'); c.imageSmoothingEnabled = false;
+    c.drawImage(im, 0, 0, cv.width, cv.height);
+    const k = TEX_TINT[R.key] !== undefined ? TEX_TINT[R.key] : 0.5;
+    c.globalCompositeOperation = 'color'; c.globalAlpha = k; c.fillStyle = R.stone; c.fillRect(0, 0, cv.width, cv.height);
+    c.globalCompositeOperation = 'multiply'; c.globalAlpha = 0.35; c.fillStyle = R.stone; c.fillRect(0, 0, cv.width, cv.height);
+    c.globalCompositeOperation = 'source-over'; c.globalAlpha = 1;
+    cv.texScale = s;
+    return cv;
+  }
   function materialCanvas(R, s) {
     const key = R.key + ':' + s.toFixed(2);
     if (matCache[key]) return matCache[key];
+    if (!(VS.settings && VS.settings.bgArt === false)) { const tc = textureCanvas(R, s); if (tc) { matCache[key] = tc; return tc; } }
     const cv = document.createElement('canvas'); cv.width = cv.height = Math.round(P * s);
     const c = cv.getContext('2d'); c.scale(s, s);
     const rnd = U.rng(U.hash(R.key + 'mat'));
@@ -140,6 +157,8 @@
     }
     // grão fino por cima de tudo
     speck(0, 0, P, P, 180, '#000000', 0.18); speck(0, 0, P, P, 60, R.stoneLight, 0.1);
+    // enquanto a textura pintada ainda carrega, não fixar a versão desenhada
+    if (!VS.Assets.failed['tiles/stone.png'] && !(VS.settings && VS.settings.bgArt === false) && !VS.Assets.ok(VS.Assets.img('tiles/stone.png'))) return cv;
     matCache[key] = cv;
     return cv;
   }
