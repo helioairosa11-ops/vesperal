@@ -75,9 +75,25 @@
   // PORTÃO DO PALÁCIO (a entrada da área final): arco ogival alto entre duas colunas, portas duplas de ébano com ouro
   // e um sol em chama ao centro, cinco engastes de brasa à volta do arco (acendem-se com as brasas que já tens),
   // a coroa na pedra de fecho e dois braseiros. Abre-se a deslizar para os lados.
+  // portão pintado (assets/props/gate.png): fechado · as cinco brasas acesas · aberto, com fumo dourado entre eles
+  const SOCKETS = [0.42, 0.505, 0.59, 0.675, 0.76];
+  function gateArt(ctx, d, k, embers, t) {
+    const im = VS.Assets.img('props/gate.png'); if (!VS.Assets.ok(im)) return false;
+    const fw = im.width / 3, fh = im.height, H = 158, W = H * fw / fh, cx = d.x, fl = d.y + d.h, x0 = cx - W / 2, y0 = fl - H + 2;
+    const frame = (i, a) => { if (a <= 0.01) return; ctx.globalAlpha = a; ctx.drawImage(im, i * fw, 0, fw, fh, x0, y0, W, H); };
+    ctx.save();
+    if (k <= 0.01) {
+      frame(embers >= 5 ? 1 : 0, 1);
+      if (embers < 5) for (let i = 0; i < embers; i++) { ctx.globalAlpha = 0.8 + 0.2 * Math.sin(t * 4 + i); glow(ctx, cx, y0 + H * SOCKETS[i], 7, '#ff9030', 0.9); ctx.fillStyle = '#ffb050'; ctx.beginPath(); ctx.arc(cx, y0 + H * SOCKETS[i], 2.2, 0, U.TAU); ctx.fill(); }
+      else { ctx.globalAlpha = 0.35 + 0.15 * Math.sin(t * 3); glow(ctx, cx, y0 + H * 0.6, 40, '#ff8030', 0.5); }
+    } else { frame(1, 1 - k); frame(2, k); }
+    ctx.restore();
+    return true;
+  }
   SO.palaceGate = function (ctx, d, R) {
     const t = d.t || 0, k = d.anim, gx0 = d.x - T, gx1 = d.x + T, cx = (gx0 + gx1) / 2, fl = d.y + d.h;
     const ys = fl - 92, ya = fl - 138, embers = Math.min(5, (VS.state && VS.state.embers) || 0), full = embers >= 5;
+    if (gateArt(ctx, d, k, embers, t)) return;
     const arch = (q, x0, x1, y0, yA) => { const m = (x0 + x1) / 2; q.moveTo(x0, fl); q.lineTo(x0, y0); q.quadraticCurveTo(x0, yA + (y0 - yA) * 0.25, m, yA); q.quadraticCurveTo(x1, yA + (y0 - yA) * 0.25, x1, y0); q.lineTo(x1, fl); q.closePath(); };
     ctx.save();
     // recesso escuro dentro do arco
@@ -166,6 +182,8 @@
       if (k < 1) { ctx.globalAlpha = 1 - k; ctx.fillStyle = 'rgba(150,100,255,0.5)'; ctx.fillRect(x + 2, y, T - 4, h); ctx.globalAlpha = 1; }
     } else {
       const yy = y - off;
+      const gim = VS.Assets.img('props/grate.png');
+      if (VS.Assets.ok(gim) && !/^embers/.test(d.open)) { ctx.drawImage(gim, x - 3, yy, T + 6, h + 4); ctx.restore(); ctx.fillStyle = R.stoneDark; ctx.fillRect(x - 3, y - 4, T + 6, 5); return; }
       // grade de ferro
       ctx.fillStyle = '#1a1618';
       for (let i = 0; i < 4; i++) { ctx.fillRect(x + 2 + i * 5, yy, 2.4, h); ctx.beginPath(); ctx.moveTo(x + 1 + i * 5, yy + h); ctx.lineTo(x + 3.2 + i * 5, yy + h + 4); ctx.lineTo(x + 5.4 + i * 5, yy + h); ctx.fill(); }

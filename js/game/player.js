@@ -59,6 +59,7 @@
     update(dt, game) {
       super.update(dt, game);
       const st = this.st;
+      this.updateBurn(dt, game);
       this.iframes = Math.max(0, this.iframes - dt);
       this.dodgeCd = Math.max(0, this.dodgeCd - dt);
       this.riposteT = Math.max(0, this.riposteT - dt);
@@ -622,7 +623,21 @@
       // recuo mais claro (os golpes que empurram — investida, onda de choque — trazem a força no 'knock')
       if (!st.fx('noKnockback', false)) { this.vx = kdir * (hb && !hb.projectile && hb.knock > 230 ? hb.knock : 230); this.vy = -235; }
       this.action = { type: 'hurt', t: 0 };
-      if (st.hp <= 0) { st.hp = 0; this.die(game); }
+      if (st.hp <= 0) { st.hp = 0; this.die(game); return; }
+      if (Player.isFire(hb)) this.ignite();
+    }
+    // QUEIMADURA: golpes de fogo deixam o herói a arder ~3 s (dano pequeno a cada 0,6 s); rolar apaga mais depressa
+    ignite() { this.burn = { t: 3.0, tick: 0.6 }; }
+    updateBurn(dt, game) {
+      const b = this.burn; if (!b) return;
+      const a = this.action; if (a && a.type === 'dead') { this.burn = null; return; }
+      b.t -= dt * (a && a.type === 'dodge' ? 3 : 1); b.tick -= dt;
+      if (Math.random() < 0.6) VS.Gfx.emit({ x: this.cx + U.rand(-5, 5), y: this.y + U.rand(4, this.h - 2), vx: U.rand(-15, 15), vy: U.rand(-70, -35), drag: 1, life: U.rand(0.25, 0.5), size: U.rand(1, 2), color: U.pick(['#ff9030', '#ffcf60', '#ff5a10']), add: true, shrink: true, layer: 2 });
+      if (b.tick <= 0) {
+        b.tick = 0.6;
+        const st = this.st; if (!game.god && st.hp > 1) { st.hp = Math.max(1, st.hp - 3); this.flash = 0.12; VS.Audio.sfx('fire', { vol: 0.25 }); }
+      }
+      if (b.t <= 0) this.burn = null;
     }
     hazardHit(game) {
       const st = this.st;
@@ -762,5 +777,17 @@
     }
   }
   Player.C = C; Player.ATK = ATK;
+  // golpe de fogo? projéteis de fogo/explosões/metal derretido e os golpes dos chefes que ardem
+  const FIRE_KINDS = { fire: 1, blast: 1, molten: 1, ingot: 1, plume: 1, spark: 1, judgement: 1 };
+  const FIRE_BOSSES = { hilde: 1, automato: 1, vael: 1, aldric: 1, corvin: 1 };
+  Player.isFire = function (hb) {
+    if (!hb) return false;
+    if (hb.fire) return true;
+    const src = hb.src || hb.owner;
+    const k = hb.kind || (src && src.kind);
+    if (k && FIRE_KINDS[k]) return true;
+    if (src && src.isBoss && (FIRE_BOSSES[src.bossId] || (src.bossId === 'coveiro' && src.phase >= 1))) return true;
+    return false;
+  };
   VS.Player = Player;
 })(window.VS);

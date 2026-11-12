@@ -57,6 +57,13 @@
       const th = this.c.phases || [];
       while (this.phase < th.length && this.hp / this.maxHp <= th[this.phase]) {
         this.phase++; A.setIntensity(this.phase);
+        // ao entrar na segunda fase recupera 20% da vida (e troca para a folha da fase 2, se existir)
+        if (this.phase === 1) {
+          this.hp = Math.min(this.maxHp, this.hp + this.maxHp * 0.2);
+          G.burst(this.cx, this.cy, 26, { color: '#ffb050', speed: 140, life: 0.7, size: 2, add: true }); VS.FX.flare(this.cx, this.cy, 46, [255, 170, 80], 0.4);
+          const base = (this.K && this.K.sheet) || this.kind;
+          if (VS.SPRITE_META && VS.SPRITE_META['en_' + base + '_p2']) { this.sheetName = base + '_p2'; VS.Assets.sheet('en_' + base + '_p2'); }
+        }
         if (this.K.onPhase) this.K.onPhase(this, game, this.phase);
       }
       // cada fase bate um pouco mais forte e espera menos entre golpes

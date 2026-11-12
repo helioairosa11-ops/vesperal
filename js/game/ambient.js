@@ -148,6 +148,20 @@
     }
     ctx.restore();
   }
+  // ratos e corvos pintados (assets/sprites/amb.png); devolve false se a folha ainda não carregou
+  function ambSprite(ctx, a) {
+    const M = VS.AMB_META, im = VS.Assets.img('sprites/amb.png');
+    if (!M || !VS.Assets.ok(im)) return false;
+    const it = M.items[a.kind]; if (!it) return false;
+    let an, fps;
+    if (a.kind === 'rat') { an = a.st === 'idle' ? 'idle' : 'run'; fps = a.st === 'flee' ? 18 : a.st === 'walk' ? 11 : 5; }
+    else { an = a.st === 'idle' ? (a.hop > 0 ? 'hop' : 'idle') : 'fly'; fps = a.st === 'idle' ? 4 : 14; }
+    const L = it[an] || it.idle, f = L[Math.floor(a.t * fps) % L.length], U = M.U;
+    const w = f[2] / U, h = f[3] / U, y = a.st === 'idle' || a.kind === 'rat' ? a.y : a.y + h * 0.5;
+    ctx.save(); ctx.globalAlpha = Math.max(0, a.a == null ? 1 : a.a); ctx.translate(a.x, y); ctx.scale(a.dir, 1);
+    ctx.drawImage(im, f[0], f[1], f[2], f[3], -w / 2, -h, w, h); ctx.restore();
+    return true;
+  }
   function rat(ctx, a, rim, body) {
     ctx.save(); ctx.globalAlpha = Math.max(0, a.a); ctx.translate(a.x, a.y); ctx.scale(a.dir * 1.2, 1.2);
     const run = a.st !== 'idle', b = run ? Math.sin(a.t * (a.st === 'flee' ? 40 : 22)) * 0.6 : 0, sniff = a.st === 'idle' ? Math.sin(a.t * 14) * 0.4 : 0;
@@ -189,6 +203,7 @@
     for (const a of Amb.list) {
       const jumping = a.kind === 'fish' && a.st === 'jump', x = jumping ? a.jx : a.x, y = jumping ? a.jy : a.y;
       if (!VS.Gfx.inView(x - 12, y - 12, 24, 24, 20)) continue;
+      if ((a.kind === 'crow' || a.kind === 'rat') && ambSprite(ctx, a)) continue;
       if (a.kind === 'crow') crow(ctx, a, rim, body, false);
       else if (a.kind === 'dove') crow(ctx, a, 'rgba(255,250,240,0.95)', '#c8c0b8', true);
       else if (a.kind === 'rat') rat(ctx, a, rim, '#1a1414');
