@@ -23,7 +23,7 @@
   Assets.preloadRoom = function (def) {
     if (!def || !def.ents) return;
     for (const e of def.ents) {
-      if (e.t === 'boss' && e.boss) { Assets.sheet('en_b_' + e.boss); if (e.boss === 'gemeos') { Assets.sheet('en_b_gemeo_a'); Assets.sheet('en_b_gemeo_b'); } }
+      if (e.t === 'boss' && e.boss) { Assets.sheet('en_b_' + e.boss); if (VS.SPRITE_META['en_b_' + e.boss + '_p2']) Assets.sheet('en_b_' + e.boss + '_p2'); if (e.boss === 'gemeos') { Assets.sheet('en_b_gemeo_a'); Assets.sheet('en_b_gemeo_b'); } }
       else if (e.t === 'enemy' && e.k) Assets.sheet('en_' + e.k);
       else if (e.t === 'npc' && e.id) Assets.sheet('npc_' + String(e.id).replace(/_body$/, ''));
     }

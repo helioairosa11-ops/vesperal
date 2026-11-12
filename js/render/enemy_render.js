@@ -5,7 +5,7 @@
 (function (VS) {
   const U = VS.U;
   const ER = {};
-  const name = (e) => 'en_' + ((e.K && e.K.sheet) || e.kind);
+  const name = (e) => 'en_' + (e.sheetName || (e.K && e.K.sheet) || e.kind);
   ER.sheet = (e) => VS.Assets.sheet(name(e));
   ER.has = (e) => { const sh = ER.sheet(e); return !!(sh && VS.Assets.ok(sh.img)); };
 

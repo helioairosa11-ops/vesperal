@@ -519,7 +519,7 @@
       ctx.drawImage(G.bgCanvas, 0, 0, G.bgCanvas.width, G.bgCanvas.height, 0, 0, G.canvas.width, G.canvas.height);
       G.screenTransform(ctx);
       G.worldTransform(ctx);
-      if (R.interior || VS.ROOMS[room.id].interior) VS.Deco.drawBackdrop(ctx, room, R, cam);
+      if ((R.interior || VS.ROOMS[room.id].interior) && !(VS.BG.hasRoomArt && VS.BG.hasRoomArt(room.id))) VS.Deco.drawBackdrop(ctx, room, R, cam);
       VS.Deco.drawBack(ctx, room, R, this.time);
       // entidades atrás
       // ordem de desenho por camada (z): reaproveita o vetor e só reordena quando a lista muda
