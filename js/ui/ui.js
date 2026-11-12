@@ -295,8 +295,9 @@
     for (let i = 0; i < 3; i++) { const a = -Math.PI / 2 + U.TAU * i / 3; ctx.fillStyle = '#1a1014'; ctx.beginPath(); ctx.arc(C[0] + Math.cos(a) * 12.6, C[1] + Math.sin(a) * 12.6, 1.1, 0, U.TAU); ctx.fill(); }
     flame(ctx, C[0], C[1] + 4, 1.15 + lk * 0.35, t, lk);
     // ---- barra de vida
-    const bw = 110 + st.hearts * 16, bx = mx + 50, by = my + 26 - 7;
-    const ix = bx + 4, iy = by + 4, iw = bw - 4, ih = 6;
+    // moldura nova (assets/ui/hud_bar_*): medalhão do coração à esquerda, canal da vida, ponta de lança à direita
+    const bw = 124 + st.hearts * 16, bx = mx + 46, by = C[1] - 16.4;
+    const ix = bx + 27.2, iy = by + 13.2, ih = 6.4, iw = bw - 18 + 9.4 - 27.2;
     ctx.fillStyle = 'rgba(14,6,8,0.92)'; ctx.fillRect(ix, iy, iw, ih);
     UI.hpGhost = U.approach(UI.hpGhost, st.hp, 0.6 * (VS.Gfx.fk || 1));
     const hk = U.clamp(st.hp / st.hpMax, 0, 1), gk = U.clamp(UI.hpGhost / st.hpMax, 0, 1);
@@ -310,20 +311,20 @@
     if (hk < 0.3) { ctx.fillStyle = `rgba(255,40,40,${0.18 + 0.15 * Math.sin(t * 8)})`; ctx.fillRect(ix, iy, iw * hk, ih); }
     ctx.restore();
     if (painted) {
+      const [mw] = HM('hud_bar_m'); let x = bx + HM('hud_bar_l')[0] - 0.5;
+      const end = bx + bw - 18;
+      while (x < end) { const w = Math.min(mw, end - x + 0.5); const im = HI('hud_bar_m'); if (VS.Assets.ok(im)) ctx.drawImage(im, 0, 0, im.width * (w / mw), im.height, x, by, w, HM('hud_bar_m')[1]); x += w - 0.5; }
+      hud(ctx, 'hud_bar_r', end, by);
       hud(ctx, 'hud_bar_l', bx, by);
-      const [mw] = HM('hud_bar_m'); let x = bx + HM('hud_bar_l')[0];
-      const end = bx + bw + 2;
-      while (x < end) { const w = Math.min(mw, end - x); const im = HI('hud_bar_m'); if (VS.Assets.ok(im)) ctx.drawImage(im, 0, 0, im.width * (w / mw), im.height, x, by, w, HM('hud_bar_m')[1]); x += w; }
-      hud(ctx, 'hud_bar_r', end, by - 3);
     } else { ctx.strokeStyle = '#6a5a50'; ctx.lineWidth = 0.8; ctx.strokeRect(ix - 1.5, iy - 1.5, iw + 3, ih + 3); }
     // ---- círios (cura)
     for (let i = 0; i < st.flasksMax; i++) {
-      const lit = i < st.flasks, cx = bx + 6 + i * 11, cy = by + 15;
+      const lit = i < st.flasks, cx = bx + 30 + i * 11, cy = by + 24;
       if (painted) { hud(ctx, lit ? 'hud_candle_lit' : 'hud_candle_out', cx, cy); if (lit) flame(ctx, cx + 5, cy + 2.8, 0.42, t + i * 1.7, 0.6); else if (Math.sin(t * 2 + i) > 0.6) { ctx.fillStyle = 'rgba(160,150,150,0.25)'; ctx.beginPath(); ctx.arc(cx + 5.2 + Math.sin(t * 3 + i), cy + 7 - ((t * 6 + i * 3) % 6), 1.1, 0, U.TAU); ctx.fill(); } }
       else { ctx.fillStyle = lit ? '#e8dcc0' : '#3a3438'; ctx.fillRect(cx + 3, cy + 4, 4, 7); }
     }
     // ---- cinza
-    const ay = by + 34, ashTxt = String(st.ash);
+    const ay = by + 43, ashTxt = String(st.ash);
     if (painted) hud(ctx, 'hud_ash', bx + 4, ay - 1);
     ctx.font = UI.font(11); ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillText(ashTxt, bx + 21, ay + 7.6);
@@ -332,8 +333,8 @@
     let bxf = bx + bw - 6;
     for (const b in st.buffs) {
       const im = VS.Assets.img('icons/' + b + '.png'), k = U.clamp(st.buffs[b] / 60, 0, 1);
-      if (VS.Assets.ok(im)) ctx.drawImage(im, bxf - 8, by + 14, 16, 16); else { ctx.fillStyle = b === 'oil' ? '#ff8030' : '#a090c0'; ctx.beginPath(); ctx.arc(bxf, by + 22, 3.5, 0, U.TAU); ctx.fill(); }
-      ctx.strokeStyle = 'rgba(255,200,140,0.7)'; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.arc(bxf, by + 22, 8.6, -Math.PI / 2, -Math.PI / 2 + U.TAU * k); ctx.stroke();
+      if (VS.Assets.ok(im)) ctx.drawImage(im, bxf - 8, by + 25, 16, 16); else { ctx.fillStyle = b === 'oil' ? '#ff8030' : '#a090c0'; ctx.beginPath(); ctx.arc(bxf, by + 33, 3.5, 0, U.TAU); ctx.fill(); }
+      ctx.strokeStyle = 'rgba(255,200,140,0.7)'; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.arc(bxf, by + 33, 8.6, -Math.PI / 2, -Math.PI / 2 + U.TAU * k); ctx.stroke();
       bxf -= 18;
     }
     // relógio opcional
@@ -343,20 +344,20 @@
     if (UI.boss && !UI.boss.dead) {
       const b = UI.boss, w = 300, x = (U.SCREEN_W - w) / 2, y = U.SCREEN_H - 30;
       ctx.textAlign = 'center'; ctx.font = UI.font(11);
-      ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillText(VS.t(b.nameKey), U.SCREEN_W / 2 + 1, y - 7);
-      ctx.fillStyle = '#efe0c8'; ctx.fillText(VS.t(b.nameKey), U.SCREEN_W / 2, y - 8);
+      ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillText(VS.t(b.nameKey), U.SCREEN_W / 2 + 1, y - 10);
+      ctx.fillStyle = '#efe0c8'; ctx.fillText(VS.t(b.nameKey), U.SCREEN_W / 2, y - 11);
       ctx.fillStyle = 'rgba(12,6,8,0.92)'; ctx.fillRect(x, y + 3.4, w, 4);
       UI.bossGhost = U.approach(UI.bossGhost, b.hp / b.maxHp, 0.004 * (VS.Gfx.fk || 1));
       ctx.fillStyle = '#d8c4a4'; ctx.fillRect(x, y + 3.4, w * UI.bossGhost, 4);
       const g2 = ctx.createLinearGradient(0, y + 3.4, 0, y + 7.4); g2.addColorStop(0, '#c8303a'); g2.addColorStop(1, '#5a0c14');
       ctx.fillStyle = g2; ctx.fillRect(x, y + 3.4, w * Math.max(0, b.hp / b.maxHp), 4);
       if (VS.Assets.ok(HI('hud_boss_m'))) {
-        const [mw, mh] = HM('hud_boss_m'), im = HI('hud_boss_m');
-        for (let xx = x; xx < x + w; xx += mw) { const ww = Math.min(mw, x + w - xx); ctx.drawImage(im, 0, 0, im.width * (ww / mw), im.height, xx, y, ww, mh); }
-        const [lw] = HM('hud_boss_l'); hud(ctx, 'hud_boss_l', x - lw + 1, y - 4); hud(ctx, 'hud_boss_r', x + w - 1, y - 4);
+        const [mw, mh] = HM('hud_boss_m'), im = HI('hud_boss_m'), fy = y - 3.43, x0 = x - 9.6 + HM('hud_boss_l')[0] - 0.5, x1 = x + w - 4.5;
+        for (let xx = x0; xx < x1; xx += mw - 0.5) { const ww = Math.min(mw, x1 - xx + 0.5); ctx.drawImage(im, 0, 0, im.width * (ww / mw), im.height, xx, fy, ww, mh); }
+        hud(ctx, 'hud_boss_l', x - 9.6, fy); hud(ctx, 'hud_boss_r', x1, fy); hud(ctx, 'hud_boss_c', x + w / 2 - HM('hud_boss_c')[0] / 2, fy);
       } else { ctx.strokeStyle = '#6a5a50'; ctx.lineWidth = 0.8; ctx.strokeRect(x - 1.5, y + 1.9, w + 3, 7); }
-      if (b.bars > 1) for (let i = 0; i < b.bars; i++) { const px = U.SCREEN_W / 2 + (i - (b.bars - 1) / 2) * 13, py = y + 15; ctx.save(); ctx.translate(px, py); ctx.rotate(Math.PI / 4); ctx.fillStyle = i >= (b.bar || 0) ? '#d8303a' : 'rgba(30,16,20,0.9)'; ctx.fillRect(-3, -3, 6, 6); ctx.strokeStyle = '#d8b890'; ctx.lineWidth = 0.8; ctx.strokeRect(-3, -3, 6, 6); ctx.restore(); }
-      if (b.postureMax) { ctx.fillStyle = 'rgba(8,6,10,0.85)'; ctx.fillRect(x + w * 0.2, y + 11, w * 0.6, 2.4); ctx.fillStyle = b.posture >= b.postureMax ? '#ffffff' : '#e8c060'; ctx.fillRect(x + w * 0.2, y + 11, w * 0.6 * Math.min(1, b.posture / b.postureMax), 2.4); }
+      if (b.bars > 1) for (let i = 0; i < b.bars; i++) { const px = U.SCREEN_W / 2 + (i - (b.bars - 1) / 2) * 13, py = y + 20; ctx.save(); ctx.translate(px, py); ctx.rotate(Math.PI / 4); ctx.fillStyle = i >= (b.bar || 0) ? '#d8303a' : 'rgba(30,16,20,0.9)'; ctx.fillRect(-3, -3, 6, 6); ctx.strokeStyle = '#d8b890'; ctx.lineWidth = 0.8; ctx.strokeRect(-3, -3, 6, 6); ctx.restore(); }
+      if (b.postureMax) { ctx.fillStyle = 'rgba(8,6,10,0.85)'; ctx.fillRect(x + w * 0.2, y + 15, w * 0.6, 2.4); ctx.fillStyle = b.posture >= b.postureMax ? '#ffffff' : '#e8c060'; ctx.fillRect(x + w * 0.2, y + 15, w * 0.6 * Math.min(1, b.posture / b.postureMax), 2.4); }
     }
     ctx.textAlign = 'left';
   };

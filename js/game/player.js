@@ -368,6 +368,7 @@
       if (st.hp >= st.hpMax) { game.toast(VS.t('msg_full_hp')); return; }
       this.action = { type: 'heal', t: 0, dur: 0.85 / st.fx('healSpeed', 1) };
       VS.Audio.sfx('charge', { vol: 0.4 });
+      VS.FX.art('heal', this.cx, this.y + this.h + 1, { h: 44, life: this.action.dur + 0.25, follow: this, alpha: 0.6 });
     }
     startSpell(game) {
       const st = this.st;

@@ -345,6 +345,18 @@
     ctx.beginPath(); ctx.moveTo(x - w * 0.45, y); ctx.quadraticCurveTo(x - w * 0.5, y - h * 0.4, x + lean * 0.6, y - h * 0.68); ctx.quadraticCurveTo(x + w * 0.5, y - h * 0.4, x + w * 0.45, y); ctx.closePath(); ctx.fill();
   }
   D.flame = flame;
+  const FIRE_ART = { altar: 5.2, brazier: 5.6 };
+  function fireArt(ctx, flames, hk, time, seed) {
+    const m = VS.FX_ART && VS.FX_ART.fire, im = VS.Assets.img('sprites/fx_art.png');
+    if (!m || !VS.Assets.ok(im)) return false;
+    let cx = 0, by = -1e9, mx = 0; for (const q of flames) { cx += q[0]; by = Math.max(by, q[1]); mx = Math.max(mx, q[2]); }
+    cx /= flames.length;
+    const i = 2 + (Math.floor(time * 10 + seed * 17) % 3), h = mx * hk, w = m.w * h / m.h;
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    ctx.drawImage(im, i * m.w, m.y, m.w, m.h, cx - w / 2, by + h * 0.12 - h, w, h);
+    ctx.restore();
+    return true;
+  }
   // desenha a variante v do adereço k com a âncora em (x, y); devolve false se o atlas ainda não está pronto
   D.atlas = function (ctx, k, v, x, y, o) {
     const meta = VS.PROP_META, list = meta && meta.items[k];
@@ -358,7 +370,12 @@
     if (f.sway && !(o && o.still)) { const a = Math.sin(time * (1.1 + seed * 0.6) + seed * 9) * f.sway; ctx.rotate(a); }
     if (f.skew && !(o && o.still)) ctx.transform(1, 0, Math.sin(time * 1.6 + seed * 5) * 0.06, 1, 0, 0);
     ctx.drawImage(im, e[0], e[1], e[2], e[3], -e[4] / S, -e[5] / S, e[2] / S, e[3] / S);
-    if (f.flames && !(o && o.unlit)) { const k2 = (o && o.flameK) || 1; f.flames.forEach((q, i) => flame(ctx, q[0], q[1], q[2] * k2, time, seed * 10 + i)); }
+    if (f.flames && !(o && o.unlit)) {
+      const k2 = (o && o.flameK) || 1;
+      // fogo pintado (assets/sprites/fx_art.png) nos braseiros e no altar; chamas pequenas continuam desenhadas
+      if (FIRE_ART[k] && fireArt(ctx, f.flames, k2 * FIRE_ART[k], time, seed)) { /* desenhado */ }
+      else f.flames.forEach((q, i) => flame(ctx, q[0], q[1], q[2] * k2, time, seed * 10 + i));
+    }
     ctx.restore();
     return f;
   };
