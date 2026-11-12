@@ -14,7 +14,9 @@
   // devolve { sheet, anim, f (fotograma) }
   H.select = function (p) {
     const suf = VS.state && VS.state.look === 'sino' ? '_sino' : '';
-    const a = p.action, base = 'hero' + suf, wc = 'hero_' + cls(p) + suf;
+    // arte nova do herói (hero2*): por agora só com a espada do Desperto e o capuz; as outras armas usam as folhas anteriores
+    const v2 = !suf && wid() === 'desperto' && VS.SPRITE_META && VS.SPRITE_META.hero2 && VS.SPRITE_META.hero2_espada;
+    const a = p.action, base = v2 ? 'hero2' : 'hero' + suf, wc = v2 ? 'hero2_espada' : 'hero_' + cls(p) + suf;
     const S = (sheet, anim, idx) => ({ sheet, anim, idx });
     const P = (sheet, anim, phase, k) => ({ sheet, anim, phase, k });
     const A = p.anim;

@@ -46,6 +46,7 @@
     const cls = (VS.WEAPONS[w] || VS.WEAPONS.desperto).cls;
     const list = ['sprites/hero.png', 'sprites/hero' + look + '.png', 'sprites/hero_espada' + look + '.png', 'weapons/w_' + w + '.png', 'sprites/fx_proj.png', 'ui/hud_medallion.png', 'ui/hud_bar_m.png', 'ui/hud_candle_lit.png'];
     if (VS.SPRITE_META['hero_' + cls + look]) list.push('sprites/hero_' + cls + look + '.png');
+    if (VS.SPRITE_META.hero2) list.push('sprites/hero2.png', 'sprites/hero2_espada.png');
     return list;
   };
 
