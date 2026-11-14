@@ -39,7 +39,7 @@
     ins_i34_t: 'Plaque du portrait de la Reine', ins_i34: 'Seraphine, peinte le jour de son couronnement. Le peintre se plaignait de ne pas pouvoir la regarder plus d\'une minute d\'affilée.',
     ins_i35_t: 'Gravé sur les marches du trône', ins_i35: 'Le trône de Vesperal fut fait pour qui garde la lumière. Personne ne l\'a fait pour qui la libère.',
     // ---------- objets ----------
-    item_ab_dash_name: 'Pas de Cendre', item_ab_dash_desc: 'Le fossoyeur le gardait sans le savoir. Appuie sur Esquiver en l\'air pour t\'élancer en avant, au-dessus de gouffres qu\'aucun saut n\'atteint.',
+    item_ab_dash_name: 'Pas de Cendre', item_ab_dash_desc: 'La Bête le gardait sans le savoir. Appuie sur Esquiver en l\'air pour t\'élancer en avant, au-dessus de gouffres qu\'aucun saut n\'atteint.',
     item_ab_spell_name: 'Étincelle', item_ab_spell_desc: 'Une étincelle du Lume qu\'Ione t\'a appris à libérer. Coûte un tiers de ton Lume ; le Lume se remplit en frappant et en parant.',
     item_ab_wall_name: 'Griffe de la Sentinelle', item_ab_wall_desc: 'Le dernier don de Caedmon : t\'accrocher à la pierre comme il s\'est accroché à son serment. Glisse le long des murs et saute depuis eux.',
     item_ab_forge_name: 'Coup de Forge', item_ab_forge_desc: 'Hilde t\'a appris, sans un mot, à charger un coup. Maintiens le coup lourd jusqu\'à ce qu\'il brille : il brise la pierre fissurée.',
@@ -115,7 +115,7 @@
     en_penitent_big: 'Grand Pénitent', enj_penitent_big: 'Il a porté le joug le plus lourd de la procession jusqu\'à ce que le joug lui pousse dans les épaules. Chaque coup pèse comme une cloche ; le troisième brille.',
     en_royalguard_big: 'Champion du Roi', enj_royalguard_big: 'Il a remporté tous les tournois du royaume et garde la porte de la salle du trône. La hallebarde porte plus loin que tu ne crois.',
     // ---------- gardiens ----------
-    bossj_coveiro: 'Le fossoyeur de la ville a continué de creuser après sa mort. Il gardait, sans le savoir, le Pas de Cendre.',
+    bossj_coveiro: 'Une bête aux ailes noires s\'est posée dans le Cimetière la nuit sans lune et ne s\'est plus envolée. Elle gardait, sans le savoir, le Pas de Cendre.',
     bossj_matilheira: 'La plus vieille chienne des chenils du Bastion. Elle appelait ses petits dès qu\'elle était blessée.',
     bossj_caedmon: 'Sire Caedmon, Bouclier de la Reine. Son bouclier n\'a jamais cédé à un coup — seulement à une parade parfaite.',
     bossj_automato: 'Automate de forge, modèle III. Le fourneau dans son dos était à la fois sa faiblesse et son cœur.',

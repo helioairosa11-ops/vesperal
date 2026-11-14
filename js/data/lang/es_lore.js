@@ -39,7 +39,7 @@
     ins_i34_t: 'Placa del retrato de la Reina', ins_i34: 'Seraphine, pintada el día de su coronación. El pintor se quejó de que no podía mirarla más de un minuto seguido.',
     ins_i35_t: 'Grabado en los peldaños del trono', ins_i35: 'El trono de Vesperal se hizo para quien guarda la luz. Nadie lo hizo para quien la libera.',
     // ---------- objetos ----------
-    item_ab_dash_name: 'Paso de Ceniza', item_ab_dash_desc: 'El sepulturero lo guardaba sin saberlo. Pulsa Esquivar en el aire para lanzarte hacia delante, por encima de abismos que ningún salto alcanza.',
+    item_ab_dash_name: 'Paso de Ceniza', item_ab_dash_desc: 'La Bestia lo guardaba sin saberlo. Pulsa Esquivar en el aire para lanzarte hacia delante, por encima de abismos que ningún salto alcanza.',
     item_ab_spell_name: 'Chispa', item_ab_spell_desc: 'Una chispa del Lume que Ione te enseñó a soltar. Gasta un tercio de tu Lume; el Lume se llena al golpear y al hacer parry.',
     item_ab_wall_name: 'Garra del Centinela', item_ab_wall_desc: 'El último don de Caedmon: aferrarte a la piedra como él se aferró a su juramento. Deslízate por las paredes y salta desde ellas.',
     item_ab_forge_name: 'Golpe de Forja', item_ab_forge_desc: 'Hilde te enseñó, sin palabras, a cargar un golpe. Mantén el golpe pesado hasta que brille: rompe la piedra agrietada.',
@@ -115,7 +115,7 @@
     en_penitent_big: 'Gran Penitente', enj_penitent_big: 'Cargó el yugo más pesado de la procesión hasta que el yugo le creció en los hombros. Cada golpe pesa como una campana; el tercero brilla.',
     en_royalguard_big: 'Campeón del Rey', enj_royalguard_big: 'Ganó todos los torneos del reino y quedó de guardia ante la puerta del trono. La alabarda llega más lejos de lo que crees.',
     // ---------- guardianes ----------
-    bossj_coveiro: 'El sepulturero de la ciudad siguió cavando después de morir. Guardaba, sin saberlo, el Paso de Ceniza.',
+    bossj_coveiro: 'Una bestia de alas negras se posó en el Cementerio la noche sin luna y no volvió a alzar el vuelo. Guardaba, sin saberlo, el Paso de Ceniza.',
     bossj_matilheira: 'La perra más vieja de las perreras del Bastión. Llamaba a sus crías cuando se veía herida.',
     bossj_caedmon: 'Sir Caedmon, Escudo de la Reina. Su escudo nunca cedió ante un golpe, solo ante un parry perfecto.',
     bossj_automato: 'Autómata de forja, modelo III. El horno de su espalda era su debilidad y su corazón.',

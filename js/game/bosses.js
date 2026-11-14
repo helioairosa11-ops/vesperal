@@ -206,68 +206,57 @@
   VS.Bosses = Bosses;
 
   // ======================================================================
-  // O COVEIRO — subchefe da Cidade Cinzenta
+  // A BESTA DO SACRIFÍCIO — subchefe do Cemitério (ocupa o lugar do Coveiro: mesmo id, mesma sala, mesma recompensa)
   // ======================================================================
+  const DARK = ['#1a1418', '#2a1e26', '#3a2a34'];
   Bosses.def('coveiro', {
-    aggr: [1.6, 1.95, 2.2], repelCol: [210, 180, 130],
-    // gigante (≈2× a protagonista): caixa do corpo 40×64; a pá chega a ~70 px à frente
-    cfg: { w: 40, h: 64, hp: 520, music: 'sb_coveiro', heavy: true, phases: [0.5], ash: 0, ashCol: '#7a6a58' },
+    aggr: [1.6, 1.95, 2.25], repelCol: [150, 40, 50],
+    // grande e alada (≈2,5× a protagonista): caixa do corpo 44×70; garra até ~70 px, ferrão até ~140 px
+    cfg: { w: 44, h: 70, hp: 520, music: 'sb_coveiro', heavy: true, phases: [0.5], ash: 0, ashCol: '#3a2a32' },
     attacks: {
-      // golpe de cima: a pá desce por cima da cabeça e crava-se à frente (aparável); fica presa — costas expostas
-      slam: { wind: 0.8, act: 0.16, rec: 1.15, dmg: 22, tell: 'white', sfx: 'swing_heavy', hb: (e) => front(e, 10, 0, 64, 62),
-        onAct(e, g) { G.addShake(0.45); A.sfx('crush'); const x = e.cx + e.facing * 66; VS.FX.impact(x, e.bottom - 2, 'stone', e.facing, 1.3); G.burst(x, e.bottom - 2, 22, { color: '#5a4a3a', speed: 170, angle: -Math.PI / 2, spread: 1.6, g: 600, life: 0.8, size: 2.2 }); } },
-      // varrida rente (sem sinal): raspa o chão de trás para a frente — saltar
-      sweep: { wind: 0.6, act: 0.18, rec: 0.6, dmg: 18, tell: null, sfx: 'swing_heavy', hb: (e) => front(e, -6, 0, 84, 26), lunge: 50,
-        during(e, g) { if (Math.random() < 0.7) G.emit({ x: e.cx + e.facing * U.rand(10, 70), y: e.bottom - 1, vx: e.facing * U.rand(40, 120), vy: U.rand(-90, -20), g: 400, life: 0.5, size: U.rand(1, 2), color: U.pick(['#5a4a3a', '#6a5a48']) }); } },
-      // terra: enche a pá e atira torrões em arco
-      clods: { wind: 0.65, act: 0.1, rec: 0.7, tell: null, sfx: 'swing', onAct(e, g) { const n = e.phase ? 3 : 2, p = g.player; for (let i = 0; i < n; i++) { const dir = Math.sign(p.cx - e.cx) || e.facing, fy = e.bottom - 18; g.spawn(P({ x: e.cx + dir * 26 - 5, y: fy - i * 6, vx: dir * (230 + i * 70), vy: -140 - i * 25, g: 650, w: 10, h: 10, dmg: 12, kind: 'clod', life: 3, light: false, reflectable: false })); } } },
-      // enterrar-se (vermelho): crava a pá, afunda-se e irrompe debaixo da protagonista
-      burrow: { wind: 0.7, act: 1.4, rec: 0.6, dmg: 24, tell: 'red', sfx: 'crush',
-        onAct(e, g) { e.underground = true; e.hittable = false; A.sfx('crush'); G.burst(e.cx, e.bottom, 20, { color: '#5a4a3a', speed: 140, angle: -Math.PI / 2, spread: 2, g: 500, life: 0.8, size: 2.4 }); },
-        during(e, g, dt) {
-          const a = e.atk;
-          if (a.t < 1.0) { e.vx = 0; e.targetX = g.player.cx; if (Math.random() < 0.5) G.emit({ x: e.targetX + U.rand(-14, 14), y: e.arena.floor - 2, vy: -60, life: 0.5, size: 1.8, color: '#6a5a48', g: 300 }); }
-          else if (!a.emerged) { a.emerged = true; e.x = U.clamp(e.targetX - e.w / 2, 40, g.room.pw - e.w - 40); e.underground = false; e.hittable = true; G.addShake(0.5); A.sfx('crush'); G.burst(e.cx, e.bottom, 30, { color: '#5a4a3a', speed: 240, angle: -Math.PI / 2, spread: 1.2, g: 600, life: 0.9, size: 2.8 }); }
-          if (a.emerged && a.t < 1.2) e.attackHBs.push({ x: e.x - 8, y: e.y - 20, w: e.w + 16, h: e.h + 20, dmg: 24, id: a.id, unblockable: true, parryable: false, src: e });
+      // garra (aparável): golpe curto com rasto negro
+      claw: { wind: 0.55, act: 0.16, rec: 0.5, dmg: 20, tell: 'white', sfx: 'swing_heavy', hb: (e) => front(e, 8, 8, 66, 58), lunge: 60 },
+      // ferrão da cauda (aparável): estocada comprida à altura do peito — agacha-te, salta ou apara
+      sting: { wind: 0.6, act: 0.2, rec: 0.55, dmg: 20, tell: 'white', sfx: 'whip', hb: (e) => front(e, 16, 34, 128, 16) },
+      // investida (vermelho): atravessa a arena de asas abertas — esquiva por dentro ou salta
+      dash: { wind: 0.6, act: 0.42, rec: 0.6, dmg: 22, tell: 'red', sfx: 'wind', lunge: 470, unblockable: true,
+        hb: (e) => front(e, -24, 0, 74, 60),
+        during(e) { if (Math.random() < 0.6) G.emit({ x: e.cx - e.facing * U.rand(10, 40), y: e.cy + U.rand(-20, 20), vx: -e.facing * U.rand(40, 120), vy: U.rand(-20, 20), life: 0.4, size: U.rand(1.5, 3), color: U.pick(DARK) }); } },
+      // mergulho de sombra (sem sinal): rasteja a direito, rente ao chão — salta por cima
+      dive: { wind: 0.5, act: 0.5, rec: 0.55, dmg: 18, tell: null, sfx: 'whip', lunge: 420, hb: (e) => front(e, -16, 0, 64, 22),
+        during(e) { G.emit({ x: e.cx - e.facing * U.rand(0, 30), y: e.bottom - U.rand(2, 12), vx: -e.facing * U.rand(30, 90), vy: U.rand(-30, 0), life: 0.5, size: U.rand(1.5, 3), color: U.pick(DARK) }); } },
+      // rajada de asas: fecha as asas à frente e larga uma onda negra rente ao chão (duas na 2.ª fase)
+      wing: { wind: 0.75, act: 0.12, rec: 0.7, tell: null, sfx: 'wind',
+        onAct(e, g) {
+          const n = e.phase ? 2 : 1;
+          for (let i = 0; i < n; i++) g.spawn(P({ x: e.cx + e.facing * 34 - 20, y: e.bottom - 40 - i * 4, vx: e.facing * (280 + i * 90), vy: 0, w: 40, h: 32, dmg: 18, kind: 'shadowwing', life: 2.4, light: false, reflectable: false }));
+          G.addShake(0.25); G.burst(e.cx + e.facing * 30, e.cy, 14, { color: DARK[1], speed: 160, angle: e.facing > 0 ? 0 : Math.PI, spread: 0.8, life: 0.5, size: 2.4 });
         } },
+      // salto (2.ª fase, vermelho): sobe e cai em cima da protagonista; ao cair, duas ondas de pó correm pelo chão
+      leap: { wind: 0.55, act: 0.9, rec: 0.6, dmg: 22, tell: 'red', sfx: 'wind',
+        onAct(e, g) { const dx = g.player.cx - e.cx; e.vx = dx / 0.75; e.vy = -540; e.leaping = true; },
+        during(e, g) {
+          e.attackHBs.push({ x: e.x, y: e.y, w: e.w, h: e.h, dmg: 22, id: e.atk.id, unblockable: true, parryable: false, src: e });
+          if (e.onGround && e.atk.t > 0.2) {
+            e.atk.t = 99; e.vx = 0; G.addShake(0.5); A.sfx('crush'); VS.FX.impact(e.cx, e.bottom - 2, 'stone', e.facing, 1.4);
+            for (const d of [-1, 1]) g.spawn(P({ x: e.cx + d * 20 - 8, y: e.bottom - 12, vx: d * 250, vy: 0, w: 16, h: 12, dmg: 14, kind: 'shockwave', color: '#8a7a90', life: 1.1, light: false, reflectable: false }));
+          }
+        },
+        onEnd(e) { e.leaping = false; } },
     },
     think(e, dt, g) {
       if (e.atk) return;
       e.face();
       const d = Math.abs(e.dx());
-      if (e.cool > 0) { e.walk(d > 80 ? e.facing : 0, 42, dt); return; }
+      if (e.cool > 0) { e.walk(d > 90 ? e.facing : 0, 50, dt); return; }
       const r = Math.random();
-      if (d < 80) e.attack(r < 0.5 ? 'sweep' : 'slam');
-      else if (d < 180) e.attack(r < 0.5 ? 'slam' : (e.phase && r < 0.8 ? 'burrow' : 'clods'));
-      else e.attack(e.phase && r < 0.5 ? 'burrow' : 'clods');
+      if (d < 85) e.attack(r < 0.55 ? 'claw' : 'sting');
+      else if (d < 200) e.attack(r < 0.35 ? 'sting' : r < 0.65 ? 'dive' : (e.phase && r < 0.85 ? 'leap' : 'dash'));
+      else e.attack(r < 0.45 ? 'wing' : (e.phase && r < 0.75 ? 'leap' : 'dash'));
     },
-    onPhase(e, g) { A.sfx('roar'); G.addShake(0.4); e.cool = 0.2; },
-    eyeLight: { r: 30, i: 0.5, color: '#ffb84a' },
-    // debaixo da terra: só um monte de terra a mexer (desenho próprio); ao sair, a animação 'emerge'
-    drawSpecial(ctx, e) {
-      if (!e.underground) return false;
-      const x = e.targetX || e.cx, y = e.arena.floor;
-      for (let i = 0; i < 3; i++) { ctx.fillStyle = ['#2e241c', '#3e3226', '#54463a'][i]; ctx.beginPath(); ctx.ellipse(x + Math.sin(e.t * 9 + i) * 1.5, y, 26 - i * 6, 7 - i * 1.6 + Math.sin(e.t * 12) * 0.6, 0, Math.PI, 0); ctx.fill(); }
-      return true;
-    },
-    animState(e) {
-      if (e.intro) return { anim: 'emerge', idx: e.rising > 0 ? Math.min(3.9, (1 - e.rising) * 4) : Math.min(5, 4 + (e.introT - 1.43) * 6) };
-      const a = e.atk; if (a && a.name === 'burrow' && a.emerged) return { anim: 'emerge', idx: Math.min(5, ((a.t - 1.0) / 0.5) * 6) }; return null;
-    },
-    // fraqueza: com a pá cravada no chão (depois do golpe de cima) as costas e a lanterna ficam expostas
-    damageMult(e, hb) {
-      const a = e.atk, behind = (e.game.player.cx - e.cx) * e.facing < 0;
-      if (a && a.name === 'slam' && a.phase === 'rec' && behind) {
-        if (!e.backHint) { e.backHint = true; VS.UI.toast(VS.t('tip_coveiro_back'), 5); }
-        const L = VS.EnemyRender.point(e, e._f, 'light') || { x: e.cx - e.facing * 10, y: e.cy - 20 };
-        VS.FX.flare(L.x, L.y, 22, [255, 210, 140], 0.18); return 1.8;
-      }
-      return 1;
-    },
-    // entrada: irrompe da terra da fossa (a animação 'emerge' corta o corpo pelo chão)
-    introStart(e, g) { e.rising = 1; },
-    introUpdate(e, g, dt) { if (e.rising > 0) { e.rising -= dt * 0.7; if (Math.random() < 0.7) G.emit({ x: e.cx + U.rand(-20, 20), y: e.bottom - 1, vx: U.rand(-40, 40), vy: U.rand(-160, -60), life: 0.7, size: U.rand(1.4, 2.6), color: U.pick(['#5a4a3a', '#3e3226']), g: 500 }); if (e.rising <= 0) { G.addShake(0.4); A.sfx('crush'); } } },
-    light(e) { const L = e._f && VS.EnemyRender.point(e, e._f, 'light'); if (L && !e.underground) G.light(L.x, L.y, 100, '#ffb060', 0.8, 2); },
+    onPhase(e, g) { A.sfx('roar'); G.addShake(0.45); e.cool = 0.2; G.flash('#3a0a10', 0.25); },
+    eyeLight: { r: 26, i: 0.5, color: '#ff3a30' },
+    animState(e) { if (e.leaping && e.atk && e.atk.name === 'leap') return { anim: 'atk_leap', idx: e.vy < 0 ? 1 : 2 }; return null; },
   });
 
   // ======================================================================

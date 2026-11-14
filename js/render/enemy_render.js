@@ -167,6 +167,11 @@
     const sh = VS.Assets.sheet('fx_proj');
     if (!sh || !VS.Assets.ok(sh.img)) return false;
     let k = pr.kind, def = PROJ[k];
+    // onda negra das asas da Besta: o próprio desenho da folha dela
+    if (k === 'shadowwing') {
+      const bs = VS.Assets.sheet('en_b_coveiro'), bf = bs && VS.Assets.ok(bs.img) && bs.meta.anims.fx_wing && VS.Assets.frame(bs, 'fx_wing', 0);
+      if (bf) { ctx.save(); ctx.translate(pr.cx, pr.cy); ctx.scale(pr.vx < 0 ? -1 : 1, 1); VS.Assets.drawFrame(ctx, bs, bf); ctx.restore(); return true; }
+    }
     if (k === 'glass') { const c = (pr.color || '').toLowerCase(); def = [c.includes('60ff') || c.includes('80ff') || c.startsWith('#60') ? 'glassB' : c.startsWith('#ffd') || c.startsWith('#e0b') ? 'glassY' : 'glassR', 'dir', 7]; }
     if (k === 'shockwave') { const c = (pr.color || '#c0b0a0').toLowerCase(); def = [c.startsWith('#ff') ? 'shockwave' : 'dust', 'flip', 14]; }
     if (!def) return false;

@@ -39,7 +39,7 @@
     ins_i34_t: 'Placa do retrato da Rainha', ins_i34: 'Seraphine, pintada no dia da coroação. O pintor queixou-se de que não conseguia olhar para ela mais de um minuto seguido.',
     ins_i35_t: 'Gravado nos degraus do trono', ins_i35: 'O trono de Vesperal foi feito para quem guarda a luz. Ninguém o fez para quem a liberta.',
     // ---------- itens ----------
-    item_ab_dash_name: 'Passo de Cinza', item_ab_dash_desc: 'O coveiro guardava-o sem saber. Prime Esquivar no ar para te lançares em frente, por cima de fossos que nenhum salto alcança.',
+    item_ab_dash_name: 'Passo de Cinza', item_ab_dash_desc: 'A Besta guardava-o sem saber. Prime Esquivar no ar para te lançares em frente, por cima de fossos que nenhum salto alcança.',
     item_ab_spell_name: 'Centelha', item_ab_spell_desc: 'Uma faísca do Lume que Ione te ensinou a soltar. Gasta um terço do teu Lume; o Lume enche-se ao golpear e ao aparar.',
     item_ab_wall_name: 'Garra do Sentinela', item_ab_wall_desc: 'O último dom de Caedmon: agarrares-te à pedra como ele se agarrou ao juramento. Desliza nas paredes e salta a partir delas.',
     item_ab_forge_name: 'Golpe de Forja', item_ab_forge_desc: 'Hilde ensinou-te, sem palavras, a carregar um golpe. Mantém o golpe pesado premido até brilhar: parte a pedra rachada.',
@@ -115,7 +115,7 @@
     en_penitent_big: 'Grande Penitente', enj_penitent_big: 'Carregou a canga mais pesada da procissão até a canga lhe crescer nos ombros. Cada golpe pesa como um sino; o terceiro brilha.',
     en_royalguard_big: 'Campeão do Rei', enj_royalguard_big: 'Venceu todos os torneios do reino e ficou de guarda à porta do trono. A alabarda chega mais longe do que pensas.',
     // ---------- guardiões ----------
-    bossj_coveiro: 'O coveiro da cidade continuou a cavar depois de morrer. Guardava, sem o saber, o Passo de Cinza.',
+    bossj_coveiro: 'Uma besta de asas negras pousou no Cemitério na noite sem lua e não voltou a levantar voo. Guardava, sem o saber, o Passo de Cinza.',
     bossj_matilheira: 'A cadela mais velha dos canis do Bastião. Chamava as crias quando se via ferida.',
     bossj_caedmon: 'Sir Caedmon, o Escudo da Rainha. O seu escudo nunca cedeu a um golpe — só a um parry perfeito.',
     bossj_automato: 'Autómato de forja, modelo III. A fornalha nas costas era a sua fraqueza e o seu coração.',

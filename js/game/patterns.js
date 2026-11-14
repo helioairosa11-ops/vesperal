@@ -149,9 +149,9 @@
   };
   // que padrão tem cada chefe (os extremos — Custódio, Seraphine e o rei — têm os seus próprios poderes)
   const SPEC = {
-    coveiro: { type: 'rain', kind: 'glass', color: '#e8dcc0', warnCol: '#c8a070', waves: 2, dmg: 12, light: true, every: [13, 17] }, // lascas de osso
+    coveiro: { type: 'rings', color: [200, 40, 50], rings: 2, dmg: 13, every: [13, 17] }, // círculos de sangue que se abrem no chão
     matilheira: { type: 'wall', kind: 'fire', color: '#ff7a30', walls: 2, dmg: 13, every: [12, 16] },
-    caedmon: { type: 'rain', kind: 'glass', color: '#c8dcff', warnCol: '#a0c8ff', waves: 3, dmg: 14, light: true, every: [12, 15] },
+    caedmon: { type: 'rings', color: [170, 205, 255], rings: 3, dmg: 14, every: [12, 15] }, // sem chuva do céu: ondas de luz no chão
     automato: { type: 'grid', color: '#ff8030', cycles: 3, dmg: 15, every: [11, 14] },
     hilde: { type: 'rain', kind: 'molten', color: '#ff7020', warnCol: '#ff8030', waves: 3, dmg: 15, light: true, every: [11, 14] },
     mariposa: { type: 'spiral', kind: 'scale', color: '#f0e0ff', arms: 3, dmg: 12, every: [10, 13] },

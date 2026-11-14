@@ -786,7 +786,7 @@
     const src = hb.src || hb.owner;
     const k = hb.kind || (src && src.kind);
     if (k && FIRE_KINDS[k]) return true;
-    if (src && src.isBoss && (FIRE_BOSSES[src.bossId] || (src.bossId === 'coveiro' && src.phase >= 1))) return true;
+    if (src && src.isBoss && FIRE_BOSSES[src.bossId]) return true;
     return false;
   };
   VS.Player = Player;

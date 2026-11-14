@@ -39,7 +39,7 @@
     ins_i34_t: 'Plaque of the Queen\'s Portrait', ins_i34: 'Seraphine, painted on the day of her coronation. The painter complained that he could not look at her for more than a minute at a time.',
     ins_i35_t: 'Carved on the Throne Steps', ins_i35: 'The throne of Vesperal was made for whoever keeps the light. No one made it for whoever sets it free.',
     // ---------- items ----------
-    item_ab_dash_name: 'Ash Step', item_ab_dash_desc: 'The gravedigger kept it without knowing. Press Dodge in the air to launch yourself forward, across chasms no jump can reach.',
+    item_ab_dash_name: 'Ash Step', item_ab_dash_desc: 'The Beast kept it without knowing. Press Dodge in the air to launch yourself forward, across chasms no jump can reach.',
     item_ab_spell_name: 'Spark', item_ab_spell_desc: 'A spark of the Lume that Ione taught you to release. Costs a third of your Lume; Lume refills when you strike and parry.',
     item_ab_wall_name: 'Sentinel\'s Claw', item_ab_wall_desc: 'Caedmon\'s last gift: to cling to the stone as he clung to his oath. Slide down walls and jump off them.',
     item_ab_forge_name: 'Forge Strike', item_ab_forge_desc: 'Hilde taught you, without words, to charge a blow. Hold the heavy attack until it glows: it breaks cracked stone.',
@@ -115,7 +115,7 @@
     en_penitent_big: 'Great Penitent', enj_penitent_big: 'It carried the heaviest yoke in the procession until the yoke grew into its shoulders. Every blow weighs like a bell; the third one gleams.',
     en_royalguard_big: 'King\'s Champion', enj_royalguard_big: 'It won every tourney in the realm and was set to guard the throne room door. The halberd reaches farther than you think.',
     // ---------- guardians ----------
-    bossj_coveiro: 'The city\'s gravedigger kept digging after he died. Without knowing, he kept the Ash Step.',
+    bossj_coveiro: 'A black-winged beast landed in the Cemetery on the moonless night and never flew again. Without knowing, it kept the Ash Step.',
     bossj_matilheira: 'The oldest bitch in the Bastion kennels. She called her pups whenever she was wounded.',
     bossj_caedmon: 'Sir Caedmon, the Queen\'s Shield. His shield never yielded to a blow — only to a perfect parry.',
     bossj_automato: 'Forge automaton, model III. The furnace on its back was both its weakness and its heart.',
