@@ -48,7 +48,6 @@ func _ready() -> void:
 	c.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	add_child(c)
 	c.draw.connect(_draw_ui)
-	c.gui_input.connect(_gui)
 	f_title = FontVariation.new(); f_title.base_font = load("res://art/fonts/Cinzel-VF.woff")
 	f_title.variation_opentype = {TextServerManager.get_primary_interface().name_to_tag("wght"): 700}
 	f_label = load("res://art/fonts/AlegreyaSC-Bold.woff2")
@@ -367,6 +366,13 @@ func _unhandled_input(e: InputEvent) -> void:
 	elif e.is_action("ui_accept") or e.is_action("jump") or e.is_action("attack"): _activate()
 	elif e.is_action("ui_cancel") or e.is_action("pause") or e.is_action("dodge") or (p.get("kind", "") == "inv" and e.is_action("inventory")): back()
 	else: return
+	get_viewport().set_input_as_handled()
+
+## o rato é tratado aqui (antes da GUI): os cliques chegam sempre aos painéis, por cima de tudo o resto
+func _input(e: InputEvent) -> void:
+	if stack.is_empty() or not (e is InputEventMouse):
+		return
+	_gui(e)
 	get_viewport().set_input_as_handled()
 
 func _gui(e: InputEvent) -> void:
