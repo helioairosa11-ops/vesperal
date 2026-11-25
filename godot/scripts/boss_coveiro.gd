@@ -97,8 +97,8 @@ func _think_boss(dt: float) -> void:
 	else:
 		attack("burrow" if phase > 0 and r < 0.5 else "clods")
 
-func _on_act(name: String, _s: Dictionary) -> void:
-	match name:
+func _on_act(nm: String, _s: Dictionary) -> void:
+	match nm:
 		"slam":
 			world.shake(0.45); world.audio.sfx("crush")
 			var x := cx + facing * 66
@@ -121,10 +121,10 @@ func _on_act(name: String, _s: Dictionary) -> void:
 			world.audio.sfx("crush")
 			world.fx.dust(Vector2(cx, bottom), 20)
 
-func _during(name: String, _s: Dictionary, dt: float) -> void:
-	if name == "sweep" and randf() < 0.7:
+func _during(nm: String, _s: Dictionary, _dt: float) -> void:
+	if nm == "sweep" and randf() < 0.7:
 		world.fx.dust(Vector2(cx + facing * randf_range(10, 70), bottom - 1), 1)
-	if name == "burrow":
+	if nm == "burrow":
 		var a := atk
 		if a["t"] < 1.0:
 			vel.x = 0; target_x = player.cx

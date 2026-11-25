@@ -146,9 +146,9 @@ func fly_to(target: Vector2, speed: float, dt: float) -> void:
 	var v := d.normalized() * minf(speed, d.length() * 3.0)
 	vel = vel.lerp(v, 1.0 - exp(-dt * 3.0))
 
-func attack(name: String) -> void:
-	var s: Dictionary = K["attacks"][name]
-	atk = {"name": name, "s": s, "t": 0.0, "phase": "wind", "id": Actor.new_attack_id()}
+func attack(nm: String) -> void:
+	var s: Dictionary = K["attacks"][nm]
+	atk = {"name": nm, "s": s, "t": 0.0, "phase": "wind", "id": Actor.new_attack_id()}
 	face()
 	if s.get("tell", "") == "red":
 		world.audio.sfx("danger")
@@ -214,24 +214,24 @@ func _update_attack(dt: float) -> void:
 				atk = {}
 				cool = randf_range(0.4, 1.0)
 
-func _on_act(name: String, s: Dictionary) -> void:
+func _on_act(nm: String, s: Dictionary) -> void:
 	if s.get("shake", 0.0) > 0:
 		world.shake(s["shake"]); world.audio.sfx("crush")
 		world.fx.dust(Vector2(cx + facing * 26, bottom), 10)
 	else:
 		world.audio.sfx("swing_enemy")
-	if kind == "wisp" and name == "spit":
+	if kind == "wisp" and nm == "spit":
 		var a := (Vector2(player.cx, player.cy) - Vector2(cx, cy)).normalized()
 		world.spawn_projectile({"pos": Vector2(cx, cy), "vel": a * 150.0, "size": Vector2(9, 9), "dmg": 10.0, "kind": "fire", "fire": true, "life": 3.0})
-	if kind == "wisp" and name == "dive":
+	if kind == "wisp" and nm == "dive":
 		var a2 := (Vector2(player.cx, player.cy) - Vector2(cx, cy)).normalized()
 		vel = a2 * 260.0
 
 func _during(_name: String, _s: Dictionary, _dt: float) -> void:
 	pass
 
-func _on_end(name: String) -> void:
-	if kind == "crawler" and name == "bite":
+func _on_end(nm: String) -> void:
+	if kind == "crawler" and nm == "bite":
 		vel.x = -facing * 110.0
 	if kind == "wisp":
 		vel *= 0.3

@@ -216,26 +216,26 @@ func _try_actions(ax: float, up: bool, down: bool) -> void:
 		attack_buf = 0
 		if ax != 0:
 			facing = int(ax)
-		var name := ""
+		var nm := ""
 		if riposte_t > 0:
-			name = "riposte"
+			nm = "riposte"
 		elif not on_ground and down:
-			name = "down"
+			nm = "down"
 		elif up:
-			name = "up"
+			nm = "up"
 		elif crouch:
-			name = "crouch"
+			nm = "crouch"
 		elif not on_ground:
-			name = ATK[combo]["next"] if combo == "air" and combo_t > 0 else "air"
+			nm = ATK[combo]["next"] if combo == "air" and combo_t > 0 else "air"
 		else:
-			name = ATK[combo]["next"] if combo in ["l1", "l2"] and combo_t > 0 else "l1"
-		_start_attack(name)
+			nm = ATK[combo]["next"] if combo in ["l1", "l2"] and combo_t > 0 else "l1"
+		_start_attack(nm)
 
-func _start_attack(name: String) -> void:
-	var d: Dictionary = ATK[name]
-	action = {"type": "attack", "name": name, "phase": "wind", "t": 0.0, "wind": d["wind"], "act": d["act"], "rec": d["rec"], "id": Actor.new_attack_id(), "can_turn": false}
-	combo = name; combo_t = d["wind"] + d["act"] + d["rec"] + 0.25
-	if name == "riposte":
+func _start_attack(nm: String) -> void:
+	var d: Dictionary = ATK[nm]
+	action = {"type": "attack", "name": nm, "phase": "wind", "t": 0.0, "wind": d["wind"], "act": d["act"], "rec": d["rec"], "id": Actor.new_attack_id(), "can_turn": false}
+	combo = nm; combo_t = d["wind"] + d["act"] + d["rec"] + 0.25
+	if nm == "riposte":
 		riposte_t = 0
 
 func _start_dodge(ax: float) -> void:

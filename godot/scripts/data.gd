@@ -54,13 +54,13 @@ func tex(path: String) -> Texture2D:
 	return _tex[path]
 
 ## folha de sprites: textura + meta
-func sheet(name: String) -> Dictionary:
-	if not sprites.has(name):
+func sheet(nm: String) -> Dictionary:
+	if not sprites.has(nm):
 		return {}
-	var path := "res://art/sprites/%s.png" % name
+	var path := "res://art/sprites/%s.png" % nm
 	if not ResourceLoader.exists(path):
 		return {}
-	return {"tex": tex(path), "meta": sprites[name]}
+	return {"tex": tex(path), "meta": sprites[nm]}
 
 func has_anim(sh: Dictionary, anim: String) -> bool:
 	return not sh.is_empty() and sh["meta"]["anims"].has(anim)
