@@ -53,7 +53,7 @@ func _ready() -> void:
 	props_node = Node2D.new(); props_node.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST; add_child(props_node)
 	props_node.draw.connect(_draw_props)
 	actors = Node2D.new(); actors.z_index = 5; add_child(actors)
-	fx = preload("res://scripts/fx.gd").new(); add_child(fx)
+	fx = preload("res://scripts/fx.gd").new(); fx.world = self; add_child(fx)
 	audio = Audio
 	cam = Camera2D.new(); add_child(cam)
 	cam.position_smoothing_enabled = true; cam.position_smoothing_speed = 7.0
@@ -70,11 +70,16 @@ func _cam_zoom() -> void:
 
 # ------------------------------------------------------------------ salas
 func load_room(id: String, global_pos: Vector2) -> void:
+	var _t0 := Time.get_ticks_usec()
+	call_deferred("_report_load", _t0, id)
 	if room:
 		room.queue_free()
 	for c in actors.get_children():
 		if c != player:
 			c.queue_free()
+	for n in npcs:
+		if is_instance_valid(n): n.queue_free()
+	npcs.clear()
 	doors.clear(); interactables.clear(); boss = null; boss_active = false; boss_trigger_x = -1.0
 	hud.boss = null
 	room = preload("res://scripts/room.gd").new()
@@ -167,6 +172,13 @@ func _spawn_entities() -> void:
 				d["k"] = 1.0 if d["shut"] else 0.0
 				doors.append(d)
 				_apply_door(d)
+			"npc":
+				if _npc_present(String(e["id"])):
+					var n = preload("res://scripts/npc.gd").new()
+					n.setup(e, self)
+					props_node.add_sibling(n)
+					npcs.append(n)
+					interactables.append({"t": "npc", "p": Vector2(n.cx, n.bottom), "node": n})
 			"urn":
 				interactables.append({"t": "urn", "p": Vector2(x * T + T / 2.0, (y + 1) * T), "hp": 1})
 			"altar":
@@ -220,9 +232,29 @@ func _refresh_doors() -> void:
 			shake(0.15)
 
 # ------------------------------------------------------------------ ciclo
+var transition: Dictionary = {}
+var npcs: Array = []
+var cutscene := false
+
+## quem está presente (as condições 'cond' das salas do jogo web, para o que já existe na Região 1)
+func _npc_present(id: String) -> bool:
+	var q: int = int(GameState.flags.get("q_hrolf", 0))
+	match room.id + ":" + id:
+		"r1_sanct:ione": return not GameState.bosses.get("aldric", false)
+		"r1_market:hrolf": return not GameState.bosses.get("caedmon", false) and q < 50
+		"r1_sanct:hrolf": return GameState.bosses.get("caedmon", false) or q >= 50
+	return false
+
+func restore_region_audio() -> void:
+	var reg: Dictionary = room.reg
+	Audio.play_music(String(room.def.get("music", reg.get("music", "r1"))))
+	Audio.set_ambience(String(room.def.get("amb", reg.get("amb", "r1"))))
+
 func _physics_process(delta: float) -> void:
 	if room == null:
 		return
+	if not transition.is_empty():
+		_update_transition(STEP); return
 	if hitstop_t > 0:
 		hitstop_t -= delta
 		return
@@ -316,28 +348,43 @@ func toast(s: String) -> void:
 
 # ------------------------------------------------------------------ interação: altares, inscrições, itens, dicas
 func _interact(_dt: float) -> void:
+	cutscene = hud.dialogue_open() or hud.read_body != ""
 	var pp := Vector2(player.cx, player.bottom)
-	var near := ""
+	# o mais perto (preferindo aquele para quem se está a olhar), só parada no chão — updateInteract do jogo web
+	var best = null; var bd := 1e9
+	if player.action.is_empty() and player.on_ground and not cutscene:
+		for it in interactables:
+			if not it["t"] in ["altar", "inscription", "npc"]:
+				continue
+			var p: Vector2 = it["p"]
+			var d: float = absf(p.x - pp.x) + absf(p.y - pp.y) * 0.5 + (14.0 if (p.x - pp.x) * player.facing < -4 else 0.0)
+			var rng: float = 34.0 if it["t"] == "npc" else 28.0
+			if d < rng and d < bd:
+				best = it; bd = d
+	if best != null:
+		var key: String = {"altar": "act_rest", "inscription": "act_read", "npc": "act_talk"}[best["t"]]
+		var top: float = best["node"].top_y() if best["t"] == "npc" else best["p"].y - 30.0
+		hud.prompt = "[E/W] " + Data.t(key)
+		hud.prompt_at = Vector2(best["p"].x, top)
+		if Input.is_action_just_pressed("interact") or Input.is_action_just_pressed("up"):
+			match best["t"]:
+				"altar":
+					GameState.altar_room = room.id
+					GameState.flasks = GameState.max_flasks
+					player.hp = player.max_hp; GameState.hp = GameState.max_hp
+					player.burn = {}
+					GameState.save()
+					audio.sfx("rest")
+					fx.burst_o(player.cx, player.bottom - 10, 18, {"color": "#ffb050", "speed": 70.0, "life": 0.8, "size": 1.4, "add": true})
+				"inscription":
+					var k2 := "ins_%s" % best["id"]
+					hud.read(Data.t(k2 + "_t"), Data.t(k2))
+				"npc":
+					best["node"].interact()
+	else:
+		hud.prompt = ""
 	for it in interactables:
 		match it["t"]:
-			"altar":
-				if pp.distance_to(it["p"]) < 34:
-					near = "Descansar (E)"
-					if Input.is_action_just_pressed("interact"):
-						GameState.altar_room = room.id
-						GameState.flasks = GameState.max_flasks
-						player.hp = player.max_hp; GameState.hp = GameState.max_hp
-						player.burn = {}
-						GameState.save()
-						fx.burst(it["p"] + Vector2(0, -30), 30, Color(1, 0.7, 0.35), 90.0, true)
-						audio.sfx("rest")
-						toast("A chama reconhece-te. Jogo gravado.")
-			"inscription":
-				if pp.distance_to(it["p"]) < 30:
-					near = "Ler (E)"
-					if Input.is_action_just_pressed("interact"):
-						var key := "ins_%s" % it["id"]
-						hud.read(Data.t(key + "_t"), Data.t(key))
 			"item":
 				if pp.distance_to(it["p"]) < 18:
 					GameState.flags[it["key"]] = true
@@ -350,7 +397,6 @@ func _interact(_dt: float) -> void:
 				if it["r"].has_point(Vector2(player.cx, player.cy)) and not hint_shown.has(it["hint"]):
 					hint_shown[it["hint"]] = true
 					toast(Data.t(it["hint"]))
-	hud.prompt = near
 
 # ------------------------------------------------------------------ chefe
 func _boss_logic() -> void:
@@ -403,7 +449,30 @@ func _check_exit() -> void:
 	var bottom_g := Vector2(player.cx, player.bottom) + Vector2(room.gx, room.gy)
 	if boss_active:
 		return
-	load_room(nb, bottom_g)
+	# como no jogo web: escurece 0,07 s, troca de sala, e clareia 0,12 s com a protagonista a continuar o movimento
+	transition = {"t": 0.0, "phase": "out", "to": nb, "entry": bottom_g, "vel": player.vel}
+
+func _update_transition(dt: float) -> void:
+	var tr := transition
+	tr["t"] += dt
+	if tr["phase"] == "out":
+		hud.fade = minf(1.0, tr["t"] / 0.07)
+		if tr["t"] >= 0.07:
+			var keep: Dictionary = {} if player.action.get("type", "") in ["dodge", "attack"] else player.action
+			var v: Vector2 = tr["vel"]
+			load_room(tr["to"], tr["entry"])
+			player.vel = v
+			if v.y < 0:
+				player.vel.y = minf(v.y, -500.0) if player.cy < 40 else v.y
+			player.action = keep
+			tr["phase"] = "in"; tr["t"] = 0.0
+			GameState.room = room.id
+	else:
+		hud.fade = maxf(0.0, 1.0 - tr["t"] / 0.12)
+		player.tick(dt)
+		fx.step(dt)
+		if tr["t"] >= 0.12:
+			transition = {}; hud.fade = 0.0
 
 # ------------------------------------------------------------------ tempo (cinza a cair)
 func _init_weather() -> void:
@@ -466,3 +535,7 @@ func _draw_prop_item(k: String, p: Vector2, ptex: Texture2D, S: float, pm: Dicti
 		return
 	var it: Array = items[0]
 	props_node.draw_texture_rect_region(ptex, Rect2(p - Vector2(it[4], it[5]) / S, Vector2(it[2], it[3]) / S), Rect2(it[0], it[1], it[2], it[3]))
+
+func _report_load(t0: int, id: String) -> void:
+	if OS.is_debug_build():
+		print("[sala] %s carregada em %.1f ms" % [id, (Time.get_ticks_usec() - t0) / 1000.0])

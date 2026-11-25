@@ -46,8 +46,27 @@ func setup(k: String, tx: int, ty: int) -> void:
 	cool = randf_range(0.3, 1.2)
 	sh = Data.sheet(K.get("sheet", "en_" + k))
 
+var fx_add: Node2D
+var _sm: Dictionary = {}
+static var _radial: Texture2D
+
 func _ready() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	# camada aditiva (globalCompositeOperation 'lighter' do jogo web): clarão de dano, sinais de ataque, rasto da arma
+	fx_add = Node2D.new()
+	var m := CanvasItemMaterial.new(); m.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	fx_add.material = m
+	fx_add.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	fx_add.z_index = 1
+	add_child(fx_add)
+	fx_add.draw.connect(_draw_add)
+	if _radial == null:
+		var g := Gradient.new()
+		g.set_color(0, Color(1, 1, 1, 1)); g.set_color(1, Color(1, 1, 1, 0))
+		var gt := GradientTexture2D.new()
+		gt.gradient = g; gt.fill = GradientTexture2D.FILL_RADIAL; gt.width = 64; gt.height = 64
+		gt.fill_from = Vector2(0.5, 0.5); gt.fill_to = Vector2(1, 0.5)
+		_radial = gt
 	if K.has("eye"):
 		eye_light = PointLight2D.new()
 		eye_light.texture = world.light_tex
@@ -160,9 +179,18 @@ func tick(dt: float) -> void:
 	last_hit_t += dt
 	attack_boxes.clear()
 	if dead:
-		vel.x = move_toward(vel.x, 0, 600 * dt)
-		physics(dt, flying)
+		# como no jogo web: abranda, desfaz-se em cinza a partir de 0,3 s e desaparece aos 0,7 s
+		_death_t += dt
+		vel.x *= 0.9
+		if not flying:
+			physics(dt, false)
+		if _death_t > 0.3 and not is_boss():
+			world.fx.dissolve(self, MATS.get(kind, {}).get("ashCol", "#ff9040"))
+		if _death_t > 0.7 and not is_boss():
+			queue_free()
 		return
+	if not flying:
+		_dist += absf(vel.x) * dt
 	cool = maxf(0.0, cool - dt)
 	if stagger > 0:
 		stagger -= dt
@@ -327,22 +355,35 @@ func on_hit(box: Dictionary) -> bool:
 	if stagger > 0 and parried:
 		dmg *= 1.5
 	hp -= dmg
-	flash = 0.12
+	flash = 0.16
 	last_hit_t = 0.0
-	poise -= box.get("knock", 100.0) / 10.0
-	var kb: float = box.get("knock", 120.0)
-	if not is_heavy():
-		vel.x = signf(cx - box["src"].cx) * kb * 0.6
-	if poise <= 0 and not is_heavy():
-		poise = poise_max; do_stagger(0.55, false)
-	elif not is_heavy() and not atk.is_empty() and atk["phase"] == "wind":
-		atk = {}; cool = 0.4
-	world.fx.hit(Vector2(cx, cy - size.y * 0.1), -signf(box["src"].cx - cx))
-	world.audio.sfx("hit_heavy" if box.get("kind", "") in ["heavy", "riposte"] else "hit")
-	world.audio.sfx("enemy_hurt", 0.5)
+	aggro = true
+	var heavy: bool = box.get("kind", "") in ["heavy", "riposte"]
+	var mat: String = MATS.get(kind, {}).get("mat", "flesh")
+	world.audio.sfx("hit_heavy" if heavy else "hit")
+	world.audio.sfx({"armor": "hit_metal", "stone": "hit_stone", "spirit": "hit_spirit", "wax": "hit_soft", "wood": "hit_wood"}.get(mat, "enemy_hurt"), 0.5)
+	world.hitstop(box.get("hitstop", 0.085 if heavy else 0.05))
+	world.shake((0.24 if heavy else 0.1) * (1.15 if is_boss() else 1.0))
+	var src = box.get("src")
+	var kx: float = signf(cx - src.cx) if src != null and is_instance_valid(src) and src.cx != cx else 1.0
+	# ponto de contacto: entre a ponta da arma e o centro do alvo
+	var hx: float = clampf(box["tip"].x, pos.x + 2, pos.x + size.x - 2) if box.has("tip") else cx - kx * 4
+	var hy: float = clampf(box["tip"].y, pos.y + 3, pos.y + size.y - 3) if box.has("tip") else cy - 2
+	world.fx.hit_fx({"x": hx, "y": hy, "mat": mat, "ang": box.get("cut_a", 0.0 if kx > 0 else PI), "dir": kx, "power": 1.5 if heavy else 1.0, "heavy": heavy})
 	if hp <= 0:
-		die()
+		die(); return true
+	poise -= box.get("poise", 10.0)
+	var armor: bool = not atk.is_empty() and atk["s"].get("armor", false) and atk["phase"] != "rec"
+	if (not is_heavy() or heavy) and not armor:
+		vel.x = kx * box.get("knock", 150.0) * (0.4 if is_heavy() else 1.0)
+	if poise <= 0 and not armor:
+		poise = poise_max; do_stagger(0.55, false)
+	elif not armor and not is_heavy() and not atk.is_empty() and atk["phase"] == "wind":
+		atk = {}; cool = 0.4
 	return true
+
+func is_boss() -> bool:
+	return false
 
 func damage_mult(_box: Dictionary) -> float:
 	return 1.0
@@ -353,7 +394,8 @@ func is_heavy() -> bool:
 func do_stagger(dur: float, from_parry: bool) -> void:
 	stagger = dur; atk = {}; parried = from_parry
 	if from_parry:
-		world.fx.stun(Vector2(cx, pos.y - 6))
+		world.audio.sfx("stagger")
+		world.fx.stun_at(cx, pos.y + 2)
 
 func on_parried() -> void:
 	do_stagger(1.3, true)
@@ -365,12 +407,11 @@ func is_fire_source() -> bool:
 func die() -> void:
 	if dead:
 		return
-	dead = true; hittable = false; atk = {}
+	dead = true; hittable = false; atk = {}; contact_dmg = 0.0; _death_t = 0.0
 	GameState.ash += ash_drop
-	world.fx.burst(Vector2(cx, cy), 20, Color(0.75, 0.68, 0.62), 90.0)
-	world.fx.ash_orbs(Vector2(cx, cy), 5)
+	world.fx.ash_orbs(Vector2(cx, cy), mini(6, maxi(1, ceili(ash_drop / 8.0))))
 	world.audio.sfx("enemy_die")
-	get_tree().create_timer(1.6).timeout.connect(func(): if is_instance_valid(self): queue_free())
+	world.shake(0.15)
 
 # ------------------------------------------------------------------ desenho
 func current_frame() -> Dictionary:
@@ -390,10 +431,17 @@ func current_frame() -> Dictionary:
 	if last_hit_t < 0.22 and A.has("hurt"):
 		return Data.frame(sh, "hurt", (last_hit_t / 0.22) * A["hurt"]["frames"].size())
 	if (flying or absf(vel.x) > 6) and A.has("move"):
+		var mv: Dictionary = A["move"]
+		if mv.get("stride", 0.0) > 0 and not flying:
+			return Data.frame(sh, "move", (_dist / float(mv["stride"])) * mv["frames"].size())
 		return _timed("move")
 	return _timed("idle")
 
 var _death_t := 0.0
+var _dist := 0.0
+## material e cor da cinza (VS.NATURE e cfg.ashCol do jogo web)
+const MATS := {"husk": {"mat": "ash"}, "husk_big": {"mat": "ash"}, "crawler": {"mat": "ash", "ashCol": "#ff6010"},
+	"wisp": {"mat": "wax", "ashCol": "#ffb040"}, "sexton": {"mat": "flesh"}, "coveiro": {"mat": "flesh", "ashCol": "#7a6a58"}}
 func _death_k() -> float:
 	return _death_t * float(sh["meta"]["anims"].get("death", {"fps": 8})["fps"])
 
@@ -404,8 +452,6 @@ func _timed(an: String) -> Dictionary:
 
 func _process(delta: float) -> void:
 	anim_kt += delta
-	if dead:
-		_death_t += delta
 	if K.get("center", false):
 		position = Vector2(cx, cy)
 	else:
@@ -416,6 +462,7 @@ func _process(delta: float) -> void:
 		eye_light.position = Vector2(e.x * facing, e.y) if e != null else Vector2(0, -size.y * 0.8)
 		eye_light.enabled = not dead
 	queue_redraw()
+	fx_add.queue_redraw()
 
 func tell_glow() -> Color:
 	if atk.is_empty() or atk["phase"] != "wind":
@@ -434,16 +481,102 @@ func _draw() -> void:
 		return
 	var f := current_frame()
 	var mod := Color.WHITE
-	if flash > 0:
-		mod = Color(3.0, 2.6, 2.4)
-	if dead and not is_heavy():
-		mod.a = clampf(1.6 - _death_t, 0, 1)
-	var g := tell_glow()
-	if g.a > 0:
-		# aviso do golpe: brilho branco (aparável) ou vermelho (esquiva)
-		var c := Vector2(0, -size.y * 0.6)
-		for i in 3:
-			draw_circle(c, 10.0 + i * 6.0, Color(g, 0.12 - i * 0.03))
 	draw_set_transform(Vector2.ZERO, 0, Vector2(facing, 1))
 	Data.draw_frame(self, sh, f, mod)
 	draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
+
+## ponto do fotograma em coordenadas deste nó (a âncora é a origem)
+func _pt(f: Dictionary, which: String) -> Variant:
+	var p = Data.point(f, which)
+	if p == null:
+		return null
+	return Vector2(p.x * facing, p.y)
+
+func _anchor_y() -> float:
+	return cy if K.get("center", false) else bottom
+
+func _glow(at: Vector2, r: float, c: Color) -> void:
+	fx_add.draw_texture_rect(_radial, Rect2(at - Vector2(r, r), Vector2(r, r) * 2.0), false, c)
+
+func _draw_add() -> void:
+	if sh.is_empty():
+		return
+	var f := current_frame()
+	# clarão de dano: o mesmo fotograma por cima, aditivo a 0,75 (Assets.drawFlash)
+	if flash > 0 and not dead:
+		fx_add.draw_set_transform(Vector2.ZERO, 0, Vector2(facing, 1))
+		Data.draw_frame(fx_add, sh, f, Color(1, 1, 1, 0.75))
+		fx_add.draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
+	_draw_smear(f)
+	if dead or atk.is_empty() or atk["phase"] != "wind":
+		return
+	var st: Dictionary = atk["s"]
+	var kind_t: String = st.get("tell", "")
+	if kind_t == "":
+		return
+	var k: float = atk["t"] / maxf(0.001, st["wind"])
+	var left: float = st["wind"] - atk["t"]
+	var tip = _pt(f, "tip")
+	var pt: Vector2 = tip if tip != null else Vector2(facing * size.x * 0.6, (pos.y + 6) - _anchor_y())
+	if kind_t == "white":
+		# brilho branco na ponta: aparece 0,42 s antes do golpe (ER.tell)
+		if left < 0.42:
+			var q := 1.0 - left / 0.42
+			var a := (q / 0.5 if q < 0.5 else 1.0 - (q - 0.5) * 1.2) * 0.95
+			var r := 4.0 + q * 9.0
+			_glow(pt, r * 1.6 * 0.55, Color(1, 1, 0.98, a))
+			_glow(pt, r * 1.6, Color(1, 0.92, 0.78, a * 0.45))
+			# reflexo de metal: raios finos e afunilados
+			var rot := -0.12 + q * 0.2
+			_ray(pt, rot, r * 1.7, 0.8, Color(1, 1, 1, a))
+			_ray(pt, rot + PI / 2, r * 0.35, 0.5, Color(1, 0.98, 0.92, a * 0.6))
+	elif kind_t == "red":
+		# brasa vermelha a pulsar: não se apara, esquiva-se
+		var pulse := 0.55 + 0.45 * sin(t * 26.0)
+		_glow(Vector2(0, cy - _anchor_y()), size.x + 16.0, Color(1, 0.16, 0.08, 0.22 * k))
+		var eye = _pt(f, "eye")
+		var ep: Vector2 = eye if eye != null else pt
+		var rr := 8.0 + 6.0 * k
+		_glow(ep, rr * 0.4, Color(1, 0.86, 0.78, 0.9 * pulse))
+		_glow(ep, rr, Color(1, 0.2, 0.12, 0.7 * pulse))
+
+func _ray(at: Vector2, rot: float, ln: float, w: float, c: Color) -> void:
+	var pts := PackedVector2Array()
+	var d := Vector2(cos(rot), sin(rot)); var n := Vector2(-d.y, d.x)
+	for i in 9:
+		var u := i / 8.0
+		var x := lerpf(-ln, ln, u)
+		pts.append(at + d * x - n * w * 2.0 * u * (1.0 - u) * 2.0)
+	for i in range(8, -1, -1):
+		var u := i / 8.0
+		var x := lerpf(-ln, ln, u)
+		pts.append(at + d * x + n * w * 2.0 * u * (1.0 - u) * 2.0)
+	if not Geometry2D.triangulate_polygon(pts).is_empty():
+		fx_add.draw_colored_polygon(pts, c)
+
+## rasto da arma durante o golpe: crescente curvo à volta do punho (ER.smear)
+func _draw_smear(f: Dictionary) -> void:
+	if atk.is_empty() or atk["phase"] != "act" or dead:
+		_sm = {}; return
+	var g = _pt(f, "grip"); var tp = _pt(f, "tip")
+	if g == null or tp == null:
+		_sm = {}; return
+	var ang := atan2(tp.y - g.y, tp.x - g.x)
+	var r: float = (tp - g).length()
+	if _sm.is_empty() or _sm["id"] != atk["id"]:
+		_sm = {"f": f, "a0": ang, "a1": ang, "id": atk["id"]}
+	if _sm["f"] != f:
+		_sm["a0"] = _sm["a1"]; _sm["a1"] = ang; _sm["f"] = f
+	var dd: float = wrapf(_sm["a1"] - _sm["a0"], -PI, PI)
+	if absf(dd) < 0.25 or r < 12:
+		return
+	var n := 14; var r0 := r * 0.7
+	var pts := PackedVector2Array(); var cols := PackedColorArray()
+	for i in n + 1:
+		var kk := float(i) / n; var aa: float = _sm["a0"] + dd * kk; var rr := r * (0.94 + 0.06 * kk)
+		pts.append(g + Vector2(cos(aa), sin(aa)) * rr); cols.append(Color(1, 0.96, 0.9, 0.6 * kk + 0.12))
+	for i in range(n, -1, -1):
+		var kk := float(i) / n; var aa: float = _sm["a0"] + dd * kk; var ri := r - (r - r0) * kk * kk
+		pts.append(g + Vector2(cos(aa), sin(aa)) * ri); cols.append(Color(1, 0.92, 0.78, 0.0))
+	if not Geometry2D.triangulate_polygon(pts).is_empty():
+		fx_add.draw_polygon(pts, cols)

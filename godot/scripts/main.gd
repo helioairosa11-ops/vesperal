@@ -17,6 +17,7 @@ var menu: Control
 
 func _ready() -> void:
 	_setup_input()
+	Data.warm_up()
 	if OS.get_cmdline_user_args().has("--autotest"):
 		GameState.new_game(); _start_world()
 		var at = load("res://scripts/autotest.gd").new()

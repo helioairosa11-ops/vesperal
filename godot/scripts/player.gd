@@ -56,6 +56,24 @@ func _ready() -> void:
 	max_hp = GameState.max_hp; hp = GameState.hp
 	sh = Data.sheet("hero2"); shw = Data.sheet("hero2_espada")
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	# imagens residuais da esquiva: silhueta pintada numa cor (Assets.drawTinted do jogo web)
+	for addmode in [false, true]:
+		var n := Node2D.new()
+		var mt := ShaderMaterial.new(); mt.shader = Shader.new()
+		mt.shader.code = "shader_type canvas_item;\n" + ("render_mode blend_add;\n" if addmode else "") + "void fragment() { COLOR = vec4(COLOR.rgb, texture(TEXTURE, UV).a * COLOR.a); }"
+		n.material = mt
+		n.show_behind_parent = true
+		add_child(n)
+		if addmode:
+			ghost_add = n
+		else:
+			ghost_norm = n
+		n.draw.connect(_draw_ghosts.bind(addmode))
+	flash_node = Node2D.new()
+	var fm := CanvasItemMaterial.new(); fm.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	flash_node.material = fm
+	add_child(flash_node)
+	flash_node.draw.connect(_draw_flash)
 	# a brasa no peito: luz quente que acompanha a protagonista
 	light = PointLight2D.new()
 	light.texture = world.light_tex
@@ -87,6 +105,7 @@ func tick(dt: float) -> void:
 	jump_buf = maxf(0.0, jump_buf - dt)
 	attack_buf = maxf(0.0, attack_buf - dt)
 	land_t = maxf(0.0, land_t - dt)
+	land_squash = maxf(0.0, land_squash - dt * 4.0)
 	attack_boxes.clear()
 	_update_burn(dt)
 	if dead:
@@ -97,26 +116,26 @@ func tick(dt: float) -> void:
 	# golpe à espera: aparo tardio (até 0,07 s depois)
 	if not pending_hit.is_empty():
 		pending_hit["t"] -= dt
-		if Input.is_action_just_pressed("parry"):
+		if _jp("parry"):
 			_parried(pending_hit["box"])
 			pending_hit = {}
 		elif pending_hit["t"] <= 0:
 			var b: Dictionary = pending_hit["box"]
 			pending_hit = {}
 			_take_damage(b)
-	if Input.is_action_just_pressed("jump"):
+	if _jp("jump"):
 		jump_buf = C["JUMP_BUF"]
-	if Input.is_action_just_pressed("attack"):
+	if _jp("attack"):
 		attack_buf = 0.12
-	var ax := Input.get_axis("left", "right")
+	var ax := _ax("left", "right")
 	ax = signf(ax)
-	var up := Input.is_action_pressed("up")
-	var down := Input.is_action_pressed("down")
+	var up := _pr("up")
+	var down := _pr("down")
 	if ax != 0 and wall_lock <= 0 and (action.is_empty() or action.get("can_turn", false)):
 		facing = int(ax)
 	crouch = on_ground and down and action.is_empty()
 	# ---- iniciar ações
-	if Input.is_action_just_pressed("parry") and (action.is_empty() or can_act()):
+	if _jp("parry") and (action.is_empty() or can_act()):
 		_start_parry()
 	elif action.is_empty() or can_act():
 		_try_actions(ax, up, down)
@@ -175,16 +194,16 @@ func tick(dt: float) -> void:
 			_jump(C["WALL_JVY"])
 		elif GameState.abilities.get("double", false) and not double_used:
 			double_used = true; _jump(C["DOUBLE"])
-	if Input.is_action_just_released("jump") and vel.y < 0:
+	if _jr("jump") and vel.y < 0:
 		vel.y *= C["JUMP_CUT"]
 	var was_ground := on_ground
 	var fall_v := vel.y
 	var res := physics(dt)
 	if res["landed"] and not was_ground and fall_v > 200:
 		land_t = 0.18
-		world.audio.sfx("land", 0.7)
-		if fall_v > 380:
-			world.fx.dust(Vector2(cx, bottom), 4)
+		land_squash = minf(1.0, fall_v / 600.0)
+		world.audio.sfx("land", minf(1.0, fall_v / 500.0))
+		world.fx.burst_o(cx, bottom, 6, {"color": "#8a8078", "speed": 60.0, "angle": -PI / 2, "spread": 2.6, "life": 0.4, "size": 1.4, "g": 200.0})
 	air_t = 0.0 if on_ground else air_t + dt
 	if on_ground and absf(vel.x) > 60 and action.is_empty():
 		step_t -= dt * absf(vel.x) / 160.0
@@ -199,7 +218,7 @@ func tick(dt: float) -> void:
 		_take_damage({"dmg": 20.0, "knock": 200.0, "src": null, "unblockable": true})
 	# rasto da esquiva
 	for g in afterimages:
-		g["a"] -= dt * 3.0
+		g["a"] -= dt * 2.2
 	afterimages = afterimages.filter(func(g): return g["a"] > 0)
 
 func _on_platform() -> bool:
@@ -207,15 +226,21 @@ func _on_platform() -> bool:
 	return world.room.is_platform(floori(cx / 20.0), ty)
 
 func _jump(v: float) -> void:
+	var dbl := not on_ground and double_used and air_t > 0.0
 	vel.y = v; jump_buf = 0; on_ground = false
-	world.audio.sfx("jump")
+	world.audio.sfx("jump", 0.8 if dbl else 0.5)
+	if dbl:
+		world.fx.burst_o(cx, bottom, 12, {"color": "#d8c8b0", "speed": 90.0, "angle": PI / 2, "spread": 2.2, "life": 0.45, "size": 1.6})
+		world.audio.sfx("moth", 0.5)
+	else:
+		world.fx.burst_o(cx, bottom, 5, {"color": "#8a8078", "speed": 50.0, "angle": -PI / 2, "spread": 2.8, "life": 0.3, "size": 1.2})
 	if action.get("type", "") == "attack":
 		action = {}
 
 func _try_actions(ax: float, up: bool, down: bool) -> void:
-	if Input.is_action_just_pressed("heal") and on_ground:
+	if _jp("heal") and on_ground:
 		_start_heal(); return
-	if Input.is_action_just_pressed("dodge") and dodge_cd <= 0:
+	if _jp("dodge") and dodge_cd <= 0:
 		if on_ground or not air_dash:
 			_start_dodge(ax); return
 	if not action.is_empty() and action.get("phase", "") != "rec":
@@ -250,13 +275,13 @@ func _start_dodge(ax: float) -> void:
 	var air := not on_ground
 	if ax != 0:
 		facing = int(ax)
-	action = {"type": "dodge", "t": 0.0, "dur": 0.2 if air else 0.34, "air": air}
+	var short: bool = air and not GameState.abilities.get("dash", false)
+	action = {"type": "dodge", "t": 0.0, "dur": (0.13 if short else 0.2) if air else 0.34, "air": air, "short": short, "dir": facing, "inv": false}
 	if air:
 		air_dash = true; vel.y = 0
-	vel.x = facing * (300.0 if air else 270.0)
-	iframes = maxf(iframes, 0.24)
-	dodge_cd = 0.32
+	dodge_cd = 0.3 if air else 0.32
 	world.audio.sfx("dodge")
+	world.fx.burst_o(cx, bottom - 2, 8, {"color": "#c8b8a8" if air else "#7a7068", "speed": 70.0, "angle": PI if facing > 0 else 0.0, "spread": 1.0, "life": 0.4, "size": 1.6})
 
 func _start_parry() -> void:
 	action = {"type": "parry", "t": 0.0, "phase": "act", "window": C["PARRY"], "dur": 0.38, "success": false, "can_turn": true}
@@ -265,8 +290,12 @@ func _start_parry() -> void:
 
 func _start_heal() -> void:
 	if GameState.flasks <= 0:
-		world.toast("Sem frascos de cinza."); return
+		world.audio.sfx("ui_back"); world.toast(Data.t("msg_no_flasks")); return
+	if hp >= max_hp:
+		world.toast(Data.t("msg_full_hp")); return
 	action = {"type": "heal", "t": 0.0, "dur": 0.85, "done": false}
+	world.audio.sfx("charge", 0.4)
+	world.fx.art("heal", cx, pos.y + size.y + 1, {"h": 44.0, "life": 1.1, "follow": self, "alpha": 0.6})
 
 func _update_action(dt: float) -> void:
 	if action.is_empty():
@@ -294,22 +323,36 @@ func _update_action(dt: float) -> void:
 			elif action["phase"] == "rec" and action["t"] >= action["rec"]:
 				action = {}
 		"dodge":
-			if action.get("air", false):
+			# velocidade, janela de invulnerabilidade e rasto iguais ao jogo web (player.js)
+			var a := action
+			var k: float = a["t"] / a["dur"]
+			var sp: float = (240.0 if a["short"] else 330.0) if a["air"] else lerpf(300.0, 110.0, k * k)
+			vel.x = a["dir"] * sp
+			if a["air"] and not a["short"]:
 				vel.y = 0
-			if fmod(action["t"], 0.05) < dt:
-				afterimages.append({"p": Vector2(cx, bottom), "f": facing, "fr": _current_frame(), "a": 0.7})
-			if action["t"] >= action["dur"]:
-				vel.x *= 0.45; action = {}
+			var tt: float = a["t"]
+			a["inv"] = ((tt > 0.02 and tt < 0.09) if a["short"] else (tt > 0.02 and tt < 0.15)) if a["air"] else (tt > 0.04 and tt < 0.26)
+			if randf() < 0.7 or a["inv"]:
+				afterimages.append({"p": Vector2(cx, bottom), "f": facing, "fr": _current_frame(), "sh": sh, "a": 0.6 if a["inv"] else 0.4, "inv": a["inv"]})
+			if a["inv"] and randf() < 0.9:
+				world.fx.emit({"x": cx - a["dir"] * randf_range(4, 12), "y": pos.y + randf_range(4, size.y - 2), "vx": -a["dir"] * randf_range(160, 260), "vy": 0.0, "drag": 6.0,
+					"life": randf_range(0.12, 0.22), "size": randf_range(2, 3.2), "color": ["#d8ccff", "#a898f0", "#ffffff"].pick_random(), "add": true, "kind": "line"})
+			if a["t"] >= a["dur"]:
+				action = {}
+				if not a["air"]:
+					vel.x *= 0.5
 		"parry":
 			if action["t"] >= action["dur"]:
 				action = {}
 		"heal":
-			if not action["done"] and action["t"] >= action["dur"] * 0.6:
+			if randf() < 0.5:
+				world.fx.emit({"x": cx + randf_range(-8, 8), "y": bottom - randf_range(0, 20), "vy": -40.0, "life": 0.6, "size": 1.4, "color": "#ffd080", "add": true, "shrink": true})
+			if not action["done"] and action["t"] >= action["dur"]:
 				action["done"] = true
 				GameState.flasks -= 1
 				hp = minf(max_hp, hp + round(max_hp * 0.45)); GameState.hp = int(hp)
 				heal_glow = 0.8; burn = {}
-				world.fx.burst(Vector2(cx, cy), 18, Color(1, 0.75, 0.4), 70.0, true)
+				world.fx.burst_o(cx, cy, 20, {"color": "#ffd890", "speed": 90.0, "life": 0.7, "size": 1.8, "add": true})
 				world.audio.sfx("heal")
 			if action["t"] >= action["dur"]:
 				action = {}
@@ -321,7 +364,10 @@ func _update_action(dt: float) -> void:
 func receive(box: Dictionary) -> void:
 	if dead or iframes > 0:
 		return
-	if action.get("type", "") == "dodge":
+	if action.get("type", "") == "dodge" and action.get("inv", false):
+		if not action.get("perfect", false):
+			action["perfect"] = true
+			world.fx.burst_o(cx, cy, 10, {"color": "#d0c0ff", "speed": 60.0, "life": 0.4, "size": 1.4, "add": true})
 		return
 	var parryable: bool = box.get("parryable", true) and not box.get("unblockable", false)
 	if action.get("type", "") == "parry" and action["t"] <= action["window"] and parryable:
@@ -338,10 +384,10 @@ func _parried(box: Dictionary) -> void:
 	GameState.lume = minf(100.0, GameState.lume + 25.0)
 	iframes = maxf(iframes, 0.2)
 	var src = box.get("src")
-	var p := Vector2(cx + facing * 14, cy - 4)
-	world.fx.sparks(p, 22)
-	world.hitstop(0.12)
+	world.fx.parry(cx + facing * 14, pos.y + 12, facing)
+	world.hitstop(0.14)
 	world.shake(0.25)
+	world.flash_screen(Color.WHITE, 0.35)
 	world.audio.sfx("parry")
 	if src != null and is_instance_valid(src) and src.has_method("on_parried") and not box.get("projectile", false):
 		src.on_parried()
@@ -367,7 +413,7 @@ func _take_damage(box: Dictionary) -> void:
 		dir = 1 if cx >= src.cx else -1
 	vel = Vector2(dir * box.get("knock", 160.0), -200)
 	action = {"type": "hurt", "t": 0.0}
-	world.fx.blood(Vector2(cx, cy), 12, dir)
+	world.fx.hurt(cx, cy - 4, dir)
 	world.hitstop(0.08); world.shake(0.3)
 	world.audio.sfx("hurt"); world.flash_screen(Color("#a01010"), 0.24); world.hurt = 1.0
 	if hp <= 0:
@@ -458,22 +504,71 @@ func _process(delta: float) -> void:
 	sync_node()
 	light.energy = 1.0 + 0.15 * sin(t * 7.0) + heal_glow + parry_flash * 0.8
 
+var flash_node: Node2D
+var land_squash := 0.0
+var _last_sh: Dictionary = {}
+var _last_f: Dictionary = {}
+
+## clarão de dano: o fotograma por cima em aditivo, 1 + 0,6 (Assets.drawFlash duas vezes)
+func _draw_flash() -> void:
+	if flash <= 0 or _last_f.is_empty():
+		return
+	var sx := 1.0; var sy := 1.0
+	if land_squash > 0:
+		sx = 1.0 + land_squash * 0.12; sy = 1.0 - land_squash * 0.1
+	flash_node.draw_set_transform(Vector2.ZERO, 0, Vector2(facing * sx, sy))
+	Data.draw_frame(flash_node, _last_sh, _last_f, Color(1, 1, 1, 1))
+	Data.draw_frame(flash_node, _last_sh, _last_f, Color(1, 1, 1, 0.6))
+	flash_node.draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
+
+var ghost_norm: Node2D
+var ghost_add: Node2D
+
+## invulnerável: rasto claro e esticado (#7a6ad8, aditivo); os outros, sombra azul (#3a5aa0)
+func _draw_ghosts(addmode: bool) -> void:
+	var n: Node2D = ghost_add if addmode else ghost_norm
+	for g in afterimages:
+		if g["fr"].is_empty() or g["inv"] != addmode:
+			continue
+		if addmode:
+			n.draw_set_transform(g["p"] - position, 0, Vector2(g["f"] * 1.12, 0.94))
+			Data.draw_frame(n, g["sh"], g["fr"], Color(Color("#7a6ad8"), g["a"] * 0.6))
+		else:
+			n.draw_set_transform(g["p"] - position, 0, Vector2(g["f"], 1))
+			Data.draw_frame(n, g["sh"], g["fr"], Color(Color("#3a5aa0"), g["a"] * 0.45))
+	n.draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
+
 func _draw() -> void:
 	if sh.is_empty():
 		return
-	# rasto fantasma da esquiva
-	for g in afterimages:
-		draw_set_transform(g["p"] - position, 0, Vector2(g["f"], 1))
-		Data.draw_frame(self, sh if not g["fr"].is_empty() and action.get("type", "") != "attack" else sh, g["fr"], Color(0.45, 0.55, 1.0, g["a"] * 0.45))
-	draw_set_transform(Vector2.ZERO, 0, Vector2(facing, 1))
+	ghost_norm.queue_redraw(); ghost_add.queue_redraw()
+	# escala como no jogo web: achata ao aterrar, estica na esquiva
+	var sx := 1.0; var sy := 1.0
+	if land_squash > 0:
+		sx = 1.0 + land_squash * 0.12; sy = 1.0 - land_squash * 0.1
+	if action.get("type", "") == "dodge":
+		var kk := sin(minf(1.0, action["t"] / action["dur"]) * PI)
+		sx *= 1.0 + 0.14 * kk; sy *= 1.0 - 0.08 * kk
+	draw_set_transform(Vector2.ZERO, 0, Vector2(facing * sx, sy))
 	var f := _current_frame()
 	var useweapon: bool = action.get("type", "") in ["attack", "parry"]
 	var mod := Color.WHITE
-	if flash > 0:
-		mod = Color(3, 2.4, 2.2)
-	elif iframes > 0 and fmod(t, 0.12) < 0.06 and not dead:
-		mod = Color(1, 1, 1, 0.55)
-	if not burn.is_empty():
-		mod = mod * Color(1.25, 0.85, 0.7)
-	Data.draw_frame(self, shw if useweapon else sh, f, mod)
+	if iframes > 0 and iframes < 0.9 and not dead and int(floor(t * 20.0)) % 2 == 0:
+		mod.a = 0.5
+	_last_sh = shw if useweapon else sh
+	_last_f = f
+	Data.draw_frame(self, _last_sh, f, mod)
 	draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
+	flash_node.queue_redraw()
+
+# ------------------------------------------------------------------ entrada (bloqueada durante diálogos e cenas)
+func _blocked() -> bool:
+	return world.cutscene
+func _jp(a: String) -> bool:
+	return not _blocked() and Input.is_action_just_pressed(a)
+func _pr(a: String) -> bool:
+	return not _blocked() and Input.is_action_pressed(a)
+func _jr(a: String) -> bool:
+	return not _blocked() and Input.is_action_just_released(a)
+func _ax(a: String, b: String) -> float:
+	return 0.0 if _blocked() else Input.get_axis(a, b)

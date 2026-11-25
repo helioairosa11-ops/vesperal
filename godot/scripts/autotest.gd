@@ -9,6 +9,7 @@ var seq := "walk"
 var steps: Array = []
 var idx := 0
 var log_lines: Array = []
+var last_enemy
 
 func _ready() -> void:
 	shots_dir = OS.get_environment("SHOTS")
@@ -38,6 +39,16 @@ func _ready() -> void:
 					steps.append([0.35, "tap", "attack"])
 				steps.append([0.25, "shot", "p%02d" % i])
 			steps.append([0.2, "release", "right"])
+		"fx":
+			steps = [[0.5, "room", "r1_street"], [0.3, "spawn", "husk"], [0.1, "enemy_attack", "lunge"], [0.42, "shot", "f01_tell_white"],
+				[0.25, "shot", "f02_lunge_act"], [0.8, "spawn", "sexton"], [0.1, "enemy_attack", "slam"], [0.5, "shot", "f03_tell_red"],
+				[0.8, "tap", "attack"], [0.07, "shot", "f04_hit"], [0.05, "shot", "f05_hit2"], [0.6, "press", "right"], [0.05, "tap", "dodge"], [0.07, "shot", "f06_dodge_inv"],
+				[0.12, "shot", "f07_dodge_end"], [0.1, "release", "right"], [0.4, "tap", "jump"], [0.08, "shot", "f08_jump"], [0.6, "shot", "f09_land"],
+				[0.1, "kill", ""], [0.35, "shot", "f10_dissolve"], [0.5, "quit", ""]]
+		"npc":
+			steps = [[0.5, "room", "r1_sanct"], [0.2, "place", "22"], [0.6, "shot", "n01_prompt"], [0.1, "tap", "interact"], [0.6, "shot", "n02_typing"],
+				[1.8, "shot", "n03_line1"], [0.1, "tap", "interact"], [0.1, "tap", "interact"], [1.0, "shot", "n04_line2"],
+				[0.1, "room", "r1_market"], [0.2, "place", "7"], [0.6, "shot", "n05_hrolf_prompt"], [0.1, "tap", "interact"], [2.0, "shot", "n06_hrolf"], [0.3, "quit", ""]]
 		"rooms":
 			steps = [[0.6, "shot", "r_wake"], [0.1, "room", "r1_street"], [0.8, "shot", "r_street"], [0.1, "room", "r1_sanct"], [0.8, "shot", "r_sanct"],
 				[0.1, "room", "r1_cemetery"], [0.8, "shot", "r_cemetery"], [0.1, "room", "r1_market"], [0.8, "shot", "r_market"], [0.5, "quit", ""]]
@@ -73,6 +84,25 @@ func _process(delta: float) -> void:
 			w.player.pos = Vector2(8 * 20, 15 * 20 - w.player.size.y)
 		"room":
 			w.load_room(s[2], Vector2.INF)
+		"place":
+			var tx := int(s[2])
+			w.player.pos = Vector2(tx * 20.0 + 4.0, w.room.floor_below(tx * 20.0 + 10.0, 100.0) - w.player.size.y)
+			w.player.vel = Vector2.ZERO
+			w.player.facing = 1
+		"spawn":
+			var en = load("res://scripts/enemy.gd").new()
+			en.world = w
+			en.setup(s[2], int(w.player.cx / 20.0) + 3, int(w.player.bottom / 20.0) - 1)
+			w.actors.add_child(en)
+			last_enemy = en
+		"enemy_attack":
+			if is_instance_valid(last_enemy):
+				last_enemy.aggro = true; last_enemy.facing = -1 if last_enemy.cx > w.player.cx else 1
+				last_enemy.atk = {}; last_enemy.attack(s[2])
+		"kill":
+			for a in w.actors.get_children():
+				if a != w.player and a.has_method("die") and not a.dead:
+					a.die()
 		"boss_attack":
 			if w.boss and is_instance_valid(w.boss) and not w.boss.dead:
 				w.boss.atk = {}; w.boss.stagger = 0; w.boss.attack(s[2])

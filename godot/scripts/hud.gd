@@ -5,8 +5,11 @@ extends CanvasLayer
 var world
 var boss = null
 var prompt := ""
+var prompt_at := Vector2.ZERO
+var dlg: Dictionary = {}
 var flash := Color(0, 0, 0, 0)
 var hurt := 0.0
+var fade := 0.0
 var tint := Color(0, 0, 0, 0)
 var vignette: Texture2D
 var red_edges: Texture2D
@@ -31,8 +34,8 @@ func _ready() -> void:
 	c.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	add_child(c)
 	c.draw.connect(_draw_hud)
-	font_title = load("res://art/fonts/Cinzel-Bold.woff2")
-	font_body = load("res://art/fonts/EBGaramond-Regular.woff2")
+	font_title = load("res://art/fonts/Cinzel-VF.woff")
+	font_body = load("res://art/fonts/EBGaramond-VF.woff")
 	# margens vermelhas da ferida (redEdges do jogo web)
 	var g := Gradient.new()
 	g.offsets = PackedFloat32Array([0.0, 0.265, 0.6, 1.0])
@@ -48,6 +51,115 @@ func _ready() -> void:
 	vt.gradient = vg; vt.fill = GradientTexture2D.FILL_RADIAL; vt.width = 160; vt.height = 90
 	vt.fill_from = Vector2(0.5, 0.5); vt.fill_to = Vector2(0.5 + 0.62, 0.5)
 	vignette = vt
+
+# ------------------------------------------------------------------ diálogo (UI.dialogue do jogo web)
+func dialogue(lines: Array, choices: Array, cb: Callable) -> void:
+	dlg = {"lines": lines, "i": 0, "shown": 0.0, "choices": choices, "cb": cb, "full": "", "ci": 0, "wait": false, "t": 0.0}
+	_dlg_show()
+
+func dialogue_open() -> bool:
+	return not dlg.is_empty()
+
+func _dlg_show() -> void:
+	var l: Dictionary = dlg["lines"][dlg["i"]]
+	dlg["full"] = Data.t(l["k"], l.get("p", {})); dlg["shown"] = 0.0
+
+func _dlg_advance() -> void:
+	if dlg["wait"]:
+		return
+	if dlg["shown"] < dlg["full"].length():
+		dlg["shown"] = float(dlg["full"].length()); return
+	if dlg["i"] < dlg["lines"].size() - 1:
+		dlg["i"] += 1; _dlg_show(); Audio.sfx("ui_tab", 0.4); return
+	if not dlg["choices"].is_empty():
+		dlg["wait"] = true; return
+	_dlg_end(-1)
+
+func _dlg_end(choice: int) -> void:
+	var cb: Callable = dlg["cb"]
+	dlg = {}
+	if cb.is_valid():
+		cb.call(choice)
+
+func _dlg_update(delta: float) -> void:
+	if dlg.is_empty():
+		return
+	dlg["t"] += delta
+	if dlg["shown"] < dlg["full"].length():
+		dlg["shown"] = minf(dlg["full"].length(), dlg["shown"] + delta * 55.0)
+		if randf() < 0.15:
+			Audio.sfx("ui_tab", 0.15)
+	elif dlg["i"] == dlg["lines"].size() - 1 and not dlg["choices"].is_empty() and not dlg["wait"]:
+		dlg["wait"] = true
+
+func _dlg_input(e: InputEvent) -> bool:
+	if dlg.is_empty() or not e.is_pressed() or e.is_echo():
+		return false
+	if dlg["wait"]:
+		var n: int = dlg["choices"].size()
+		if e.is_action("ui_down") or e.is_action("down"):
+			dlg["ci"] = (dlg["ci"] + 1) % n; Audio.sfx("ui_move")
+		elif e.is_action("ui_up") or e.is_action("up"):
+			dlg["ci"] = (dlg["ci"] - 1 + n) % n; Audio.sfx("ui_move")
+		elif e.is_action("ui_accept") or e.is_action("jump") or e.is_action("interact") or e.is_action("attack"):
+			Audio.sfx("ui_ok"); _dlg_end(dlg["ci"])
+		return true
+	if e.is_action("ui_accept") or e.is_action("interact") or e.is_action("jump") or e.is_action("attack") or e.is_action("ui_cancel") \
+		or (e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT):
+		_dlg_advance()
+		return true
+	return false
+
+## caixa do diálogo: .dialogue do css (largura min(92vw,760px), 5% do fundo, degradê escuro, linha dourada)
+func _draw_dialogue(W: float) -> void:
+	if dlg.is_empty():
+		return
+	c.draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
+	var vs := c.get_viewport_rect().size
+	var u := vs.y / 900.0
+	var bw := minf(vs.x * 0.92, 760.0 * u)
+	var l: Dictionary = dlg["lines"][dlg["i"]]
+	var speaker: String = Data.t(l["s"]) if l.get("s", "") != "" else ""
+	var tfs := clampf(vs.x / u * 0.02, 16, 21) * u
+	var sfs := clampf(vs.x / u * 0.017, 14, 17) * u
+	var text: String = dlg["full"].substr(0, int(dlg["shown"]))
+	var inner := bw - 44.0 * u
+	var full_h := font_body.get_multiline_string_size(dlg["full"], HORIZONTAL_ALIGNMENT_LEFT, inner, int(tfs)).y
+	var ch_h := 0.0
+	if dlg["wait"]:
+		ch_h = 10.0 * u + dlg["choices"].size() * (sfs * 1.1 + 18.0 * u)
+	var bh := maxf(110.0 * u, 16.0 * u + (sfs + 6.0 * u if speaker != "" else 0.0) + maxf(full_h, tfs * 1.5 * 2.8) + ch_h + 26.0 * u)
+	var r := Rect2((vs.x - bw) / 2.0, vs.y * 0.95 - bh, bw, bh)
+	var fade := minf(1.0, dlg["t"] / 0.25)
+	var top := Color(10 / 255.0, 8 / 255.0, 12 / 255.0, 0.9 * fade); var bot := Color(6 / 255.0, 5 / 255.0, 8 / 255.0, 0.96 * fade)
+	c.draw_polygon(PackedVector2Array([r.position, r.position + Vector2(r.size.x, 0), r.end, r.position + Vector2(0, r.size.y)]), PackedColorArray([top, top, bot, bot]))
+	c.draw_rect(r, Color(214 / 255.0, 178 / 255.0, 120 / 255.0, 0.35 * fade), false, maxf(1.0, u))
+	var x := r.position.x + 22.0 * u; var y := r.position.y + 16.0 * u
+	if speaker != "":
+		var xx := x
+		for ch in speaker:
+			c.draw_string(font_title, Vector2(xx, y + sfs), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, int(sfs), Color(Color("#ffb050"), fade))
+			xx += font_title.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, int(sfs)).x + sfs * 0.14
+		y += sfs + 6.0 * u
+	var italic := speaker == ""
+	c.draw_multiline_string(font_body, Vector2(x, y + tfs), text, HORIZONTAL_ALIGNMENT_CENTER if italic else HORIZONTAL_ALIGNMENT_LEFT, inner, int(tfs), -1, Color(Color("#e6d8c4") if italic else Color("#e9dfcf"), fade))
+	y += maxf(full_h, tfs * 1.5 * 2.8)
+	if dlg["wait"]:
+		y += 10.0 * u
+		for i in dlg["choices"].size():
+			var cr := Rect2(x, y, inner, sfs * 1.1 + 14.0 * u)
+			var foc: bool = i == dlg["ci"]
+			c.draw_rect(cr, Color(1, 0.59, 0.27, 0.12) if foc else Color(1, 1, 1, 0.02))
+			c.draw_rect(cr, Color("#ffb050") if foc else Color(214 / 255.0, 178 / 255.0, 120 / 255.0, 0.35), false, maxf(1.0, u))
+			c.draw_string(font_body, Vector2(cr.position.x + 14.0 * u, cr.position.y + 7.0 * u + sfs * 0.95), Data.t(dlg["choices"][i]), HORIZONTAL_ALIGNMENT_LEFT, -1, int(sfs), Color("#e9dfcf"))
+			y += cr.size.y + 4.0 * u
+	elif dlg["shown"] >= dlg["full"].length():
+		# seta a piscar (.dlg-next)
+		var bl := 0.5 + 0.5 * sin(dlg["t"] * TAU / 1.2)
+		var nc := r.end - Vector2(20.0 * u, 14.0 * u)
+		var s8 := 4.0 * u
+		c.draw_polyline(PackedVector2Array([nc + Vector2(-s8, -s8 * 0.3), nc + Vector2(0, s8 * 0.7), nc + Vector2(s8, -s8 * 0.3)]), Color(Color("#ffb050"), bl), 2.0 * u)
+	c.draw_set_transform(Vector2.ZERO, 0, Vector2(K, K))
 
 func toast(s: String) -> void:
 	if s == "":
@@ -70,6 +182,7 @@ func _process(delta: float) -> void:
 		q["t"] -= delta
 	toasts = toasts.filter(func(q): return q["t"] > 0)
 	banner_t = maxf(0.0, banner_t - delta)
+	_dlg_update(delta)
 	if died_t >= 0:
 		died_t += delta
 		if died_t > 2.4:
@@ -77,6 +190,8 @@ func _process(delta: float) -> void:
 	c.queue_redraw()
 
 func _unhandled_input(e: InputEvent) -> void:
+	if _dlg_input(e):
+		get_viewport().set_input_as_handled(); return
 	if read_body != "" and e.is_pressed() and not e.is_echo():
 		if e.is_action("interact") or e.is_action("ui_cancel") or e.is_action("jump") or e.is_action("attack"):
 			read_body = ""; read_title = ""
@@ -204,8 +319,16 @@ func _draw_hud() -> void:
 		c.draw_texture_rect(_img("hud_boss_c"), Rect2(W / 2.0 - 15.25, byy, 30.49, 16.46), false)
 		_text(font_title, Data.t("boss_coveiro"), Vector2(W / 2.0, byy - 4), 10, Color("#e8d8c0"), true)
 	# ---- aviso de interação
-	if prompt != "":
-		_text(font_body, prompt, Vector2(p.position.x, 0) * 0 + Vector2(W / 2.0, 360.0 - 70.0), 10, Color(0.95, 0.88, 0.78, 0.9), true)
+	if prompt != "" and dlg.is_empty():
+		# UI.drawPrompt: caixinha escura por cima do alvo, no mundo
+		var sp: Vector2 = world.get_viewport().get_canvas_transform() * (prompt_at + Vector2(0, -18)) / K
+		var tw := font_title.get_string_size(prompt, HORIZONTAL_ALIGNMENT_LEFT, -1, int(8 * K)).x / K + 10.0
+		var bx2 := clampf(sp.x - tw / 2.0, 3.0, W - tw - 3.0)
+		var by2 := maxf(3.0, sp.y + sin(Time.get_ticks_msec() / 1000.0 * 3.0) * 1.2 * world.cam.zoom.x / K)
+		c.draw_rect(Rect2(bx2, by2, tw, 12), Color(0.04, 0.03, 0.05, 0.75))
+		c.draw_rect(Rect2(bx2, by2, tw, 12), Color(0.86, 0.75, 0.55, 0.5), false, 0.6)
+		_text(font_title, prompt, Vector2(bx2 + tw / 2.0, by2 + 9.0), 8, Color("#efe4d2"), true)
+	_draw_dialogue(W)
 	# ---- mensagens
 	var ty := 70.0
 	for q in toasts:
@@ -233,6 +356,9 @@ func _draw_hud() -> void:
 		var a3 := clampf(died_t * 1.2, 0, 0.85)
 		c.draw_rect(Rect2(0, 0, W, 360), Color(0.04, 0, 0, a3))
 		_text(font_title, "A CHAMA APAGOU-SE", Vector2(W / 2.0, 180), 22, Color(0.8, 0.2, 0.15, clampf(died_t, 0, 1)), true)
+	c.draw_set_transform(Vector2.ZERO, 0, Vector2(K, K))
+	if fade > 0.001:
+		c.draw_rect(Rect2(0, 0, W, 360), Color(0, 0, 0, fade))
 
 ## texto desenhado à resolução real (sem esticar letras pequenas)
 func _text(f: Font, s: String, at: Vector2, size: int, col: Color, center := false) -> void:

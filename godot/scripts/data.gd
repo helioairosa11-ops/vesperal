@@ -39,8 +39,14 @@ func _json(path: String) -> Variant:
 		return {}
 	return JSON.parse_string(f.get_as_text())
 
-func t(key: String) -> String:
-	return String(lang.get(key, key))
+func t(key: String, params := {}) -> String:
+	var out := String(lang.get(key, key))
+	for k in params:
+		out = out.replace("{%s}" % k, str(params[k]))
+	return out
+
+func has_key(key: String) -> bool:
+	return lang.has(key)
 
 func room_at_cell(c: Vector2i) -> String:
 	return cell_index.get(c, "")
@@ -52,6 +58,22 @@ func tex(path: String) -> Texture2D:
 	if not _tex.has(path):
 		_tex[path] = load(path)
 	return _tex[path]
+
+## lista das imagens a pré-carregar (uma por fotograma, durante o menu) para a troca de sala não engasgar
+var _warm: Array = []
+func warm_up() -> void:
+	for dir in ["res://art/bg", "res://art/sprites", "res://art/tiles", "res://art/ui"]:
+		var d := DirAccess.open(dir)
+		if d == null:
+			continue
+		for f in d.get_files():
+			var fn := f.trim_suffix(".import")
+			if (fn.ends_with(".png") or fn.ends_with(".jpg")) and not fn.contains(".orig.") and not _warm.has(dir.path_join(fn)):
+				_warm.append(dir.path_join(fn))
+
+func _process(_d: float) -> void:
+	if not _warm.is_empty():
+		tex(_warm.pop_back())
 
 ## folha de sprites: textura + meta
 func sheet(nm: String) -> Dictionary:
@@ -100,7 +122,7 @@ func anim_len(sh: Dictionary, anim: String) -> float:
 
 ## desenha um quadro com a âncora em (0,0) (pés ao centro); o chamador põe a transformação
 func draw_frame(ci: CanvasItem, sh: Dictionary, f: Dictionary, mod := Color.WHITE) -> void:
-	if f.is_empty():
+	if f.is_empty() or f.get("ox") == null or f.get("w") == null:
 		return
 	var s: float = f.get("s", sh["meta"]["scale"])
 	var src := Rect2(f["x"], f["y"], f["w"], f["h"])

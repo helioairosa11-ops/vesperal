@@ -48,6 +48,9 @@ func _ready() -> void:
 	eye_light.texture_scale = 0.6
 	add_child(eye_light)
 
+func is_boss() -> bool:
+	return true
+
 func is_heavy() -> bool:
 	return true
 
