@@ -129,12 +129,12 @@ func _draw_hud() -> void:
 	var C := Vector2(mx + 26, my + 26)
 	c.draw_texture_rect(_img("hud_medallion"), Rect2(mx, my, 52, 52), false)
 	var lk := clampf(GameState.lume / 100.0, 0, 1)
-	var ready := GameState.lume >= 33
+	var lume_ready := GameState.lume >= 33
 	c.draw_arc(C, 12.6, 0, TAU, 48, Color(0.35, 0.2, 0.12, 0.55), 2.4, true)
 	if lk > 0.005:
-		var pulse := 0.75 + 0.25 * sin(tsec * 4.0) if ready else 0.55
+		var pulse := 0.75 + 0.25 * sin(tsec * 4.0) if lume_ready else 0.55
 		c.draw_arc(C, 12.6, -PI / 2, -PI / 2 + TAU * lk, 48, Color(1, 0.55, 0.2, 0.5 * pulse), 4.6, true)
-		c.draw_arc(C, 12.6, -PI / 2, -PI / 2 + TAU * lk, 48, Color("#ffcf80") if ready else Color("#c88a50"), 1.8, true)
+		c.draw_arc(C, 12.6, -PI / 2, -PI / 2 + TAU * lk, 48, Color("#ffcf80") if lume_ready else Color("#c88a50"), 1.8, true)
 	for i in 3:
 		var an := -PI / 2 + TAU * i / 3.0
 		c.draw_circle(C + Vector2(cos(an), sin(an)) * 12.6, 1.1, Color("#1a1014"))
