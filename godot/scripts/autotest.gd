@@ -29,6 +29,15 @@ func _ready() -> void:
 				[1.2, "boss_hp", "0.45"], [0.6, "shot", "b08_phase2"], [0.2, "parries", "4"], [0.5, "shot", "b09_dazed"],
 				[0.3, "tap", "attack"], [0.1, "shot", "b10_attack"], [2.8, "boss_attack", "sweep"], [0.4, "shot", "b11_sweep"],
 				[1.0, "boss_hp", "0.0"], [1.6, "shot", "b12_dead"], [1.0, "quit", ""]]
+		"play":
+			steps = [[0.5, "press", "right"]]
+			for i in 24:
+				if i % 3 == 0:
+					steps.append([0.3, "press", "jump"]); steps.append([0.3, "release", "jump"])
+				else:
+					steps.append([0.35, "tap", "attack"])
+				steps.append([0.25, "shot", "p%02d" % i])
+			steps.append([0.2, "release", "right"])
 		"rooms":
 			steps = [[0.6, "shot", "r_wake"], [0.1, "room", "r1_street"], [0.8, "shot", "r_street"], [0.1, "room", "r1_sanct"], [0.8, "shot", "r_sanct"],
 				[0.1, "room", "r1_cemetery"], [0.8, "shot", "r_cemetery"], [0.1, "room", "r1_market"], [0.8, "shot", "r_market"], [0.5, "quit", ""]]
@@ -60,10 +69,10 @@ func _process(delta: float) -> void:
 			Input.action_press(s[2])
 			get_tree().create_timer(0.08).timeout.connect(func(): Input.action_release(s[2]))
 		"warp":
-			w.load_room("r1_coveiro", Vector2(-1, -1))
+			w.load_room("r1_coveiro", Vector2.INF)
 			w.player.pos = Vector2(8 * 20, 15 * 20 - w.player.size.y)
 		"room":
-			w.load_room(s[2], Vector2(-1, -1))
+			w.load_room(s[2], Vector2.INF)
 		"boss_attack":
 			if w.boss and is_instance_valid(w.boss) and not w.boss.dead:
 				w.boss.atk = {}; w.boss.stagger = 0; w.boss.attack(s[2])

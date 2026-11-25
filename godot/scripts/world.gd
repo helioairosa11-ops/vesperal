@@ -60,7 +60,7 @@ func _ready() -> void:
 	set_process_unhandled_input(true)
 
 func start(room_id: String) -> void:
-	load_room(room_id, Vector2(-1, -1))
+	load_room(room_id, Vector2.INF)
 
 func _cam_zoom() -> void:
 	var vs := get_viewport().get_visible_rect().size
@@ -98,7 +98,7 @@ func load_room(id: String, global_pos: Vector2) -> void:
 		player.world = self
 		actors.add_child(player)
 	var p: Vector2
-	if global_pos.x >= 0:
+	if global_pos != Vector2.INF:
 		p = global_pos - Vector2(room.gx, room.gy)
 	else:
 		p = _spawn_point()
@@ -374,7 +374,7 @@ func _respawn() -> void:
 	player.iframes = 1.0
 	GameState.flasks = GameState.max_flasks
 	var r: String = GameState.altar_room if GameState.altar_room != "" else "r1_wake"
-	load_room(r, Vector2(-1, -1))
+	load_room(r, Vector2.INF)
 
 # ------------------------------------------------------------------ mudar de sala pelas bordas
 func _check_exit() -> void:
