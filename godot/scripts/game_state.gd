@@ -13,6 +13,13 @@ var abilities: Dictionary = {"dash": false, "double": false}
 var room := "r1_wake"
 var spawn := Vector2(-1, -1)
 var altar_room := ""
+# inventário (como o GameState do jogo web): itens contáveis, armas, relíquias e ranhuras
+var items: Dictionary = {}
+var weapons: Array = ["desperto"]
+var weapon_id := "desperto"
+var relics: Array = []
+var equipped: Array = []
+var relic_slots := 2
 
 const SLOTS := 3
 var slot := 0
@@ -68,6 +75,48 @@ func new_game(i := -1) -> void:
 	max_hp = 100; hp = 100; flasks = 3; max_flasks = 3; ash = 0; lume = 0.0
 	bosses = {}; flags = {}; abilities = {"dash": false, "double": false}
 	room = "r1_wake"; spawn = Vector2(-1, -1); altar_room = ""
+	items = {}; weapons = ["desperto"]; weapon_id = "desperto"; relics = []; equipped = []; relic_slots = 2
+
+# ------------------------------------------------------------------ itens (state.give/take do jogo web)
+func count(id: String) -> int:
+	return int(items.get(id, 0))
+
+func has(id: String) -> bool:
+	return count(id) > 0 or relics.has(id)
+
+func give(id: String, n := 1) -> void:
+	var it: Dictionary = Data.items.get(id, {})
+	if it.is_empty():
+		push_warning("item desconhecido: " + id); return
+	match String(it.get("cat", "")):
+		"weapon":
+			if not weapons.has(String(it["weapon"])): weapons.append(String(it["weapon"]))
+			return
+		"relic":
+			if not relics.has(id): relics.append(id)
+			if equipped.size() < relic_slots and not equipped.has(id): equipped.append(id)
+			return
+	match id:
+		"candle_fragment":
+			max_flasks += n; flasks = max_flasks; return
+		"ash_heart":
+			max_hp += 15 * n; hp = max_hp; return
+		"relic_slot":
+			relic_slots = mini(5, relic_slots + n); return
+	items[id] = mini(int(it.get("max", 99)), count(id) + n)
+
+func take(id: String, n := 1) -> void:
+	items[id] = maxi(0, count(id) - n)
+	if int(items[id]) == 0:
+		items.erase(id)
+
+func equip(id: String) -> bool:
+	if not relics.has(id) or equipped.has(id) or equipped.size() >= relic_slots:
+		return false
+	equipped.append(id); return true
+
+func unequip(id: String) -> void:
+	equipped.erase(id)
 
 func has_save() -> bool:
 	return last_slot() >= 0
@@ -81,6 +130,7 @@ func save() -> void:
 	f.store_string(JSON.stringify({
 		"v": 2, "max_hp": max_hp, "flasks": max_flasks, "ash": ash, "bosses": bosses, "flags": flags,
 		"abilities": abilities, "room": altar_room if altar_room != "" else room, "altar": altar_room,
+		"items": items, "weapons": weapons, "weapon_id": weapon_id, "relics": relics, "equipped": equipped, "relic_slots": relic_slots,
 		"play_time": play_time, "deaths": deaths, "saved_at": int(Time.get_unix_time_from_system()),
 	}))
 	f.close()
@@ -101,4 +151,9 @@ func load_game(i := -1) -> bool:
 	ash = int(d.get("ash", 0))
 	bosses = d.get("bosses", {}); flags = d.get("flags", {}); abilities = d.get("abilities", abilities)
 	room = String(d.get("room", "r1_wake")); altar_room = String(d.get("altar", ""))
+	items = d.get("items", {}); relics = d.get("relics", []); equipped = d.get("equipped", [])
+	weapons = d.get("weapons", ["desperto"]); weapon_id = String(d.get("weapon_id", "desperto"))
+	relic_slots = int(d.get("relic_slots", 2))
+	for k in items.keys():
+		items[k] = int(items[k])
 	return true

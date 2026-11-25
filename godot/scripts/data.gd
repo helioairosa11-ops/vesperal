@@ -9,6 +9,7 @@ var rooms: Dictionary = {}
 var sprites: Dictionary = {}
 var regions: Dictionary = {}
 var props: Dictionary = {}
+var items: Dictionary = {}
 var lang: Dictionary = {}
 var cell_index: Dictionary = {}
 var _tex: Dictionary = {}
@@ -18,6 +19,7 @@ func _ready() -> void:
 	sprites = _json("res://data/sprites.json")
 	regions = _json("res://data/regions.json")
 	props = _json("res://data/props.json")
+	items = _json("res://data/items.json")
 	set_lang("pt")
 	for id in rooms:
 		var d: Dictionary = rooms[id]
@@ -65,6 +67,11 @@ func room_at_cell(c: Vector2i) -> String:
 
 func region(key: String) -> Dictionary:
 	return regions.get(key, regions.get("r1", {}))
+
+## ícone pintado de um item (assets/icons e assets/weapons do jogo web)
+func icon(id: String) -> Texture2D:
+	var p := "res://art/icons/%s.png" % id
+	return tex(p) if ResourceLoader.exists(p) else null
 
 func tex(path: String) -> Texture2D:
 	if not _tex.has(path):

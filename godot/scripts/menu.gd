@@ -29,7 +29,7 @@ func _ready() -> void:
 	logo = load("res://art/ui/logo_v.png")
 	f_title = FontVariation.new(); f_title.base_font = load("res://art/fonts/Cinzel-VF.woff")
 	f_title.variation_opentype = {TextServerManager.get_primary_interface().name_to_tag("wght"): 500}
-	f_body = FontVariation.new(); f_body.base_font = load("res://art/fonts/EBGaramond-VF.woff")
+	f_body = FontVariation.new(); f_body.base_font = load("res://art/fonts/Alegreya-Medium.woff2")
 	var g := Gradient.new()
 	g.set_color(0, Color(1, 1, 1, 1)); g.set_color(1, Color(1, 1, 1, 0))
 	var gt := GradientTexture2D.new()

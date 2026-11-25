@@ -28,7 +28,34 @@ func _ready() -> void:
 		UI._adjust(-1)
 		UI.close_all(); UI.open_slots(func(_i, _f): pass); await get_tree().create_timer(0.4).timeout; shot.call("u6_slots")
 		UI.close_all(); UI.open_credits(); await get_tree().create_timer(0.4).timeout; shot.call("u7_credits")
+		UI.close_all(); UI.confirm(Data.t("confirm_quit"), func(): pass); await get_tree().create_timer(0.4).timeout; shot.call("u8_confirm")
 		UI.close_all()
+		# dentro do jogo: pausa, inventário, leitura, diálogo, item obtido, aviso
+		GameState.new_game(0)
+		for id in ["salt", "salt", "ash_steel", "letter_3", "lost_bell", "r_lantern", "w_espirito", "candle_fragment"]:
+			GameState.give(id)
+		GameState.abilities["dash"] = true
+		_start_world()
+		await get_tree().create_timer(1.5).timeout
+		UI.open_pause(world); await get_tree().create_timer(0.4).timeout; shot.call("g1_pause")
+		UI.close_all(); UI.open_inventory(world); await get_tree().create_timer(0.4).timeout; shot.call("g2_inv_weapons")
+		UI._tab(1); await get_tree().create_timer(0.3).timeout; shot.call("g3_inv_relics")
+		UI._tab(1); await get_tree().create_timer(0.3).timeout; shot.call("g4_inv_cons")
+		UI._tab(1); UI._adjust(1); await get_tree().create_timer(0.3).timeout; shot.call("g5_inv_key")
+		UI.close_all(); world.hud.read(Data.t("item_letter_3_name"), Data.t("letter_3_text"), true); await get_tree().create_timer(0.4).timeout; shot.call("g6_letter")
+		UI.close_all(); get_tree().paused = false
+		world.hud.dialogue([{"s": "npc_ione", "k": "ione_meet1"}], [], Callable())
+		await get_tree().create_timer(2.5).timeout; shot.call("g7_dialogue")
+		world.hud.dlg = {}
+		world.hud.dialogue([{"s": "", "k": "ione_meet1"}], ["yes", "no"], Callable())
+		await get_tree().create_timer(3.5).timeout; shot.call("g8_narration_choices")
+		world.hud.dlg = {}
+		world.hud.item_get("r_lantern"); world.hud.toast(Data.t("tut_dash"))
+		for it in world.interactables:
+			if it["t"] in ["altar", "inscription", "npc"]:
+				world.player.position.x += it["p"].x - world.player.cx + 6; world.player.prev_pos = world.player.position
+				break
+		await get_tree().create_timer(0.6).timeout; shot.call("g9_notes")
 		get_tree().quit()
 		return
 	if OS.get_cmdline_user_args().has("--menushot"):

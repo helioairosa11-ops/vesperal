@@ -7,15 +7,15 @@ const LANGS := ["pt", "en", "es", "fr"]
 const LANG_NAMES := {"pt": "Português", "en": "English", "es": "Español", "fr": "Français"}
 const RESOLUTIONS := [Vector2i(1280, 720), Vector2i(1366, 768), Vector2i(1600, 900), Vector2i(1920, 1080), Vector2i(2560, 1440), Vector2i(3840, 2160)]
 ## ações que se podem redefinir (como In.REMAPPABLE no jogo web)
-const REMAPPABLE := ["left", "right", "up", "down", "jump", "attack", "dodge", "parry", "heal", "interact", "pause"]
+const REMAPPABLE := ["left", "right", "up", "down", "jump", "attack", "dodge", "parry", "heal", "interact", "inventory", "pause"]
 const DEFAULT_KEYS := {
 	"left": [KEY_A, KEY_LEFT], "right": [KEY_D, KEY_RIGHT], "up": [KEY_W, KEY_UP], "down": [KEY_S, KEY_DOWN],
 	"jump": [KEY_SPACE, KEY_Z], "attack": [KEY_J, KEY_X], "dodge": [KEY_L, KEY_SHIFT, KEY_C],
-	"parry": [KEY_I, KEY_B], "heal": [KEY_F], "interact": [KEY_E], "pause": [KEY_ESCAPE],
+	"parry": [KEY_I, KEY_B], "heal": [KEY_F], "interact": [KEY_E], "inventory": [KEY_TAB, KEY_I], "pause": [KEY_ESCAPE],
 }
 const PADS := {
 	"jump": [JOY_BUTTON_A], "attack": [JOY_BUTTON_X], "dodge": [JOY_BUTTON_B], "parry": [JOY_BUTTON_RIGHT_SHOULDER],
-	"heal": [JOY_BUTTON_LEFT_SHOULDER], "interact": [JOY_BUTTON_Y], "pause": [JOY_BUTTON_START],
+	"heal": [JOY_BUTTON_LEFT_SHOULDER], "interact": [JOY_BUTTON_Y], "inventory": [JOY_BUTTON_BACK], "pause": [JOY_BUTTON_START],
 	"left": [JOY_BUTTON_DPAD_LEFT], "right": [JOY_BUTTON_DPAD_RIGHT], "up": [JOY_BUTTON_DPAD_UP], "down": [JOY_BUTTON_DPAD_DOWN],
 }
 

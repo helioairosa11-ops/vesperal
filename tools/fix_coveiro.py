@@ -1,0 +1,265 @@
+"""Corrige as folhas do Coveiro (fase 1 e 2) para o Godot: tira pedaços colados de outros quadros, completa o que
+ficou cortado pela moldura do quadro (pá levantada, lâmina da pá), desfaz cortes a direito no fumo, nas chamas e
+nos montes de terra, e volta a arrumar a folha com margem à volta de cada quadro para o desenho poder passar o recorte.
+
+Entrada: tools/art/orig/godot_stage/<folha>.png + coveiro_meta.json (a folha já limpa e os quadros originais)
+Saída:   godot/art/sprites/<folha>.png e os quadros novos em godot/data/sprites.json
+Correr depois de tools/export_godot_data.py (que reescreve sprites.json)."""
+import json, pathlib
+import numpy as np
+from PIL import Image, ImageFilter
+import scipy.ndimage as ndi
+
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+STAGE = ROOT / 'tools' / 'art' / 'orig' / 'godot_stage'
+SPR = ROOT / 'godot' / 'art' / 'sprites'
+DATA = ROOT / 'godot' / 'data' / 'sprites.json'
+P = 30                                    # margem nova à volta de cada quadro (px da folha)
+rng = np.random.default_rng(11)
+
+def noise1d(n, scale=6.0, seed=0):
+    r = np.random.default_rng(seed).random(int(n / scale) + 3)
+    x = np.arange(n) / scale
+    i = x.astype(int); f = x - i
+    f = f * f * (3 - 2 * f)
+    return r[i] * (1 - f) + r[i + 1] * f
+
+def comp(a):
+    lab, n = ndi.label(a[..., 3] > 8, structure=np.ones((3, 3)))
+    sizes = ndi.sum(a[..., 3] > 8, lab, range(1, n + 1)) if n else []
+    return lab, n, sizes
+
+# ------------------------------------------------------------------ operações (coordenadas do quadro já com margem)
+def drop_border_bits(a, box, max_size=450):
+    """pedacinhos soltos cortados pela borda antiga do quadro (vêm dos quadros vizinhos da folha de origem)"""
+    x0, y0, x1, y1 = box
+    lab, n, sizes = comp(a)
+    if n == 0: return
+    main = 1 + int(np.argmax(sizes))
+    for k in range(1, n + 1):
+        if k == main or sizes[k - 1] > max_size: continue
+        ys, xs = np.where(lab == k)
+        if xs.min() <= x0 or ys.min() <= y0 or xs.max() >= x1 - 1 or ys.max() >= y1 - 1:
+            a[lab == k] = 0
+
+def erase(a, rect):
+    x0, y0, x1, y1 = rect
+    a[y0:y1, x0:x1] = 0
+
+def keep_main_near(a, rect):
+    """dentro do retângulo apaga tudo o que não estiver ligado à figura principal fora dele"""
+    x0, y0, x1, y1 = rect
+    outside = a.copy(); outside[y0:y1, x0:x1] = 0
+    lab, n, sizes = comp(outside)
+    if n == 0: return
+    main = 1 + int(np.argmax(sizes))
+    full, _, _ = comp(a)
+    keep_ids = set(np.unique(full[(lab == main)])) - {0}
+    region = full[y0:y1, x0:x1]
+    m = ~np.isin(region, list(keep_ids))
+    a[y0:y1, x0:x1][m] = 0
+
+def ragged(a, side, box, depth=10, rows=None, seed=0, soft=True):
+    """desfaz um corte a direito na borda antiga 'side' (L, R, T, B): rói a orla com um contorno irregular e suave"""
+    x0, y0, x1, y1 = box
+    h, w = a.shape[:2]
+    yy, xx = np.mgrid[0:h, 0:w]
+    if side == 'L': d = xx - x0; along = yy
+    elif side == 'R': d = (x1 - 1) - xx; along = yy
+    elif side == 'T': d = yy - y0; along = xx
+    else: d = (y1 - 1) - yy; along = xx
+    L = h if side in 'LR' else w
+    nz = noise1d(L, 5.0, seed) * 0.65 + noise1d(L, 1.7, seed + 7) * 0.35
+    thr = depth * (0.25 + 0.75 * nz[along])
+    k = np.clip((d - thr) / (2.5 if soft else 0.8), 0, 1)
+    if rows is not None:
+        lo, hi = rows
+        inside = (along >= lo) & (along < hi)
+        k = np.where(inside, k, 1.0)
+    a[..., 3] = (a[..., 3] * k).astype(np.uint8)
+
+def fade_side(a, side, box, depth=16, seed=0, span=None):
+    """fumo/chamas cortados: desvanecem em vez de acabar a direito (span: só neste intervalo ao longo da borda)"""
+    keep = a.copy()
+    ragged(a, side, box, depth=depth, seed=seed, soft=True)
+    x0, y0, x1, y1 = box
+    h, w = a.shape[:2]
+    yy, xx = np.mgrid[0:h, 0:w]
+    d = {'L': xx - x0, 'R': (x1 - 1) - xx, 'T': yy - y0, 'B': (y1 - 1) - yy}[side]
+    k = np.clip(d / (depth * 1.6), 0, 1) ** 0.8
+    a[..., 3] = (a[..., 3] * np.where(d < depth * 1.6, k, 1)).astype(np.uint8)
+    if span is not None:
+        along = xx if side in 'TB' else yy
+        out = (along < span[0]) | (along >= span[1])
+        a[out] = keep[out]
+
+def paste(a, src, rect, at, flip_v=False, flip_h=False, under=True):
+    """copia um pedaço (de outro quadro) para aqui; por baixo do que já existe, para não tapar a figura"""
+    x0, y0, x1, y1 = rect
+    piece = src[y0:y1, x0:x1].copy()
+    if flip_v: piece = piece[::-1]
+    if flip_h: piece = piece[:, ::-1]
+    px, py = at
+    ph, pw = piece.shape[:2]
+    dst = a[py:py + ph, px:px + pw]
+    pa = piece[..., 3:4].astype(np.float32) / 255
+    da = dst[..., 3:4].astype(np.float32) / 255
+    if under:
+        out_a = da + pa * (1 - da)
+        out_c = (dst[..., :3] * da + piece[..., :3] * pa * (1 - da)) / np.maximum(out_a, 1e-6)
+    else:
+        out_a = pa + da * (1 - pa)
+        out_c = (piece[..., :3] * pa + dst[..., :3] * da * (1 - pa)) / np.maximum(out_a, 1e-6)
+    dst[..., :3] = np.clip(out_c, 0, 255).astype(np.uint8)
+    dst[..., 3:4] = np.clip(out_a * 255, 0, 255).astype(np.uint8)
+
+def transplant(a, src, rect, shift):
+    """troca uma zona pelos píxeis de outro quadro (alinhado pelo corpo): tapa o que um pedaço colado escondia"""
+    x0, y0, x1, y1 = rect
+    sx, sy = shift
+    a[y0:y1, x0:x1] = src[y0 - sy:y1 - sy, x0 - sx:x1 - sx]
+
+META = {}
+def anchor_shift(a, frames, src_i, dst_i, rect):
+    """copia uma zona de outro quadro para este, os dois alinhados pela âncora (o ponto dos pés no chão)"""
+    fs, fd = META['frames'][src_i], META['frames'][dst_i]
+    s = META['scale']
+    # posição da âncora em px de cada quadro com margem
+    ax_s, ay_s = P - fs['ox'] * s, P - fs['oy'] * s
+    ax_d, ay_d = P - fd['ox'] * s, P - fd['oy'] * s
+    dx, dy = int(round(ax_s - ax_d)), int(round(ay_s - ay_d))
+    src = frames[src_i][0]
+    x0, y0, x1, y1 = rect
+    x1 = min(x1, a.shape[1], src.shape[1] - dx); y1 = min(y1, a.shape[0], src.shape[0] - dy)
+    part = src[y0 + dy:y1 + dy, x0 + dx:x1 + dx]
+    dst = a[y0:y1, x0:x1]
+    m = dst[..., 3] < 10
+    dst[m] = part[m]
+
+def mirror_complete(a, rect, axis_x):
+    """completa a metade cortada de uma peça simétrica (lâmina da pá) espelhando a outra metade"""
+    x0, y0, x1, y1 = rect
+    for y in range(y0, y1):
+        for x in range(x0, x1):
+            mx = int(round(2 * axis_x - x))
+            if 0 <= mx < a.shape[1] and a[y, x, 3] < 40 and a[y, mx, 3] > 40:
+                a[y, x] = a[y, mx]
+
+def drop_specks(a, max_size=3):
+    lab, n, sizes = comp(a)
+    for k in range(1, n + 1):
+        if sizes[k - 1] <= max_size:
+            a[lab == k] = 0
+
+# ------------------------------------------------------------------ correções por quadro
+# caixa antiga do quadro dentro do quadro com margem: (P, P, P+w, P+h)
+def fixes(name, i, a, box, frames):
+    x0, y0, x1, y1 = box
+    w, h = x1 - x0, y1 - y0
+    X = lambda v: x0 + v
+    Y = lambda v: y0 + v
+    if name == 'en_b_coveiro':
+        if i == 8:
+            # a mão e o cabo do quadro seguinte colados no canto de baixo à direita: tira-se esse canto e a terra
+            # volta a ser a do quadro 9 (mesmo passo), alinhada pela âncora dos pés
+            erase(a, (X(140), Y(96), X(w), Y(h)))
+            anchor_shift(a, frames, 9, i, (X(140), Y(118), X(w) + 20, Y(h) + 6))
+        if i == 16:
+            # a pá levantada saía pelo topo: tira os restos cortados (lâmina e rasto) e põe a lâmina inteira
+            # (a do quadro 0, virada para cima) no cimo do cabo
+            erase(a, (X(98), Y(0), X(147), Y(10)))
+            erase(a, (X(140), Y(0), X(168), Y(5)))
+            src, sb = frames[0]
+            rect = (sb[0] + 116, sb[1] + 104, sb[0] + 162, sb[1] + 132)
+            src = src.copy()
+            piece = src[rect[1]:rect[3], rect[0]:rect[2]]
+            # só a lâmina: a peça ligada ao meio do recorte (sem terra nem cabo)
+            lab, n = ndi.label(piece[..., 3] > 60, structure=np.ones((3, 3)))
+            mid = lab[piece.shape[0] // 2 + 4, piece.shape[1] // 2 + 2]
+            if mid:
+                piece[lab != mid] = 0
+            cxp = np.average(np.where(piece[..., 3] > 100)[1])
+            paste(a, src, rect, (int(round(X(153.5) - cxp)), Y(8) - (rect[3] - rect[1])), flip_v=True, under=False)
+        if i == 19:
+            fade_side(a, 'T', box, depth=14, seed=19, span=(X(195), X(w)))
+            fade_side(a, 'R', box, depth=12, seed=91, span=(Y(0), Y(90)))
+        if i in (51, 52):
+            fade_side(a, 'T', box, depth=8, seed=i)
+    else:
+        if i == 8:
+            erase(a, (X(139), Y(110), X(w), Y(h)))
+            anchor_shift(a, frames, 9, i, (X(139), Y(112), X(w) + 20, Y(h) + 6))
+        if i == 11:
+            # pá em brasa de outro quadro colada por cima das pernas: do cinto para baixo (pernas, pá, terra) passa a ser
+            # o quadro 12, alinhado pela âncora; do cinto para cima fica o 11 — o corte fica escondido no cinto
+            fs, fd = META['frames'][12], META['frames'][11]
+            sc = META['scale']
+            dx = int(round((P - fs['ox'] * sc) - (P - fd['ox'] * sc))); dy = int(round((P - fs['oy'] * sc) - (P - fd['oy'] * sc)))
+            src = frames[12][0]
+            cut = Y(86)
+            a[cut:] = 0
+            for yy in range(cut, a.shape[0]):
+                sy = yy + dy
+                if 0 <= sy < src.shape[0]:
+                    for_x0 = max(0, -dx); for_x1 = min(a.shape[1], src.shape[1] - dx)
+                    a[yy, for_x0:for_x1] = src[sy, for_x0 + dx:for_x1 + dx]
+        # a pá/tocha erguida, o fumo e as chamas saíam pelo topo: desvanecem (só nas colunas deles, a cabeça fica)
+        spans = {16: (X(130), X(w)), 38: (X(168), X(w)), 20: (X(150), X(w)), 19: (X(200), X(w)), 36: (X(0), X(w)), 37: (X(0), X(w)), 49: (X(0), X(w))}
+        if i in spans:
+            fade_side(a, 'T', box, depth=12, seed=i + 3, span=spans[i])
+        if i == 19:
+            fade_side(a, 'R', box, depth=12, seed=77, span=(Y(0), Y(90)))
+    drop_border_bits(a, box)
+    drop_specks(a)
+
+def run(name):
+    meta = json.load(open(STAGE / 'coveiro_meta.json'))[name]
+    META.clear(); META.update(meta)
+    sheet = np.asarray(Image.open(STAGE / f'{name}.png').convert('RGBA'))
+    scale = meta['scale']
+    frames_in = meta['frames']
+    # 1) cada quadro numa tela com margem
+    padded = {}
+    for i, f in enumerate(frames_in):
+        if not f or f.get('w') is None: continue
+        w, h = f['w'], f['h']
+        a = np.zeros((h + 2 * P, w + 2 * P, 4), np.uint8)
+        a[P:P + h, P:P + w] = sheet[f['y']:f['y'] + h, f['x']:f['x'] + w]
+        padded[i] = (a, (P, P))
+    # 2) correções (os quadros de origem para colar são os já com margem, antes de mexer)
+    src = {i: (v[0].copy(), v[1]) for i, v in padded.items()}
+    for i, (a, _) in padded.items():
+        f = frames_in[i]
+        fixes(name, i, a, (P, P, P + f['w'], P + f['h']), src)
+    # 3) recorta ao conteúdo (com 2 px) e volta a arrumar a folha em prateleiras
+    crops = {}
+    for i, (a, _) in padded.items():
+        ys, xs = np.where(a[..., 3] > 3)
+        cx0, cy0 = max(0, xs.min() - 2), max(0, ys.min() - 2)
+        cx1, cy1 = min(a.shape[1], xs.max() + 3), min(a.shape[0], ys.max() + 3)
+        crops[i] = (a[cy0:cy1, cx0:cx1], cx0 - P, cy0 - P)
+    W = 2048; x = y = 0; row_h = 0; place = {}
+    for i in sorted(crops, key=lambda k: -crops[k][0].shape[0]):
+        c = crops[i][0]; ch, cw = c.shape[:2]
+        if x + cw > W: x = 0; y += row_h + 2; row_h = 0
+        place[i] = (x, y); x += cw + 2; row_h = max(row_h, ch)
+    H = y + row_h
+    out = np.zeros((H, W, 4), np.uint8)
+    frames_out = []
+    for i, f in enumerate(frames_in):
+        if i not in crops:
+            frames_out.append(f); continue
+        c, dx, dy = crops[i]; px, py = place[i]
+        out[py:py + c.shape[0], px:px + c.shape[1]] = c
+        s = f.get('s') or scale
+        g = dict(f)
+        g.update({'x': px, 'y': py, 'w': int(c.shape[1]), 'h': int(c.shape[0]), 'ox': f['ox'] + dx / s, 'oy': f['oy'] + dy / s})
+        frames_out.append(g)
+    Image.fromarray(out).save(SPR / f'{name}.png', optimize=True)
+    data = json.load(open(DATA, encoding='utf-8'))
+    data[name]['frames'] = frames_out
+    json.dump(data, open(DATA, 'w', encoding='utf-8'), ensure_ascii=False)
+    print(name, 'folha', W, H)
+
+for n in ['en_b_coveiro', 'en_b_coveiro_p2']:
+    run(n)

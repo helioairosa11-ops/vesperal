@@ -34,8 +34,8 @@ func _ready() -> void:
 	c.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	add_child(c)
 	c.draw.connect(_draw_hud)
-	font_title = load("res://art/fonts/Cinzel-VF.woff")
-	font_body = load("res://art/fonts/EBGaramond-VF.woff")
+	font_title = UI.f_title
+	font_body = UI.f_body
 	# margens vermelhas da ferida (redEdges do jogo web)
 	var g := Gradient.new()
 	g.offsets = PackedFloat32Array([0.0, 0.265, 0.6, 1.0])
@@ -97,6 +97,11 @@ func _dlg_input(e: InputEvent) -> bool:
 		return false
 	if dlg["wait"]:
 		var n: int = dlg["choices"].size()
+		if e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT:
+			for i in _dlg_rects.size():
+				if _dlg_rects[i].has_point(e.position):
+					Audio.sfx("ui_ok"); _dlg_end(i); return true
+			return true
 		if e.is_action("ui_down") or e.is_action("down"):
 			dlg["ci"] = (dlg["ci"] + 1) % n; Audio.sfx("ui_move")
 		elif e.is_action("ui_up") or e.is_action("up"):
@@ -110,56 +115,88 @@ func _dlg_input(e: InputEvent) -> bool:
 		return true
 	return false
 
-## caixa do diálogo: .dialogue do css (largura min(92vw,760px), 5% do fundo, degradê escuro, linha dourada)
+## caixa do diálogo: a moldura larga da interface, retrato na oval dourada e placa com o nome de quem fala
+const PORTRAITS := {"npc_ione": "ione", "npc_hrolf": "hrolf", "npc_maren": "maren", "npc_teodoro": "teodoro"}
 func _draw_dialogue(_W: float) -> void:
 	if dlg.is_empty():
 		return
 	c.draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
 	var vs := c.get_viewport_rect().size
 	var u := vs.y / 900.0
-	var bw := minf(vs.x * 0.92, 760.0 * u)
+	var dfade := minf(1.0, dlg["t"] / 0.22)
 	var l: Dictionary = dlg["lines"][dlg["i"]]
-	var speaker: String = Data.t(l["s"]) if l.get("s", "") != "" else ""
-	var tfs := clampf(vs.x / u * 0.02, 16, 21) * u
-	var sfs := clampf(vs.x / u * 0.017, 14, 17) * u
-	var text: String = dlg["full"].substr(0, int(dlg["shown"]))
-	var inner := bw - 44.0 * u
-	var full_h := font_body.get_multiline_string_size(dlg["full"], HORIZONTAL_ALIGNMENT_LEFT, inner, int(tfs)).y
+	var sk: String = l.get("s", "") if l.get("s", "") != null else ""
+	var speaker: String = Data.t(sk) if sk != "" else ""
+	var por: Texture2D = Data.tex("res://art/portraits/%s.png" % PORTRAITS[sk]) if PORTRAITS.has(sk) else null
+	var bw := minf(vs.x * 0.92, 1040.0 * u)
+	var kb := 0.36 * u
+	var pad_x := 58.0 * u
+	var pad_t := 46.0 * u
+	var pad_b := 40.0 * u
+	var por_w := 150.0 * u if por else 0.0
+	var tx0 := pad_x + (por_w + 26.0 * u if por else 0.0)
+	var inner := bw - tx0 - pad_x
+	var italic := speaker == ""
+	var f: Font = UI.f_ital if italic else UI.f_body
+	var tfs := 22.0 * u
+	var full_h := UI.para_h(f, dlg["full"], inner, tfs)
 	var ch_h := 0.0
 	if dlg["wait"]:
-		ch_h = 10.0 * u + dlg["choices"].size() * (sfs * 1.1 + 18.0 * u)
-	var bh := maxf(110.0 * u, 16.0 * u + (sfs + 6.0 * u if speaker != "" else 0.0) + maxf(full_h, tfs * 1.5 * 2.8) + ch_h + 26.0 * u)
-	var r := Rect2((vs.x - bw) / 2.0, vs.y * 0.95 - bh, bw, bh)
-	var dfade := minf(1.0, dlg["t"] / 0.25)
-	var top := Color(10 / 255.0, 8 / 255.0, 12 / 255.0, 0.9 * dfade); var bot := Color(6 / 255.0, 5 / 255.0, 8 / 255.0, 0.96 * dfade)
-	c.draw_polygon(PackedVector2Array([r.position, r.position + Vector2(r.size.x, 0), r.end, r.position + Vector2(0, r.size.y)]), PackedColorArray([top, top, bot, bot]))
-	c.draw_rect(r, Color(214 / 255.0, 178 / 255.0, 120 / 255.0, 0.35 * dfade), false, maxf(1.0, u))
-	var x := r.position.x + 22.0 * u; var y := r.position.y + 16.0 * u
+		ch_h = 12.0 * u + dlg["choices"].size() * 46.0 * u
+	var min_lines := 2.0 if dlg["wait"] else 3.0
+	var bh := maxf(170.0 * u if dlg["wait"] else 196.0 * u, pad_t + maxf(full_h, tfs * 1.3 * min_lines) + ch_h + pad_b)
+	var r := Rect2((vs.x - bw) / 2.0, vs.y - 26.0 * u - bh + (1.0 - dfade) * 16.0 * u, bw, bh)
+	UI.box(c, r, kb, dfade)
+	# retrato recortado na oval
+	if por:
+		var orc := Rect2(r.position.x + 52.0 * u, r.position.y - 46.0 * u, por_w, por_w * 530.0 / 400.0)
+		var cc := orc.position + Vector2(199.0 / 400.0, 274.5 / 530.0) * orc.size
+		var rx := 154.0 / 400.0 * orc.size.x
+		var ry := 205.0 / 530.0 * orc.size.y
+		var pts := PackedVector2Array()
+		var uvs := PackedVector2Array()
+		for i in 48:
+			var an := TAU * i / 48.0
+			var pt := cc + Vector2(cos(an) * rx, sin(an) * ry)
+			pts.append(pt)
+			uvs.append(Vector2(0.5 + (pt.x - cc.x) / (2.0 * ry), 0.5 + (pt.y - cc.y) / (2.0 * ry)))
+		c.draw_texture_rect(UI.glow, orc.grow(20 * u), false, Color(0, 0, 0, 0.6 * dfade))
+		c.draw_colored_polygon(pts, Color(0.04, 0.03, 0.04, dfade))
+		c.draw_polygon(pts, PackedColorArray([Color(1, 1, 1, dfade)]), uvs, por)
+		c.draw_texture_rect(UI.tex("oval_ring"), orc, false, Color(1, 1, 1, dfade))
+	# placa com o nome
 	if speaker != "":
-		var xx := x
-		for ch in speaker:
-			c.draw_string(font_title, Vector2(xx, y + sfs), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, int(sfs), Color(Color("#ffb050"), dfade))
-			xx += font_title.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, int(sfs)).x + sfs * 0.14
-		y += sfs + 6.0 * u
-	var italic := speaker == ""
-	c.draw_multiline_string(font_body, Vector2(x, y + tfs), text, HORIZONTAL_ALIGNMENT_CENTER if italic else HORIZONTAL_ALIGNMENT_LEFT, inner, int(tfs), -1, Color(Color("#e6d8c4") if italic else Color("#e9dfcf"), dfade))
-	y += maxf(full_h, tfs * 1.5 * 2.8)
+		var nfs := 20.0 * u
+		var nw := UI.text_w(UI.f_label, speaker, nfs, 0.08) + 90.0 * u
+		var nr := Rect2(r.position.x + tx0 - 24.0 * u, r.position.y - 20.0 * u, nw, 42.0 * u)
+		UI.plate(c, nr, false, dfade)
+		UI.text(c, UI.f_label, speaker, Vector2(nr.get_center().x, nr.get_center().y + nfs * 0.33), nfs, Color(Color("#ffcf8a"), dfade), 1, 0.08)
+	var text: String = dlg["full"].substr(0, int(dlg["shown"]))
+	var x := r.position.x + tx0
+	var y := r.position.y + pad_t
+	UI.para(c, f, text, Vector2(x, y), inner, tfs, Color(Color("#e6d8c4") if italic else Color("#f1e7d6"), dfade), HORIZONTAL_ALIGNMENT_CENTER if italic and not por else HORIZONTAL_ALIGNMENT_LEFT)
+	y += maxf(full_h, tfs * 1.3 * min_lines) if not dlg["wait"] else full_h
+	_dlg_rects.clear()
 	if dlg["wait"]:
-		y += 10.0 * u
+		y += 12.0 * u
 		for i in dlg["choices"].size():
-			var cr := Rect2(x, y, inner, sfs * 1.1 + 14.0 * u)
+			var cw := minf(inner, 560.0 * u)
+			var cr := Rect2((x + inner / 2.0 - cw / 2.0) if italic and not por else x, y, cw, 42.0 * u)
 			var foc: bool = i == dlg["ci"]
-			c.draw_rect(cr, Color(1, 0.59, 0.27, 0.12) if foc else Color(1, 1, 1, 0.02))
-			c.draw_rect(cr, Color("#ffb050") if foc else Color(214 / 255.0, 178 / 255.0, 120 / 255.0, 0.35), false, maxf(1.0, u))
-			c.draw_string(font_body, Vector2(cr.position.x + 14.0 * u, cr.position.y + 7.0 * u + sfs * 0.95), Data.t(dlg["choices"][i]), HORIZONTAL_ALIGNMENT_LEFT, -1, int(sfs), Color("#e9dfcf"))
-			y += cr.size.y + 4.0 * u
+			UI.plate(c, cr, foc, dfade)
+			UI.text(c, UI.f_label, Data.t(dlg["choices"][i]), Vector2(cr.position.x + 40.0 * u, cr.get_center().y + 6.0 * u), 17.0 * u, Color(Color("#fff3dc") if foc else Color("#e9dfcf"), dfade), 0, 0.03)
+			_dlg_rects.append(cr)
+			y += 46.0 * u
 	elif dlg["shown"] >= dlg["full"].length():
-		# seta a piscar (.dlg-next)
-		var bl := 0.5 + 0.5 * sin(dlg["t"] * TAU / 1.2)
-		var nc := r.end - Vector2(20.0 * u, 14.0 * u)
-		var s8 := 4.0 * u
-		c.draw_polyline(PackedVector2Array([nc + Vector2(-s8, -s8 * 0.3), nc + Vector2(0, s8 * 0.7), nc + Vector2(s8, -s8 * 0.3)]), Color(Color("#ffb050"), bl), 2.0 * u)
+		# brasa a piscar no canto (.dlg-next)
+		var bl := 0.55 + 0.45 * sin(dlg["t"] * TAU / 1.2)
+		var nc := r.end - Vector2(64.0 * u, 34.0 * u) + Vector2(0, sin(dlg["t"] * 4.0) * 2.0 * u)
+		var s8 := 6.0 * u
+		c.draw_texture_rect(UI.glow, Rect2(nc - Vector2(14, 14) * u, Vector2(28, 28) * u), false, Color(1, 0.6, 0.25, 0.6 * bl * dfade))
+		c.draw_colored_polygon(PackedVector2Array([nc + Vector2(-s8, -s8 * 0.4), nc + Vector2(s8, -s8 * 0.4), nc + Vector2(0, s8 * 0.8)]), Color(Color("#ffb45a"), bl * dfade))
 	c.draw_set_transform(Vector2.ZERO, 0, Vector2(K, K))
+
+var _dlg_rects: Array = []
 
 func toast(s: String) -> void:
 	if s == "":
@@ -171,8 +208,14 @@ func toast(s: String) -> void:
 func banner(s: String) -> void:
 	banner_txt = s; banner_t = 3.2
 
-func read(title: String, body: String) -> void:
-	read_title = title; read_body = body
+## inscrições e cartas: abrem um painel da interface (com X, rato e deslocamento)
+func read(title: String, body: String, letter := false) -> void:
+	UI.open_read(get_tree(), title, body, letter)
+
+## UI.itemGet: placa com o ícone e o nome do que se apanhou
+var gets: Array = []
+func item_get(id: String, n := 1) -> void:
+	gets.append({"id": id, "n": n, "t": 3.2})
 
 func died() -> void:
 	died_t = 0.0
@@ -192,10 +235,6 @@ func _process(delta: float) -> void:
 func _unhandled_input(e: InputEvent) -> void:
 	if _dlg_input(e):
 		get_viewport().set_input_as_handled(); return
-	if read_body != "" and e.is_pressed() and not e.is_echo():
-		if e.is_action("interact") or e.is_action("ui_cancel") or e.is_action("jump") or e.is_action("attack"):
-			read_body = ""; read_title = ""
-			get_viewport().set_input_as_handled()
 
 func _flame(at: Vector2, sc: float, tt: float, k: float) -> void:
 	var f1 := sin(tt * 9.0) * 0.6 + sin(tt * 23.0) * 0.3
@@ -318,44 +357,20 @@ func _draw_hud() -> void:
 		c.draw_texture_rect(_img("hud_boss_r"), Rect2(bxx + BW - 14.63, byy, 14.63, 16.46), false)
 		c.draw_texture_rect(_img("hud_boss_c"), Rect2(W / 2.0 - 15.25, byy, 30.49, 16.46), false)
 		_text(font_title, Data.t("boss_coveiro"), Vector2(W / 2.0, byy - 4), 10, Color("#e8d8c0"), true)
-	# ---- aviso de interação
-	if prompt != "" and dlg.is_empty():
-		# UI.drawPrompt: caixinha escura por cima do alvo, no mundo
-		var sp: Vector2 = world.get_viewport().get_canvas_transform() * (prompt_at + Vector2(0, -18)) / K
-		var tw := font_title.get_string_size(prompt, HORIZONTAL_ALIGNMENT_LEFT, -1, int(8 * K)).x / K + 10.0
-		var bx2 := clampf(sp.x - tw / 2.0, 3.0, W - tw - 3.0)
-		var by2 := maxf(3.0, sp.y + sin(Time.get_ticks_msec() / 1000.0 * 3.0) * 1.2 * world.cam.zoom.x / K)
-		c.draw_rect(Rect2(bx2, by2, tw, 12), Color(0.04, 0.03, 0.05, 0.75))
-		c.draw_rect(Rect2(bx2, by2, tw, 12), Color(0.86, 0.75, 0.55, 0.5), false, 0.6)
-		_text(font_title, prompt, Vector2(bx2 + tw / 2.0, by2 + 9.0), 8, Color("#efe4d2"), true)
+	_draw_prompt(W)
 	_draw_dialogue(W)
-	# ---- mensagens
-	var ty := 70.0
-	for q in toasts:
-		var a := clampf(q["t"], 0, 1)
-		var sz := font_body.get_string_size(q["s"], HORIZONTAL_ALIGNMENT_LEFT, -1, int(10 * K)) / K
-		c.draw_rect(Rect2(W / 2.0 - sz.x / 2.0 - 10, ty - 11, sz.x + 20, 16), Color(0.03, 0.02, 0.03, 0.6 * a))
-		_text(font_body, q["s"], Vector2(W / 2.0, ty + 1), 10, Color(0.95, 0.9, 0.82, a), true)
-		ty += 19.0
-	# ---- nome da zona
-	if banner_t > 0:
-		var a2 := clampf(minf(banner_t, 3.2 - banner_t) * 1.5, 0, 1)
-		_text(font_title, banner_txt, Vector2(W / 2.0, 120), 20, Color(0.95, 0.86, 0.72, a2), true)
-		c.draw_rect(Rect2(W / 2.0 - 90, 128, 180, 0.8), Color(0.9, 0.7, 0.5, a2 * 0.6))
-	# ---- inscrição aberta
-	if read_body != "":
-		c.draw_rect(Rect2(0, 0, W, 360), Color(0, 0, 0, 0.55))
-		c.draw_rect(Rect2(W / 2.0 - 170, 110, 340, 140), Color(0.06, 0.05, 0.06, 0.95))
-		c.draw_rect(Rect2(W / 2.0 - 170, 110, 340, 140), Color(0.6, 0.48, 0.36), false, 0.8)
-		_text(font_title, read_title, Vector2(W / 2.0, 132), 12, Color("#e8d0a8"), true)
-		c.draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
-		c.draw_multiline_string(font_body, Vector2(W / 2.0 - 155, 152) * K, read_body, HORIZONTAL_ALIGNMENT_LEFT, 310 * K, int(10 * K), -1, Color(0.92, 0.88, 0.8))
-		c.draw_set_transform(Vector2.ZERO, 0, Vector2(K, K))
+	_draw_notes()
 	# ---- morte
 	if died_t >= 0:
 		var a3 := clampf(died_t * 1.2, 0, 0.85)
 		c.draw_rect(Rect2(0, 0, W, 360), Color(0.04, 0, 0, a3))
-		_text(font_title, "A CHAMA APAGOU-SE", Vector2(W / 2.0, 180), 22, Color(0.8, 0.2, 0.15, clampf(died_t, 0, 1)), true)
+		c.draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
+		var vsd := c.get_viewport_rect().size
+		var u := vsd.y / 900.0
+		var ta := clampf(died_t * 0.9, 0, 1)
+		UI.text(c, UI.f_title, Data.t("death_title"), Vector2(vsd.x / 2.0, vsd.y * 0.47), 54 * u, Color(0.86, 0.24, 0.16, ta), 1, 0.2)
+		UI.rule(c, vsd.x / 2.0, vsd.y * 0.47 + 26 * u, 200 * u, u, ta * 0.8)
+		UI.text(c, UI.f_ital, Data.t("death_sub"), Vector2(vsd.x / 2.0, vsd.y * 0.47 + 62 * u), 21 * u, Color(0.92, 0.84, 0.76, ta * 0.9), 1)
 	c.draw_set_transform(Vector2.ZERO, 0, Vector2(K, K))
 	if fade > 0.001:
 		c.draw_rect(Rect2(0, 0, W, 360), Color(0, 0, 0, fade))
@@ -374,4 +389,77 @@ func _text(f: Font, s: String, at: Vector2, size: int, col: Color, center := fal
 	c.draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
 	c.draw_string(f, pos + Vector2(1, 1.5) * K * 0.6, s, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0, 0, 0, col.a * 0.8))
 	c.draw_string(f, pos, s, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, col)
+	c.draw_set_transform(Vector2.ZERO, 0, Vector2(K, K))
+
+## aviso de interação por cima do alvo: ícone do kit (falar / examinar / interagir), tecla e ação numa placa
+var prompt_kind := "interact"
+func _draw_prompt(_W: float) -> void:
+	if prompt == "" or not dlg.is_empty() or UI.is_open():
+		return
+	c.draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
+	var vs := c.get_viewport_rect().size
+	var u := vs.y / 900.0
+	var sp: Vector2 = world.get_viewport().get_canvas_transform() * (prompt_at + Vector2(0, -16))
+	var bob := sin(Time.get_ticks_msec() / 1000.0 * 3.0) * 3.0 * u
+	var key := Settings.key_label(int(Settings.keys_for("interact")[0])) if not Settings.keys_for("interact").is_empty() else "E"
+	var fs := 17.0 * u
+	var tw := UI.text_w(UI.f_label, prompt, fs, 0.04)
+	var kw := UI.text_w(UI.f_label, key, 15 * u) + 16 * u
+	var h := 38.0 * u
+	var ic := 44.0 * u
+	var w := ic * 0.6 + kw + tw + 58.0 * u
+	var r := Rect2(clampf(sp.x - w / 2.0, 8 * u, vs.x - w - 8 * u), maxf(8 * u, sp.y - h + bob), w, h)
+	UI.plate(c, r, false, 0.95)
+	var icr := Rect2(r.position.x - ic * 0.25, r.get_center().y - ic / 2.0, ic, ic)
+	var itex := UI.tex("ic_" + prompt_kind)
+	if itex:
+		var asp := float(itex.get_width()) / itex.get_height()
+		var iw := ic * minf(1.0, asp); var ih := ic / maxf(1.0, asp)
+		c.draw_texture_rect(itex, Rect2(icr.get_center() - Vector2(iw, ih) / 2.0, Vector2(iw, ih)), false)
+	var kr := Rect2(icr.end.x + 6 * u, r.get_center().y - 12 * u, kw, 24 * u)
+	c.draw_rect(kr, Color(0.06, 0.04, 0.06, 0.95))
+	c.draw_rect(kr, Color(UI.GOLD, 0.8), false, maxf(1.0, u * 1.2))
+	UI.text(c, UI.f_label, key, Vector2(kr.get_center().x, kr.get_center().y + 5.5 * u), 15 * u, Color("#ffd8a0"), 1)
+	UI.text(c, UI.f_label, prompt, Vector2(kr.end.x + 12 * u, r.get_center().y + fs * 0.33), fs, Color("#f3e8d6"), 0, 0.04)
+	c.draw_set_transform(Vector2.ZERO, 0, Vector2(K, K))
+
+## avisos, itens obtidos e nome da zona (desenhados à resolução real)
+func _draw_notes() -> void:
+	c.draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
+	var vs := c.get_viewport_rect().size
+	var u := vs.y / 900.0
+	var dt := get_process_delta_time()
+	# ---- itens obtidos: caixa com o ícone numa casa acesa
+	var gy := 150.0 * u
+	for g in gets:
+		g["t"] -= dt
+		var a := clampf(minf(g["t"], 3.2 - g["t"]) * 3.0, 0, 1)
+		var nm: String = Data.t("item_%s_name" % g["id"]) + (" ×%d" % g["n"] if g["n"] > 1 else "")
+		var w := maxf(UI.text_w(UI.f_title, nm, 22 * u, 0.04), UI.text_w(UI.f_label, Data.t("obtained"), 15 * u, 0.2)) + 210 * u
+		var r := Rect2(vs.x / 2.0 - w / 2.0, gy - (1.0 - a) * 12 * u, w, 112 * u)
+		UI.box(c, r, 0.3 * u, a)
+		var sr := Rect2(r.position.x + 40 * u, r.get_center().y - 34 * u, 68 * u, 68 * u)
+		UI.slot(c, sr, true, a)
+		var ic := Data.icon(String(g["id"]))
+		if ic:
+			c.draw_texture_rect(ic, sr.grow(-11 * u), false, Color(1, 1, 1, a))
+		UI.text(c, UI.f_label, Data.t("obtained"), Vector2(sr.end.x + 22 * u, r.get_center().y - 8 * u), 15 * u, Color(UI.EMBER, a), 0, 0.2)
+		UI.text(c, UI.f_title, nm, Vector2(sr.end.x + 22 * u, r.get_center().y + 22 * u), 22 * u, Color(UI.TITLE, a), 0, 0.04)
+		gy += 122 * u
+	gets = gets.filter(func(g): return g["t"] > 0)
+	# ---- avisos curtos numa placa
+	var ty := gy + 10 * u
+	for q in toasts:
+		var a2 := clampf(q["t"], 0, 1)
+		var fs := 18.0 * u
+		var w2 := minf(vs.x * 0.8, UI.text_w(UI.f_body, q["s"], fs) + 110 * u)
+		var r2 := Rect2(vs.x / 2.0 - w2 / 2.0, ty, w2, 46 * u)
+		UI.plate(c, r2, false, a2 * 0.96)
+		UI.text(c, UI.f_body, q["s"], Vector2(vs.x / 2.0, r2.get_center().y + fs * 0.33), fs, Color(0.96, 0.91, 0.83, a2), 1)
+		ty += 52 * u
+	# ---- nome da zona / do chefe
+	if banner_t > 0:
+		var a3 := clampf(minf(banner_t, 3.2 - banner_t) * 1.5, 0, 1)
+		UI.text(c, UI.f_title, banner_txt, Vector2(vs.x / 2.0, vs.y * 0.33), 46 * u, Color(UI.TITLE, a3), 1, 0.14, 4)
+		UI.rule(c, vs.x / 2.0, vs.y * 0.33 + 24 * u, 230 * u, u, a3)
 	c.draw_set_transform(Vector2.ZERO, 0, Vector2(K, K))

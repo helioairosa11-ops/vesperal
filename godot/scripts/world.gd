@@ -269,8 +269,10 @@ var transition: Dictionary = {}
 signal quit_to_menu
 
 func _unhandled_input(e: InputEvent) -> void:
-	if e.is_action_pressed("pause") and not UI.is_open() and not hud.dialogue_open() and hud.read_body == "":
+	if e.is_action_pressed("pause") and not UI.is_open() and not hud.dialogue_open():
 		UI.open_pause(self)
+	elif e.is_action_pressed("inventory") and not UI.is_open() and not hud.dialogue_open() and not cutscene:
+		UI.open_inventory(self)
 		get_viewport().set_input_as_handled()
 
 func _notification(what: int) -> void:
@@ -403,13 +405,13 @@ func toast(s: String) -> void:
 
 # ------------------------------------------------------------------ interação: altares, inscrições, itens, dicas
 func _interact(_dt: float) -> void:
-	cutscene = hud.dialogue_open() or hud.read_body != ""
+	cutscene = hud.dialogue_open() or UI.is_open()
 	var pp := Vector2(player.cx, player.bottom)
 	# o mais perto (preferindo aquele para quem se está a olhar), só parada no chão — updateInteract do jogo web
 	var best = null; var bd := 1e9
 	if player.action.is_empty() and player.on_ground and not cutscene:
 		for it in interactables:
-			if not it["t"] in ["altar", "inscription", "npc"]:
+			if not it["t"] in ["altar", "inscription", "npc", "item"]:
 				continue
 			var p: Vector2 = it["p"]
 			var d: float = absf(p.x - pp.x) + absf(p.y - pp.y) * 0.5 + (14.0 if (p.x - pp.x) * player.facing < -4 else 0.0)
@@ -417,9 +419,10 @@ func _interact(_dt: float) -> void:
 			if d < rng and d < bd:
 				best = it; bd = d
 	if best != null:
-		var key: String = {"altar": "act_rest", "inscription": "act_read", "npc": "act_talk"}[best["t"]]
+		var key: String = {"altar": "act_rest", "inscription": "act_read", "npc": "act_talk", "item": "act_take"}[best["t"]]
 		var top: float = best["node"].top_y() if best["t"] == "npc" else best["p"].y - 30.0
-		hud.prompt = "[E/W] " + Data.t(key)
+		hud.prompt = Data.t(key)
+		hud.prompt_kind = {"altar": "interact", "inscription": "examine", "npc": "talk", "item": "interact"}[best["t"]]
 		hud.prompt_at = Vector2(best["p"].x, top)
 		if Input.is_action_just_pressed("interact") or Input.is_action_just_pressed("up"):
 			match best["t"]:
@@ -438,22 +441,32 @@ func _interact(_dt: float) -> void:
 					hud.read(Data.t(k2 + "_t"), Data.t(k2))
 				"npc":
 					best["node"].interact()
+				"item":
+					_take_item(best)
 	else:
 		hud.prompt = ""
 	for it in interactables:
 		match it["t"]:
-			"item":
-				if pp.distance_to(it["p"]) < 18:
-					GameState.flags[it["key"]] = true
-					GameState.ash += 25
-					fx.burst(it["p"], 16, Color(1, 0.8, 0.5), 80.0, true)
-					audio.sfx("pickup")
-					toast("Encontraste cinza antiga (+25).")
-					it["t"] = "taken"
 			"hint":
 				if it["r"].has_point(Vector2(player.cx, player.cy)) and not hint_shown.has(it["hint"]):
 					hint_shown[it["hint"]] = true
 					toast(Data.t(it["hint"]))
+
+## Pickup.interact do jogo web: dá o item, mostra-o e grava
+func _take_item(it: Dictionary) -> void:
+	var id: String = it["item"]
+	GameState.flags[it["key"]] = true
+	it["t"] = "taken"
+	GameState.give(id)
+	player.max_hp = GameState.max_hp
+	if id == "ash_heart": player.hp = player.max_hp
+	var cat := String(Data.items.get(id, {}).get("cat", ""))
+	audio.sfx("pickup" if cat in ["material", "consumable"] else "pickup_big")
+	fx.burst(it["p"], 16, Color(1, 0.8, 0.5), 80.0, true)
+	hud.item_get(id)
+	if id.begins_with("letter_"):
+		hud.read(Data.t("item_%s_name" % id), Data.t("letter_%s_text" % id.trim_prefix("letter_")), true)
+	GameState.save()
 
 # ------------------------------------------------------------------ chefe
 func _boss_logic() -> void:
@@ -474,7 +487,8 @@ func on_boss_defeated(b) -> void:
 	hud.boss = null
 	Audio.stop_music(1.2)
 	_refresh_doors()
-	toast("O Coveiro caiu. Recebeste o Passo de Cinza: carrega em Esquivar no ar.")
+	hud.item_get("ab_dash")
+	toast(Data.t("tut_dash"))
 	GameState.save()
 
 func on_player_dead() -> void:
