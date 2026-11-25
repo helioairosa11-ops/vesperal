@@ -24,6 +24,20 @@ func _ready() -> void:
 		add_child(at)
 		return
 	_show_menu()
+	if OS.get_cmdline_user_args().has("--menushot"):
+		var d := OS.get_environment("SHOTS")
+		await get_tree().create_timer(1.5).timeout
+		get_viewport().get_texture().get_image().save_png(d + "/menu.png")
+		Input.action_press("ui_down"); await get_tree().process_frame; Input.action_release("ui_down")
+		var ev := InputEventAction.new(); ev.action = "ui_down"; ev.pressed = true; Input.parse_input_event(ev)
+		await get_tree().create_timer(0.6).timeout
+		get_viewport().get_texture().get_image().save_png(d + "/menu2.png")
+		get_tree().quit()
+
+func _unhandled_key_input(e: InputEvent) -> void:
+	if e is InputEventKey and e.pressed and not e.echo and e.physical_keycode == KEY_F11:
+		var fs := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
+		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if fs else DisplayServer.WINDOW_MODE_FULLSCREEN)
 
 func _setup_input() -> void:
 	for a in KEYS:
@@ -40,74 +54,17 @@ func _setup_input() -> void:
 		InputMap.action_add_event(pair[0], m)
 
 func _show_menu() -> void:
-	menu = Control.new()
-	menu.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(menu)
-	var bg := TextureRect.new()
-	bg.texture = load("res://art/bg/menu.jpg")
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	menu.add_child(bg)
-	var box := VBoxContainer.new()
-	box.set_anchors_preset(Control.PRESET_CENTER)
-	box.alignment = BoxContainer.ALIGNMENT_CENTER
-	box.add_theme_constant_override("separation", 18)
-	box.position = Vector2(-260, -330)
-	box.custom_minimum_size = Vector2(520, 660)
-	menu.add_child(box)
-	var logo := TextureRect.new()
-	logo.texture = load("res://art/ui/logo_v.png")
-	logo.custom_minimum_size = Vector2(260, 263)
-	logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	box.add_child(logo)
-	var title := Label.new()
-	title.text = "VESPERAL"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_override("font", load("res://art/fonts/Cinzel-Bold.woff2"))
-	title.add_theme_font_size_override("font_size", 64)
-	title.add_theme_color_override("font_color", Color("#e8d0a8"))
-	title.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
-	box.add_child(title)
-	var sub := Label.new()
-	sub.text = "A Última Chama"
-	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sub.add_theme_font_override("font", load("res://art/fonts/EBGaramond-Regular.woff2"))
-	sub.add_theme_font_size_override("font_size", 30)
-	sub.add_theme_color_override("font_color", Color("#c8a880"))
-	box.add_child(sub)
-	var first: Button = null
-	if GameState.has_save():
-		first = _button(box, "Continuar", func(): GameState.load_game(); _start_world())
-	var nb := _button(box, "Novo Jogo", func(): GameState.new_game(); _start_world())
-	if first == null:
-		first = nb
-	_button(box, "Sair", func(): get_tree().quit())
-	first.grab_focus.call_deferred()
-
-func _button(parent: Control, text: String, cb: Callable) -> Button:
-	var b := Button.new()
-	b.text = text
-	b.custom_minimum_size = Vector2(340, 56)
-	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	var f := load("res://art/fonts/Cinzel-Bold.woff2")
-	b.add_theme_font_override("font", f)
-	b.add_theme_font_size_override("font_size", 26)
-	for st in ["normal", "hover", "pressed", "focus"]:
-		var sb := StyleBoxTexture.new()
-		sb.texture = load("res://art/ui/btn_focus.png" if st in ["hover", "focus"] else "res://art/ui/btn.png")
-		b.add_theme_stylebox_override(st, sb)
-	b.add_theme_color_override("font_color", Color("#d8c4a4"))
-	b.add_theme_color_override("font_hover_color", Color("#fff0d0"))
-	b.add_theme_color_override("font_focus_color", Color("#fff0d0"))
-	b.pressed.connect(cb)
-	parent.add_child(b)
-	return b
+	var layer := CanvasLayer.new()
+	add_child(layer)
+	menu = load("res://scripts/menu.gd").new()
+	layer.add_child(menu)
+	menu.continue_game.connect(func(): GameState.load_game(); _start_world())
+	menu.start_new.connect(func(): GameState.new_game(); _start_world())
 
 func _start_world() -> void:
 	if menu:
-		menu.queue_free(); menu = null
+		menu.get_parent().queue_free(); menu = null
+	Audio.set_ambience("")
 	world = preload("res://scripts/world.gd").new()
 	add_child(world)
 	world.start(GameState.room)

@@ -27,6 +27,7 @@ var shake_t := 0.0
 var acc := 0.0
 var dead_t := 0.0
 var flash_c := Color(0, 0, 0, 0)
+var hurt := 0.0
 var weather: Array = []
 var hint_shown: Dictionary = {}
 
@@ -53,7 +54,7 @@ func _ready() -> void:
 	props_node.draw.connect(_draw_props)
 	actors = Node2D.new(); actors.z_index = 5; add_child(actors)
 	fx = preload("res://scripts/fx.gd").new(); add_child(fx)
-	audio = preload("res://scripts/sfx.gd").new(); add_child(audio)
+	audio = Audio
 	cam = Camera2D.new(); add_child(cam)
 	cam.position_smoothing_enabled = true; cam.position_smoothing_speed = 7.0
 	hud = preload("res://scripts/hud.gd").new(); hud.world = self; add_child(hud)
@@ -64,7 +65,7 @@ func start(room_id: String) -> void:
 
 func _cam_zoom() -> void:
 	var vs := get_viewport().get_visible_rect().size
-	var z := vs.y / 360.0
+	var z := vs.y / 360.0 * 1.4
 	cam.zoom = Vector2(z, z)
 
 # ------------------------------------------------------------------ salas
@@ -82,9 +83,11 @@ func load_room(id: String, global_pos: Vector2) -> void:
 	GameState.room = id
 	var reg: Dictionary = room.reg
 	# escuridão e cor da região
-	var dk: float = reg.get("dark", 0.5)
+	# igual a G.beginLights(dark da sala ou da região, darkColor): véu escuro com a cor da região
+	var dk: float = room.def.get("dark", reg.get("dark", 0.5))
 	var dc: Color = Data.color(reg.get("darkColor", "#07060c"))
-	modulate_node.color = Color(1, 1, 1).lerp(dc.lightened(0.35), dk * 0.75)
+	modulate_node.color = Color(1, 1, 1).lerp(dc, minf(0.96, dk))
+	hud.tint = Data.color(reg.get("tint", "rgba(0,0,0,0)"))
 	var bgk := "sanct" if reg.get("bg", "") == "sanct" else String(reg.get("bg", "city"))
 	var bgp := "res://art/bg/%s.jpg" % bgk
 	bg_rect.texture = Data.tex(bgp) if ResourceLoader.exists(bgp) else Data.tex("res://art/bg/city.jpg")
@@ -111,6 +114,8 @@ func load_room(id: String, global_pos: Vector2) -> void:
 	_spawn_entities()
 	props_node.queue_redraw()
 	_init_weather()
+	Audio.play_music(String(room.def.get("music", reg.get("music", "r1"))))
+	Audio.set_ambience(String(room.def.get("amb", reg.get("amb", "r1"))))
 	if room.def.get("area", "") != "":
 		hud.banner(Data.t(String(room.def["area"])))
 	else:
@@ -257,6 +262,8 @@ func _process(delta: float) -> void:
 	props_node.queue_redraw()
 	flash_c.a = maxf(0.0, flash_c.a - delta * 2.0)
 	hud.flash = flash_c
+	hurt = maxf(0.0, hurt - delta * 2.2)
+	hud.hurt = hurt
 
 # ------------------------------------------------------------------ combate
 func _combat() -> void:
@@ -270,6 +277,7 @@ func _combat() -> void:
 				continue
 			if box["rect"].intersects(a.hurtbox()) and not a.already_hit(box["id"]):
 				if a.on_hit(box):
+					GameState.lume = minf(100.0, GameState.lume + 7.0)
 					hitstop(box.get("hitstop", 0.05))
 					player.on_hit_enemy(box)
 		# urnas
@@ -279,7 +287,7 @@ func _combat() -> void:
 				fx.burst(it["p"] + Vector2(0, -8), 14, Color(0.55, 0.45, 0.38), 110.0)
 				fx.ash_orbs(it["p"] + Vector2(0, -8), 2)
 				GameState.ash += 3
-				audio.sfx("kill", 0.6)
+				audio.sfx("break", 0.8)
 	# golpes dos inimigos na protagonista
 	for a in list:
 		if a == player or not is_instance_valid(a) or not ("attack_boxes" in a):
@@ -322,7 +330,7 @@ func _interact(_dt: float) -> void:
 						player.burn = {}
 						GameState.save()
 						fx.burst(it["p"] + Vector2(0, -30), 30, Color(1, 0.7, 0.35), 90.0, true)
-						audio.sfx("heal")
+						audio.sfx("rest")
 						toast("A chama reconhece-te. Jogo gravado.")
 			"inscription":
 				if pp.distance_to(it["p"]) < 30:
@@ -335,7 +343,7 @@ func _interact(_dt: float) -> void:
 					GameState.flags[it["key"]] = true
 					GameState.ash += 25
 					fx.burst(it["p"], 16, Color(1, 0.8, 0.5), 80.0, true)
-					audio.sfx("heal", 0.6)
+					audio.sfx("pickup")
 					toast("Encontraste cinza antiga (+25).")
 					it["t"] = "taken"
 			"hint":
@@ -353,13 +361,15 @@ func _boss_logic() -> void:
 		boss.visible = true
 		hud.boss = boss
 		hud.banner(Data.t("boss_coveiro"))
+		Audio.play_music("sb_coveiro", 0.4)
 		_refresh_doors()
 
 func on_boss_defeated(b) -> void:
-	audio.sfx("roar"); shake(0.8); flash_screen(Color.WHITE, 0.6); hitstop(0.4)
+	audio.sfx("boss_die"); shake(0.8); flash_screen(Color.WHITE, 0.6); hitstop(0.4)
 	fx.burst(Vector2(b.cx, b.cy), 60, Color(1, 0.7, 0.4), 220.0, true)
 	boss_active = false
 	hud.boss = null
+	Audio.stop_music(1.2)
 	_refresh_doors()
 	toast("O Coveiro caiu. Recebeste o Passo de Cinza: carrega em Esquivar no ar.")
 	GameState.save()

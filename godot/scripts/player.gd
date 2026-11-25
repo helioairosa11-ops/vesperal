@@ -46,6 +46,7 @@ var afterimages: Array = []
 var parry_flash := 0.0
 var heal_glow := 0.0
 var pending_hit: Dictionary = {}
+var step_t := 0.0
 var light: PointLight2D
 
 func _ready() -> void:
@@ -81,6 +82,7 @@ func tick(dt: float) -> void:
 	combo_t = maxf(0.0, combo_t - dt)
 	wall_lock = maxf(0.0, wall_lock - dt)
 	parry_flash = maxf(0.0, parry_flash - dt * 3.0)
+	GameState.lume = minf(100.0, GameState.lume + dt * 0.6)
 	heal_glow = maxf(0.0, heal_glow - dt)
 	jump_buf = maxf(0.0, jump_buf - dt)
 	attack_buf = maxf(0.0, attack_buf - dt)
@@ -173,7 +175,6 @@ func tick(dt: float) -> void:
 			_jump(C["WALL_JVY"])
 		elif GameState.abilities.get("double", false) and not double_used:
 			double_used = true; _jump(C["DOUBLE"])
-			world.fx.burst(Vector2(cx, bottom), 10, Color(1, 0.8, 0.55), 90.0)
 	if Input.is_action_just_released("jump") and vel.y < 0:
 		vel.y *= C["JUMP_CUT"]
 	var was_ground := on_ground
@@ -181,8 +182,15 @@ func tick(dt: float) -> void:
 	var res := physics(dt)
 	if res["landed"] and not was_ground and fall_v > 200:
 		land_t = 0.18
-		world.fx.dust(Vector2(cx, bottom), 6 + int(fall_v / 80.0))
+		world.audio.sfx("land", 0.7)
+		if fall_v > 380:
+			world.fx.dust(Vector2(cx, bottom), 4)
 	air_t = 0.0 if on_ground else air_t + dt
+	if on_ground and absf(vel.x) > 60 and action.is_empty():
+		step_t -= dt * absf(vel.x) / 160.0
+		if step_t <= 0:
+			step_t = 0.3
+			world.audio.sfx("step_stone", 0.35)
 	_update_action(dt)
 	# perigos (espinhos, lava)
 	var tx := floori(cx / 20.0)
@@ -249,7 +257,6 @@ func _start_dodge(ax: float) -> void:
 	iframes = maxf(iframes, 0.24)
 	dodge_cd = 0.32
 	world.audio.sfx("dodge")
-	world.fx.dust(Vector2(cx, bottom), 6)
 
 func _start_parry() -> void:
 	action = {"type": "parry", "t": 0.0, "phase": "act", "window": C["PARRY"], "dur": 0.38, "success": false, "can_turn": true}
@@ -328,6 +335,7 @@ func _parried(box: Dictionary) -> void:
 	action = {"type": "parry", "t": 0.0, "phase": "act", "window": 0.0, "dur": 0.3, "success": true, "can_turn": false}
 	riposte_t = 0.9
 	parry_flash = 1.0
+	GameState.lume = minf(100.0, GameState.lume + 25.0)
 	iframes = maxf(iframes, 0.2)
 	var src = box.get("src")
 	var p := Vector2(cx + facing * 14, cy - 4)
@@ -361,7 +369,7 @@ func _take_damage(box: Dictionary) -> void:
 	action = {"type": "hurt", "t": 0.0}
 	world.fx.blood(Vector2(cx, cy), 12, dir)
 	world.hitstop(0.08); world.shake(0.3)
-	world.audio.sfx("hurt")
+	world.audio.sfx("hurt"); world.flash_screen(Color("#a01010"), 0.24); world.hurt = 1.0
 	if hp <= 0:
 		_die(); return
 	if is_fire(box):
@@ -385,6 +393,7 @@ func _update_burn(dt: float) -> void:
 func _die() -> void:
 	dead = true
 	action = {"type": "dead", "t": 0.0}
+	world.audio.sfx("death")
 	world.on_player_dead()
 
 func on_hit_enemy(box: Dictionary) -> void:

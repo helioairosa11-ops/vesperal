@@ -108,7 +108,7 @@ func _on_act(nm: String, _s: Dictionary) -> void:
 		"sweep":
 			world.audio.sfx("swing_heavy")
 		"clods":
-			world.audio.sfx("swing_heavy")
+			world.audio.sfx("swing")
 			var n := 3 if phase > 0 else 2
 			var dir := signf(player.cx - cx)
 			if dir == 0:

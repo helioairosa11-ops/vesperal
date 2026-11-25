@@ -6,6 +6,10 @@ var world
 var boss = null
 var prompt := ""
 var flash := Color(0, 0, 0, 0)
+var hurt := 0.0
+var tint := Color(0, 0, 0, 0)
+var vignette: Texture2D
+var red_edges: Texture2D
 var ghost := 100.0
 var boss_ghost := 1.0
 var toasts: Array = []
@@ -29,6 +33,21 @@ func _ready() -> void:
 	c.draw.connect(_draw_hud)
 	font_title = load("res://art/fonts/Cinzel-Bold.woff2")
 	font_body = load("res://art/fonts/EBGaramond-Regular.woff2")
+	# margens vermelhas da ferida (redEdges do jogo web)
+	var g := Gradient.new()
+	g.offsets = PackedFloat32Array([0.0, 0.265, 0.6, 1.0])
+	g.colors = PackedColorArray([Color(0.47, 0, 0, 0), Color(0.47, 0, 0, 0), Color(0.59, 0.024, 0.04, 0.35), Color(0.75, 0.04, 0.08, 0.95)])
+	var gt := GradientTexture2D.new()
+	gt.gradient = g; gt.fill = GradientTexture2D.FILL_RADIAL; gt.width = 160; gt.height = 90
+	gt.fill_from = Vector2(0.5, 0.5); gt.fill_to = Vector2(0.5 + 98.0 / 160.0, 0.5)
+	red_edges = gt
+	# G.vignette(0.55, tint): radial de 0.35·altura a 0.62·largura
+	var vg := Gradient.new()
+	vg.offsets = PackedFloat32Array([0.0, 1.0]); vg.colors = PackedColorArray([Color(0, 0, 0, 0), Color(0, 0, 0, 0.55)])
+	var vt := GradientTexture2D.new()
+	vt.gradient = vg; vt.fill = GradientTexture2D.FILL_RADIAL; vt.width = 160; vt.height = 90
+	vt.fill_from = Vector2(0.5, 0.5); vt.fill_to = Vector2(0.5 + 0.62, 0.5)
+	vignette = vt
 
 func toast(s: String) -> void:
 	if s == "":
@@ -63,6 +82,26 @@ func _unhandled_input(e: InputEvent) -> void:
 			read_body = ""; read_title = ""
 			get_viewport().set_input_as_handled()
 
+func _flame(at: Vector2, sc: float, tt: float, k: float) -> void:
+	var f1 := sin(tt * 9.0) * 0.6 + sin(tt * 23.0) * 0.3
+	var f2 := sin(tt * 13.0 + 1.0)
+	for i in 4:
+		c.draw_circle(at + Vector2(0, -2 * sc), 9.0 * sc * (1.0 - i * 0.22), Color(1, 0.6, 0.25, (0.35 + 0.25 * k) * 0.18))
+	c.draw_colored_polygon(_flame_poly(at, sc, 2.4, 6.4 + f2 * 0.6, f1 * 0.6, 1.2), Color("#ff7a2a"))
+	c.draw_colored_polygon(_flame_poly(at, sc, 1.2, 4.2 + f2 * 0.4, f1 * 0.3, 0.6), Color("#ffe0a0"))
+
+func _flame_poly(at: Vector2, s: float, hw: float, h: float, tip: float, bot: float) -> PackedVector2Array:
+	# curvas quadráticas da chama do HUD web, amostradas
+	var pts := PackedVector2Array()
+	var a0 := at + Vector2(-hw, 0) * s
+	var t1 := at + Vector2(tip, -h) * s
+	var a1 := at + Vector2(hw, 0) * s
+	var q := func(p0: Vector2, c0: Vector2, p1: Vector2, u: float) -> Vector2: return p0.lerp(c0, u).lerp(c0.lerp(p1, u), u)
+	for i in 8: pts.append(q.call(a0, at + Vector2(-hw * 1.17, -h * 0.47) * s, t1, i / 8.0))
+	for i in 8: pts.append(q.call(t1, at + Vector2(hw * 1.17, -h * 0.47) * s, a1, i / 8.0))
+	for i in 8: pts.append(q.call(a1, at + Vector2(0, bot) * s, a0, i / 8.0))
+	return pts
+
 func _img(n: String) -> Texture2D:
 	return Data.tex("res://art/ui/%s.png" % n)
 
@@ -75,11 +114,35 @@ func _draw_hud() -> void:
 	var p = world.player
 	if p == null:
 		return
+	# véus de ecrã por baixo do HUD (ordem do jogo web: vinheta, ferida, clarão)
+	if tint.a > 0:
+		c.draw_rect(Rect2(0, 0, W, 360), Color(tint, tint.a * 0.1))
+	c.draw_texture_rect(vignette, Rect2(0, 0, W, 360), false)
+	if hurt > 0.01:
+		c.draw_texture_rect(red_edges, Rect2(0, 0, W, 360), false, Color(1, 1, 1, minf(1.0, hurt) * 0.75))
+	if flash.a > 0:
+		c.draw_rect(Rect2(0, 0, W, 360), flash)
 	var tsec := Time.get_ticks_msec() / 1000.0
+	# ---- medalhão e Lume
+	var mx := 8.0
+	var my := 6.0
+	var C := Vector2(mx + 26, my + 26)
+	c.draw_texture_rect(_img("hud_medallion"), Rect2(mx, my, 52, 52), false)
+	var lk := clampf(GameState.lume / 100.0, 0, 1)
+	var ready := GameState.lume >= 33
+	c.draw_arc(C, 12.6, 0, TAU, 48, Color(0.35, 0.2, 0.12, 0.55), 2.4, true)
+	if lk > 0.005:
+		var pulse := 0.75 + 0.25 * sin(tsec * 4.0) if ready else 0.55
+		c.draw_arc(C, 12.6, -PI / 2, -PI / 2 + TAU * lk, 48, Color(1, 0.55, 0.2, 0.5 * pulse), 4.6, true)
+		c.draw_arc(C, 12.6, -PI / 2, -PI / 2 + TAU * lk, 48, Color("#ffcf80") if ready else Color("#c88a50"), 1.8, true)
+	for i in 3:
+		var an := -PI / 2 + TAU * i / 3.0
+		c.draw_circle(C + Vector2(cos(an), sin(an)) * 12.6, 1.1, Color("#1a1014"))
+	_flame(C + Vector2(0, 4), 1.15 + lk * 0.35, tsec, lk)
 	# ---- barra de vida
-	var bw := 140.0
-	var bx := 14.0
-	var by := 10.0
+	var bw: float = 124.0 + 16.0 * (float(p.max_hp) - 100.0) / 25.0
+	var bx := mx + 46.0
+	var by := C.y - 16.4
 	var ix := bx + 27.2
 	var iy := by + 13.2
 	var ih := 6.4
@@ -170,8 +233,6 @@ func _draw_hud() -> void:
 		var a3 := clampf(died_t * 1.2, 0, 0.85)
 		c.draw_rect(Rect2(0, 0, W, 360), Color(0.04, 0, 0, a3))
 		_text(font_title, "A CHAMA APAGOU-SE", Vector2(W / 2.0, 180), 22, Color(0.8, 0.2, 0.15, clampf(died_t, 0, 1)), true)
-	if flash.a > 0:
-		c.draw_rect(Rect2(0, 0, W, 360), flash)
 
 ## texto desenhado à resolução real (sem esticar letras pequenas)
 func _text(f: Font, s: String, at: Vector2, size: int, col: Color, center := false) -> void:

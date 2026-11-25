@@ -151,7 +151,7 @@ func attack(nm: String) -> void:
 	atk = {"name": nm, "s": s, "t": 0.0, "phase": "wind", "id": Actor.new_attack_id()}
 	face()
 	if s.get("tell", "") == "red":
-		world.audio.sfx("danger")
+		world.audio.sfx("danger_tell", 0.7)
 
 # ------------------------------------------------------------------ ciclo
 func tick(dt: float) -> void:
@@ -219,10 +219,11 @@ func _on_act(nm: String, s: Dictionary) -> void:
 		world.shake(s["shake"]); world.audio.sfx("crush")
 		world.fx.dust(Vector2(cx + facing * 26, bottom), 10)
 	else:
-		world.audio.sfx("swing_enemy")
+		world.audio.sfx(String(s.get("sfx", "swing")))
 	if kind == "wisp" and nm == "spit":
 		var a := (Vector2(player.cx, player.cy) - Vector2(cx, cy)).normalized()
-		world.spawn_projectile({"pos": Vector2(cx, cy), "vel": a * 150.0, "size": Vector2(9, 9), "dmg": 10.0, "kind": "fire", "fire": true, "life": 3.0})
+		world.audio.sfx("shoot")
+		world.spawn_projectile({"pos": Vector2(cx + facing * 2, cy + 2), "vel": a * 150.0, "size": Vector2(9, 9), "dmg": 12.0, "kind": "orb", "color": Color("#ff9040"), "trail": true, "life": 4.0})
 	if kind == "wisp" and nm == "dive":
 		var a2 := (Vector2(player.cx, player.cy) - Vector2(cx, cy)).normalized()
 		vel = a2 * 260.0
@@ -337,7 +338,8 @@ func on_hit(box: Dictionary) -> bool:
 	elif not is_heavy() and not atk.is_empty() and atk["phase"] == "wind":
 		atk = {}; cool = 0.4
 	world.fx.hit(Vector2(cx, cy - size.y * 0.1), -signf(box["src"].cx - cx))
-	world.audio.sfx("hit")
+	world.audio.sfx("hit_heavy" if box.get("kind", "") in ["heavy", "riposte"] else "hit")
+	world.audio.sfx("enemy_hurt", 0.5)
 	if hp <= 0:
 		die()
 	return true
@@ -367,7 +369,7 @@ func die() -> void:
 	GameState.ash += ash_drop
 	world.fx.burst(Vector2(cx, cy), 20, Color(0.75, 0.68, 0.62), 90.0)
 	world.fx.ash_orbs(Vector2(cx, cy), 5)
-	world.audio.sfx("kill")
+	world.audio.sfx("enemy_die")
 	get_tree().create_timer(1.6).timeout.connect(func(): if is_instance_valid(self): queue_free())
 
 # ------------------------------------------------------------------ desenho

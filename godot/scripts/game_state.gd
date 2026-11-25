@@ -6,6 +6,7 @@ var hp := 100
 var flasks := 3
 var max_flasks := 3
 var ash := 0
+var lume := 0.0
 var bosses: Dictionary = {}
 var flags: Dictionary = {}
 var abilities: Dictionary = {"dash": false, "double": false}
@@ -16,7 +17,7 @@ var altar_room := ""
 const SAVE := "user://save.json"
 
 func new_game() -> void:
-	max_hp = 100; hp = 100; flasks = 3; max_flasks = 3; ash = 0
+	max_hp = 100; hp = 100; flasks = 3; max_flasks = 3; ash = 0; lume = 0.0
 	bosses = {}; flags = {}; abilities = {"dash": false, "double": false}
 	room = "r1_wake"; spawn = Vector2(-1, -1); altar_room = ""
 
