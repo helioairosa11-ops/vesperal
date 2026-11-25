@@ -58,6 +58,16 @@ func _ready() -> void:
 		await get_tree().create_timer(0.6).timeout; shot.call("g9_notes")
 		get_tree().quit()
 		return
+	if OS.get_cmdline_user_args().has("--clicktest"):
+		await get_tree().create_timer(1.0).timeout
+		UI.open_settings(); await get_tree().create_timer(0.5).timeout
+		var r: Rect2 = UI._close_r
+		var ev := InputEventMouseButton.new(); ev.button_index = MOUSE_BUTTON_LEFT; ev.pressed = true; var wp := r.get_center() * (Vector2(DisplayServer.window_get_size()) / get_viewport().get_visible_rect().size); ev.position = wp; ev.global_position = wp
+		Input.parse_input_event(ev)
+		await get_tree().create_timer(0.3).timeout
+		print("CLICKTEST open_after_click=", UI.is_open(), " close_rect=", r, " csize=", UI.c.size)
+		get_tree().quit()
+		return
 	if OS.get_cmdline_user_args().has("--menushot"):
 		var d := OS.get_environment("SHOTS")
 		await get_tree().create_timer(1.5).timeout

@@ -225,6 +225,10 @@ func close_all() -> void:
 
 func _process(delta: float) -> void:
 	t += delta
+	# um Control dentro de um CanvasLayer não herda o tamanho do ecrã: sem isto o rato não lhe chega
+	var vs := get_viewport().get_visible_rect().size
+	if c.size != vs:
+		c.position = Vector2.ZERO; c.size = vs
 	if not stack.is_empty():
 		stack.back()["t"] += delta
 	c.queue_redraw()
