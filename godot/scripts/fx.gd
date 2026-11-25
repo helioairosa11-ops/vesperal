@@ -180,11 +180,11 @@ func stun_at(x: float, y: float) -> void:
 		emit({"x": x + cos(a) * 6, "y": y + sin(a) * 3, "vx": cos(a) * 40, "vy": -randf_range(30, 70), "drag": 2.5, "life": randf_range(0.5, 0.9), "size": randf_range(0.8, 1.4), "color": ["#fff4d0", "#ffd890"].pick_random(), "add": true, "shrink": true})
 
 ## um morto de cinza desfaz-se (chamado a cada passo enquanto o corpo se desfaz)
-func dissolve(e, ember = "#ff9040") -> void:
+func dissolve(e, ember_col = "#ff9040") -> void:
 	if randf() < 0.8:
 		emit({"x": e.cx + randf_range(-e.size.x / 2, e.size.x / 2), "y": e.pos.y + randf_range(e.size.y * 0.2, e.size.y), "vx": randf_range(-12, 12), "vy": randf_range(-40, -12), "drag": 1.0, "life": randf_range(0.7, 1.2), "size": randf_range(1.2, 2.4), "grow": 1.4, "color": ["#5a5458", "#6c6468", "#4a4446"].pick_random(), "alpha": 0.3, "kind": "puff"})
 	if randf() < 0.5:
-		emit({"x": e.cx + randf_range(-e.size.x / 2, e.size.x / 2), "y": e.pos.y + randf_range(0, e.size.y), "vx": randf_range(-15, 15), "vy": randf_range(-55, -20), "drag": 0.8, "life": randf_range(0.6, 1.1), "size": randf_range(0.6, 1.1), "color": [ember, "#ffd080"].pick_random(), "add": true, "shrink": true})
+		emit({"x": e.cx + randf_range(-e.size.x / 2, e.size.x / 2), "y": e.pos.y + randf_range(0, e.size.y), "vx": randf_range(-15, 15), "vy": randf_range(-55, -20), "drag": 0.8, "life": randf_range(0.6, 1.1), "size": randf_range(0.6, 1.1), "color": [ember_col, "#ffd080"].pick_random(), "add": true, "shrink": true})
 
 # ------------------------------------------------------------------ atalhos antigos (mesmos efeitos do jogo web)
 func burst(p: Vector2, n: int, c: Color, speed := 100.0, add := false) -> void:

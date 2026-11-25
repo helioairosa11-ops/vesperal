@@ -14,7 +14,7 @@ var range_px := 34.0
 var sh: Dictionary = {}
 var light: PointLight2D
 var glow_tex: Texture2D
-var seed := 0.0
+var anim_seed := 0.0
 
 const LIGHTS := {"ione": ["#ffd8a0", 70.0], "hrolf": ["#ff9040", 60.0], "maren": ["#ffd090", 60.0], "teodoro": ["#c8c0ff", 50.0]}
 
@@ -25,7 +25,7 @@ func setup(d: Dictionary, w) -> void:
 	bottom = (d["y"] + 1) * 20.0
 	facing = int(d.get("face", -1))
 	sh = Data.sheet("npc_" + nid.trim_suffix("_body"))
-	seed = randf() * 3.0
+	anim_seed = randf() * 3.0
 	position = Vector2(cx, bottom)
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	if LIGHTS.has(nid):
@@ -66,7 +66,7 @@ func _say(lines: Array, choices := [], cb := Callable()) -> void:
 
 # ------------------------------------------------------------------ IONE (npcs.js N.ione)
 func _talk_ione() -> void:
-	var I := func(k: String) -> Dictionary: return {"s": "npc_ione", "k": k}
+	var I := func(key: String) -> Dictionary: return {"s": "npc_ione", "k": key}
 	if not GameState.flags.get("met_ione", false):
 		# Story.meetIone: música do momento, cinco falas, e a dica do Altar
 		Audio.play_music("event")
@@ -88,7 +88,7 @@ func _talk_ione() -> void:
 
 # ------------------------------------------------------------------ HROLF (npcs.js N.hrolf, início)
 func _talk_hrolf() -> void:
-	var H := func(k: String) -> Dictionary: return {"s": "npc_hrolf", "k": k}
+	var H := func(key: String) -> Dictionary: return {"s": "npc_hrolf", "k": key}
 	var q: int = int(GameState.flags.get("q_hrolf", 0))
 	if q == 0:
 		_say([H.call("hrolf_meet1"), H.call("hrolf_meet2"), H.call("hrolf_meet3")], [], func(_c):
@@ -103,7 +103,7 @@ func _draw() -> void:
 	var A: Dictionary = sh["meta"]["anims"]
 	var dead := nid.ends_with("_body")
 	var an := "dead" if dead and A.has("dead") else ("talk" if talking and A.has("talk") else "idle")
-	var f := Data.frame(sh, an, t * float(A[an]["fps"]) + seed)
+	var f := Data.frame(sh, an, t * float(A[an]["fps"]) + anim_seed)
 	draw_set_transform(Vector2.ZERO, 0, Vector2(1 if dead else facing, 1))
 	Data.draw_frame(self, sh, f)
 	draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)

@@ -453,25 +453,25 @@ func _check_exit() -> void:
 	transition = {"t": 0.0, "phase": "out", "to": nb, "entry": bottom_g, "vel": player.vel}
 
 func _update_transition(dt: float) -> void:
-	var tr := transition
-	tr["t"] += dt
-	if tr["phase"] == "out":
-		hud.fade = minf(1.0, tr["t"] / 0.07)
-		if tr["t"] >= 0.07:
+	var trn := transition
+	trn["t"] += dt
+	if trn["phase"] == "out":
+		hud.fade = minf(1.0, trn["t"] / 0.07)
+		if trn["t"] >= 0.07:
 			var keep: Dictionary = {} if player.action.get("type", "") in ["dodge", "attack"] else player.action
-			var v: Vector2 = tr["vel"]
-			load_room(tr["to"], tr["entry"])
+			var v: Vector2 = trn["vel"]
+			load_room(trn["to"], trn["entry"])
 			player.vel = v
 			if v.y < 0:
 				player.vel.y = minf(v.y, -500.0) if player.cy < 40 else v.y
 			player.action = keep
-			tr["phase"] = "in"; tr["t"] = 0.0
+			trn["phase"] = "in"; trn["t"] = 0.0
 			GameState.room = room.id
 	else:
-		hud.fade = maxf(0.0, 1.0 - tr["t"] / 0.12)
+		hud.fade = maxf(0.0, 1.0 - trn["t"] / 0.12)
 		player.tick(dt)
 		fx.step(dt)
-		if tr["t"] >= 0.12:
+		if trn["t"] >= 0.12:
 			transition = {}; hud.fade = 0.0
 
 # ------------------------------------------------------------------ tempo (cinza a cair)

@@ -111,7 +111,7 @@ func _dlg_input(e: InputEvent) -> bool:
 	return false
 
 ## caixa do diálogo: .dialogue do css (largura min(92vw,760px), 5% do fundo, degradê escuro, linha dourada)
-func _draw_dialogue(W: float) -> void:
+func _draw_dialogue(_W: float) -> void:
 	if dlg.is_empty():
 		return
 	c.draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
@@ -130,19 +130,19 @@ func _draw_dialogue(W: float) -> void:
 		ch_h = 10.0 * u + dlg["choices"].size() * (sfs * 1.1 + 18.0 * u)
 	var bh := maxf(110.0 * u, 16.0 * u + (sfs + 6.0 * u if speaker != "" else 0.0) + maxf(full_h, tfs * 1.5 * 2.8) + ch_h + 26.0 * u)
 	var r := Rect2((vs.x - bw) / 2.0, vs.y * 0.95 - bh, bw, bh)
-	var fade := minf(1.0, dlg["t"] / 0.25)
-	var top := Color(10 / 255.0, 8 / 255.0, 12 / 255.0, 0.9 * fade); var bot := Color(6 / 255.0, 5 / 255.0, 8 / 255.0, 0.96 * fade)
+	var dfade := minf(1.0, dlg["t"] / 0.25)
+	var top := Color(10 / 255.0, 8 / 255.0, 12 / 255.0, 0.9 * dfade); var bot := Color(6 / 255.0, 5 / 255.0, 8 / 255.0, 0.96 * dfade)
 	c.draw_polygon(PackedVector2Array([r.position, r.position + Vector2(r.size.x, 0), r.end, r.position + Vector2(0, r.size.y)]), PackedColorArray([top, top, bot, bot]))
-	c.draw_rect(r, Color(214 / 255.0, 178 / 255.0, 120 / 255.0, 0.35 * fade), false, maxf(1.0, u))
+	c.draw_rect(r, Color(214 / 255.0, 178 / 255.0, 120 / 255.0, 0.35 * dfade), false, maxf(1.0, u))
 	var x := r.position.x + 22.0 * u; var y := r.position.y + 16.0 * u
 	if speaker != "":
 		var xx := x
 		for ch in speaker:
-			c.draw_string(font_title, Vector2(xx, y + sfs), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, int(sfs), Color(Color("#ffb050"), fade))
+			c.draw_string(font_title, Vector2(xx, y + sfs), ch, HORIZONTAL_ALIGNMENT_LEFT, -1, int(sfs), Color(Color("#ffb050"), dfade))
 			xx += font_title.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1, int(sfs)).x + sfs * 0.14
 		y += sfs + 6.0 * u
 	var italic := speaker == ""
-	c.draw_multiline_string(font_body, Vector2(x, y + tfs), text, HORIZONTAL_ALIGNMENT_CENTER if italic else HORIZONTAL_ALIGNMENT_LEFT, inner, int(tfs), -1, Color(Color("#e6d8c4") if italic else Color("#e9dfcf"), fade))
+	c.draw_multiline_string(font_body, Vector2(x, y + tfs), text, HORIZONTAL_ALIGNMENT_CENTER if italic else HORIZONTAL_ALIGNMENT_LEFT, inner, int(tfs), -1, Color(Color("#e6d8c4") if italic else Color("#e9dfcf"), dfade))
 	y += maxf(full_h, tfs * 1.5 * 2.8)
 	if dlg["wait"]:
 		y += 10.0 * u
