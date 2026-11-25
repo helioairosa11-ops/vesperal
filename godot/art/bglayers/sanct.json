@@ -1,0 +1,1 @@
+{"key": "sanct", "LW": 960, "LH": 360, "art": "sanct.jpg?v=20261125a", "sky": ["#100a0a", "#2a1a14", "#4a2a18"], "haze": "rgba(255,170,90,0.07)", "stoneDark": "#120d0b", "layers": [{"p": 0.1, "topRow": false, "anim": false, "w": 2160, "h": 810}, {"p": 0.35, "topRow": false, "anim": false, "w": 2160, "h": 810}]}

@@ -1,0 +1,1 @@
+{"id": "r1_belfry", "pw": 640, "ph": 720, "S": 4, "region": "r1", "interior": false, "tileS": 2.5, "flames": [], "lights": [{"x": 390, "y": 627, "r": 40, "c": "#ff9a40", "i": 0.8, "f": 1}, {"x": 310, "y": 654, "r": 55, "c": "#ffb060", "i": 0.85, "f": 1}], "front": [{"x": 123.7395179271698, "s": 0.08917044033296406, "top": false, "arena": false}], "dark": 0.5}

@@ -16,6 +16,10 @@ var reg: Dictionary = {}
 var broken: Dictionary = {}
 var dyn: Dictionary = {}      # tiles sólidos dinâmicos (portões fechados)
 var stone_tex: Texture2D
+var layers: Dictionary = {}
+var back_tex: Texture2D
+var tiles_tex: Texture2D
+var time := 0.0
 
 func setup(room_id: String) -> void:
 	id = room_id
@@ -35,6 +39,13 @@ func setup(room_id: String) -> void:
 	gy = float(def["y"]) * Data.CELL_H * T
 	reg = Data.region(String(def.get("region", "r1")))
 	stone_tex = Data.tex("res://art/tiles/stone.png")
+	# camadas gravadas do jogo web (tools/export_room_layers.py): fundo + adereços, tiles, chamas, luzes, primeiro plano
+	layers = {}
+	var lp := "res://art/rooms/%s.json" % room_id
+	if FileAccess.file_exists(lp):
+		layers = JSON.parse_string(FileAccess.get_file_as_string(lp))
+		back_tex = Data.tex("res://art/rooms/%s_back.png" % room_id)
+		tiles_tex = Data.tex("res://art/rooms/%s_tiles.png" % room_id)
 	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	queue_redraw()
@@ -179,7 +190,14 @@ func _solid_mask(tx: int, ty: int) -> bool:
 		return true
 	return SOLID.has(ch) and not broken.has(Vector2i(tx, ty))
 
+func _process(delta: float) -> void:
+	time += delta
+	if not layers.is_empty() and not layers.get("flames", []).is_empty():
+		queue_redraw()
+
 func _draw() -> void:
+	if not layers.is_empty():
+		_draw_layers(); return
 	var stone: Color = Data.color(reg.get("stone", "#2f2e36"))
 	var light: Color = Data.color(reg.get("stoneLight", "#5d5762"))
 	var dark: Color = Data.color(reg.get("stoneDark", "#121117"))
@@ -238,3 +256,51 @@ func _draw() -> void:
 				draw_rect(r, Color(0.15, 0.25, 0.32, 0.55))
 			elif ch == "L":
 				draw_rect(r, Color(1.0, 0.45, 0.1, 0.9))
+
+# ------------------------------------------------------------------ camadas do jogo web
+func _draw_layers() -> void:
+	var sz := size_px()
+	draw_texture_rect(back_tex, Rect2(Vector2.ZERO, sz), false)
+	# chamas dos adereços (Deco.flame / fireArt), animadas
+	for f in layers["flames"]:
+		if f["t"] == "flame":
+			_flame(float(f["x"]), float(f["y"]), float(f["s"]), float(f["seed"]))
+		elif f["t"] == "fire":
+			_fire_art(f["flames"], float(f["hk"]), float(f["seed"]))
+	draw_texture_rect(tiles_tex, Rect2(Vector2.ZERO, sz), false)
+	# blocos partidos (paredes falsas desfeitas): tapa com o fundo escuro
+	for b in broken:
+		draw_rect(Rect2(b.x * T, b.y * T, T, T), Color(0, 0, 0, 0))
+
+func _q(p0: Vector2, c0: Vector2, p1: Vector2, out: PackedVector2Array) -> void:
+	for i in 6:
+		var u := i / 6.0
+		out.append(p0.lerp(c0, u).lerp(c0.lerp(p1, u), u))
+
+## chama viva: gota com núcleo claro, a tremeluzir (deco.js flame)
+func _flame(x: float, y: float, s: float, sd: float) -> void:
+	var fv := sin(time * 13.0 + sd * 7.1) * 0.5 + sin(time * 21.0 + sd * 3.3) * 0.5
+	var hh := (2.6 + fv * 0.5) * s; var ww := 1.05 * s; var lean := sin(time * 5.0 + sd) * 0.35 * s
+	var pts := PackedVector2Array()
+	_q(Vector2(x - ww, y), Vector2(x - ww * 1.1, y - hh * 0.5), Vector2(x + lean, y - hh), pts)
+	_q(Vector2(x + lean, y - hh), Vector2(x + ww * 1.1, y - hh * 0.5), Vector2(x + ww, y), pts)
+	_q(Vector2(x + ww, y), Vector2(x, y + ww * 0.6), Vector2(x - ww, y), pts)
+	if not Geometry2D.triangulate_polygon(pts).is_empty():
+		draw_colored_polygon(pts, Color(1.0, 120 / 255.0, 40 / 255.0, 0.9))
+	var p2 := PackedVector2Array()
+	_q(Vector2(x - ww * 0.45, y), Vector2(x - ww * 0.5, y - hh * 0.4), Vector2(x + lean * 0.6, y - hh * 0.68), p2)
+	_q(Vector2(x + lean * 0.6, y - hh * 0.68), Vector2(x + ww * 0.5, y - hh * 0.4), Vector2(x + ww * 0.45, y), p2)
+	if not Geometry2D.triangulate_polygon(p2).is_empty():
+		draw_colored_polygon(p2, Color("#ffe9a8"))
+
+var _fx_art: Texture2D
+func _fire_art(flames: Array, hk: float, sd: float) -> void:
+	if _fx_art == null:
+		_fx_art = Data.tex("res://art/sprites/fx_art.png")
+	var cxs := 0.0; var by := -1e9; var mx := 0.0
+	for q in flames:
+		cxs += q[0]; by = maxf(by, q[1]); mx = maxf(mx, q[2])
+	cxs /= flames.size()
+	var i := 2 + (int(floor(time * 10.0 + sd * 17.0)) % 3)
+	var fh := mx * hk; var fw := 53.0 * fh / 81.0
+	draw_texture_rect_region(_fx_art, Rect2(cxs - fw / 2.0, by + fh * 0.12 - fh, fw, fh), Rect2(i * 53, 0, 53, 81), Color(1.4, 1.2, 1.0, 1))

@@ -9,12 +9,15 @@ var room: Room
 var player
 var actors: Node2D
 var props_node: Node2D
+var props_add: Node2D
 var fx
 var audio
 var hud
 var cam: Camera2D
 var modulate_node: CanvasModulate
 var bg_rect: TextureRect
+var backdrop
+var front
 var bg_layer: CanvasLayer
 var light_tex: Texture2D
 var boss = null
@@ -50,8 +53,19 @@ func _ready() -> void:
 	bg_rect.modulate = Color(0.62, 0.6, 0.66)
 	bg_layer.add_child(bg_rect)
 	modulate_node = CanvasModulate.new(); add_child(modulate_node)
+	# fundo da região no mesmo canvas do mundo (a escuridão e as luzes também lhe tocam, como no jogo web)
+	backdrop = preload("res://scripts/backdrop.gd").new(); backdrop.world = self; backdrop.z_index = -100
+	backdrop.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	add_child(backdrop)
+	front = preload("res://scripts/front.gd").new(); front.world = self; front.z_index = 40
+	add_child(front)
 	props_node = Node2D.new(); props_node.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST; add_child(props_node)
 	props_node.draw.connect(_draw_props)
+	props_add = Node2D.new()
+	var pam := CanvasItemMaterial.new(); pam.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	props_add.material = pam; props_add.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	add_child(props_add)
+	props_add.draw.connect(_draw_props_add)
 	actors = Node2D.new(); actors.z_index = 5; add_child(actors)
 	fx = preload("res://scripts/fx.gd").new(); fx.world = self; add_child(fx)
 	audio = Audio
@@ -194,14 +208,32 @@ func _spawn_entities() -> void:
 			"lastflame":
 				var L := PointLight2D.new(); L.texture = light_tex; L.color = Color(1, 0.6, 0.25); L.energy = 1.6; L.texture_scale = 2.4
 				L.position = Vector2(x * T + T / 2.0, y * T); room.add_child(L)
-	for pr in room.def.get("props", []):
+	if not room.layers.is_empty():
+		# luzes dos adereços gravadas do jogo web (Deco.lights): G.light(x, y, r, cor, i, tremor)
+		for Ld in room.layers.get("lights", []):
+			var PL := PointLight2D.new(); PL.texture = light_tex
+			PL.color = Data.color(String(Ld["c"])); PL.energy = float(Ld["i"]) * 1.2
+			PL.texture_scale = float(Ld["r"]) * 2.0 / 256.0 * 1.15
+			PL.position = Vector2(Ld["x"], Ld["y"])
+			if float(Ld.get("f", 0)) > 0:
+				PL.set_meta("flicker", true)
+			room.add_child(PL)
+		backdrop.use_region(String(room.layers["region"]))
+		front.items = room.layers.get("front", []); front.region = String(room.layers["region"])
+	else:
+		front.items = []
+	for pr in (room.def.get("props", []) if room.layers.is_empty() else []):
 		if pr["k"] in ["lamppost", "candelabra", "brazier", "lantern", "sconce", "candles"]:
 			var L2 := PointLight2D.new(); L2.texture = light_tex; L2.color = Color(1, 0.62, 0.3); L2.energy = 0.9; L2.texture_scale = 1.1
 			L2.position = Vector2(pr["x"] * T + T / 2.0, (pr["y"] + 1) * T - 40); room.add_child(L2)
 	for it in interactables:
 		if it["t"] == "altar":
-			var L3 := PointLight2D.new(); L3.texture = light_tex; L3.color = Color(1, 0.55, 0.25); L3.energy = 1.3; L3.texture_scale = 1.4
-			L3.position = it["p"] + Vector2(0, -30); room.add_child(L3)
+			# Altar.emitLight: G.light(cx, y, aceso ? 150 : 50, '#ffa040', aceso ? 1 : 0.4)
+			var lit: bool = GameState.flags.get("altar_" + String(it["id"]), false)
+			var L3 := PointLight2D.new(); L3.texture = light_tex; L3.color = Color("#ffa040")
+			L3.energy = 1.2 if lit else 0.5; L3.texture_scale = (150.0 if lit else 50.0) * 2.0 / 256.0 * 1.15
+			L3.position = it["p"] + Vector2(0, -26); room.add_child(L3)
+			it["light"] = L3
 
 func _door_shut(d: Dictionary) -> bool:
 	var o: String = d["open"]
@@ -289,9 +321,11 @@ func _process(delta: float) -> void:
 		cam.offset = Vector2.ZERO
 	# parallax do fundo: muito lento (é o plano mais longe)
 	var vs := get_viewport().get_visible_rect().size
+	bg_rect.visible = room.layers.is_empty()
 	bg_rect.size = vs * 1.25
 	bg_rect.position = Vector2(-cam.get_screen_center_position().x * 0.06, -cam.get_screen_center_position().y * 0.03) - vs * 0.05
 	props_node.queue_redraw()
+	props_add.queue_redraw()
 	flash_c.a = maxf(0.0, flash_c.a - delta * 2.0)
 	hud.flash = flash_c
 	hurt = maxf(0.0, hurt - delta * 2.2)
@@ -369,6 +403,7 @@ func _interact(_dt: float) -> void:
 		if Input.is_action_just_pressed("interact") or Input.is_action_just_pressed("up"):
 			match best["t"]:
 				"altar":
+					GameState.flags["altar_" + String(best["id"])] = true
 					GameState.altar_room = room.id
 					GameState.flasks = GameState.max_flasks
 					player.hp = player.max_hp; GameState.hp = GameState.max_hp
@@ -377,6 +412,7 @@ func _interact(_dt: float) -> void:
 					audio.sfx("rest")
 					fx.burst_o(player.cx, player.bottom - 10, 18, {"color": "#ffb050", "speed": 70.0, "life": 0.8, "size": 1.4, "add": true})
 				"inscription":
+					GameState.flags["ins_" + String(best["id"])] = true
 					var k2 := "ins_%s" % best["id"]
 					hud.read(Data.t(k2 + "_t"), Data.t(k2))
 				"npc":
@@ -494,7 +530,7 @@ func _draw_props() -> void:
 	var pm: Dictionary = Data.props
 	var ptex := Data.tex("res://art/sprites/props.png")
 	var S: float = pm.get("S", 4)
-	for pr in room.def.get("props", []):
+	for pr in (room.def.get("props", []) if room.layers.is_empty() else []):
 		var items = pm["items"].get(pr["k"])
 		if items == null:
 			continue
@@ -505,17 +541,22 @@ func _draw_props() -> void:
 		match it2["t"]:
 			"urn":
 				if it2["hp"] > 0:
-					_draw_prop_item("urn", it2["p"], ptex, S, pm)
+					_draw_prop_item("urn", it2["p"], ptex, S, pm, int(it2["p"].x / T) % 2 == 1)
 			"altar":
 				_draw_prop_item("altar", it2["p"], ptex, S, pm)
-				var fl := 1.0 + 0.15 * sin(Time.get_ticks_msec() / 120.0)
-				props_node.draw_circle(it2["p"] + Vector2(0, -36), 3.0 * fl, Color(1, 0.7, 0.3))
+				if not GameState.flags.get("altar_" + String(it2["id"]), false):
+					# apagado: só uma brasa a pulsar na taça (SpritesObj.altar)
+					props_node.draw_circle(it2["p"] + Vector2(0, -29 + 0.5), 1.3, Color(1, 0.38, 0.13, 0.35 + sin(Time.get_ticks_msec() / 500.0) * 0.2))
 			"inscription":
 				_draw_prop_item("inscription", it2["p"], ptex, S, pm)
 			"item":
-				var k := 0.6 + 0.4 * sin(Time.get_ticks_msec() / 200.0)
-				props_node.draw_circle(it2["p"], 3.5, Color(1, 0.8, 0.45, k))
-				props_node.draw_circle(it2["p"], 7.0, Color(1, 0.7, 0.4, 0.2 * k))
+				# SpritesObj.pickup: ponto claro a flutuar com quatro faúlhas a rodar
+				var tt := Time.get_ticks_msec() / 1000.0
+				var ip: Vector2 = it2["p"] + Vector2(0, sin(tt * 2.5) * 2.0)
+				props_node.draw_circle(ip, 2.4, Color("#fff6e0"))
+				for q in 4:
+					var an := tt * 1.5 + q * PI / 2.0
+					props_node.draw_rect(Rect2(ip + Vector2(cos(an), sin(an)) * 5.0 - Vector2(0.5, 0.5), Vector2(1, 1)), Color("#fff6e0"))
 	var gtex := Data.tex("res://art/sprites/grate.png")
 	for d in doors:
 		if d["k"] <= 0.01:
@@ -528,13 +569,39 @@ func _draw_props() -> void:
 	for w in weather:
 		props_node.draw_rect(Rect2(c + w["p"], Vector2(w["s"], w["s"])), Color(0.85, 0.8, 0.78, 0.55))
 
-func _draw_prop_item(k: String, p: Vector2, ptex: Texture2D, S: float, pm: Dictionary) -> void:
+func _draw_prop_item(k: String, p: Vector2, ptex: Texture2D, S: float, pm: Dictionary, flip := false) -> void:
 	var items = pm["items"].get(k)
 	if items == null:
-		props_node.draw_rect(Rect2(p - Vector2(6, 14), Vector2(12, 14)), Color(0.4, 0.35, 0.3))
 		return
 	var it: Array = items[0]
-	props_node.draw_texture_rect_region(ptex, Rect2(p - Vector2(it[4], it[5]) / S, Vector2(it[2], it[3]) / S), Rect2(it[0], it[1], it[2], it[3]))
+	props_node.draw_set_transform(p, 0, Vector2(-1 if flip else 1, 1))
+	props_node.draw_texture_rect_region(ptex, Rect2(-Vector2(it[4], it[5]) / S, Vector2(it[2], it[3]) / S), Rect2(it[0], it[1], it[2], it[3]))
+	props_node.draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
+
+## brilhos aditivos dos objetos: fogo pintado e auréola do altar aceso, runas por ler (SpritesObj do jogo web)
+func _draw_props_add() -> void:
+	if room == null:
+		return
+	var tt := Time.get_ticks_msec() / 1000.0
+	var fx_art: Texture2D = Data.tex("res://art/sprites/fx_art.png")
+	for it2 in interactables:
+		match it2["t"]:
+			"altar":
+				if GameState.flags.get("altar_" + String(it2["id"]), false):
+					# fireArt(flames=[[0,-29,3]], 5.2): fotogramas 2–4 do fogo pintado
+					var i := 2 + (int(floor(tt * 10.0 + 0.3 * 17.0)) % 3)
+					var hh := 3.0 * 5.2; var ww := 53.0 * hh / 81.0
+					var by: float = it2["p"].y - 29.0
+					props_add.draw_texture_rect_region(fx_art, Rect2(it2["p"].x - ww / 2.0, by + hh * 0.12 - hh, ww, hh), Rect2(i * 53, 0, 53, 81))
+					_glow(props_add, Vector2(it2["p"].x, by - 3), 30.0, Color("#ff9030"), 0.55)
+			"item":
+				_glow(props_add, it2["p"] + Vector2(0, sin(tt * 2.5) * 2.0), 16.0, Color("#ffd8a0"), 0.7)
+			"inscription":
+				if not GameState.flags.get("ins_" + String(it2["id"]), false):
+					_glow(props_add, it2["p"] + Vector2(0, -14), 18.0, Color("#8aa8ff"), 0.3 + sin(tt * 2.0) * 0.08)
+
+func _glow(ci: CanvasItem, at: Vector2, r: float, c: Color, a: float) -> void:
+	ci.draw_texture_rect(fx.radial, Rect2(at - Vector2(r, r), Vector2(r, r) * 2.0), false, Color(c, a))
 
 func _report_load(t0: int, id: String) -> void:
 	if OS.is_debug_build():

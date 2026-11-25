@@ -1,0 +1,1 @@
+{"key": "crypt", "LW": 960, "LH": 360, "art": "crypt.jpg?v=20261125a", "sky": ["#050508", "#101018", "#1a1a24"], "haze": "rgba(160,160,200,0.04)", "stoneDark": "#0c0c10", "layers": [{"p": 0.1, "topRow": true, "anim": false, "w": 2160, "h": 810}, {"p": 0.4, "topRow": false, "anim": false, "w": 2160, "h": 810}]}
