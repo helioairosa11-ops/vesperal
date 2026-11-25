@@ -76,7 +76,7 @@ with sync_playwright() as p:
     ids = [k for k in pg.evaluate("() => Object.keys(VS.ROOMS)") if k.startswith(PREFIX)]
     regions = set()
     for rid in ids:
-        o = pg.evaluate(JS, [rid, 4])
+        o = pg.evaluate(JS, [rid, 2.5])
         png(OUT / f'{rid}_tiles.png', o.pop('tiles')); png(OUT / f'{rid}_back.png', o.pop('back'))
         (OUT / f'{rid}.json').write_text(json.dumps(o, ensure_ascii=False), encoding='utf-8')
         regions.add(o['region'])

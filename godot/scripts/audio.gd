@@ -15,11 +15,13 @@ var intensity := 0
 func _ready() -> void:
 	for i in 16:
 		var p := AudioStreamPlayer.new()
+		p.bus = "SFX"
 		add_child(p)
 		players.append(p)
-	music_a = AudioStreamPlayer.new(); add_child(music_a)
-	music_b = AudioStreamPlayer.new(); add_child(music_b)
-	amb = AudioStreamPlayer.new(); add_child(amb)
+	music_a = AudioStreamPlayer.new(); music_a.bus = "Music"; add_child(music_a)
+	music_b = AudioStreamPlayer.new(); music_b.bus = "Music"; add_child(music_b)
+	amb = AudioStreamPlayer.new(); amb.bus = "Amb"; add_child(amb)
+	process_mode = Node.PROCESS_MODE_ALWAYS
 
 func _stream(path: String, loop := false) -> AudioStream:
 	if cache.has(path):

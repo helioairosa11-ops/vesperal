@@ -79,7 +79,7 @@ func start(room_id: String) -> void:
 
 func _cam_zoom() -> void:
 	var vs := get_viewport().get_visible_rect().size
-	var z := vs.y / 360.0 * 1.4
+	var z := vs.y / 360.0 * float(Settings.get_v("zoom"))
 	cam.zoom = Vector2(z, z)
 
 # ------------------------------------------------------------------ salas
@@ -265,6 +265,18 @@ func _refresh_doors() -> void:
 
 # ------------------------------------------------------------------ ciclo
 var transition: Dictionary = {}
+@warning_ignore("unused_signal")
+signal quit_to_menu
+
+func _unhandled_input(e: InputEvent) -> void:
+	if e.is_action_pressed("pause") and not UI.is_open() and not hud.dialogue_open() and hud.read_body == "":
+		UI.open_pause(self)
+		get_viewport().set_input_as_handled()
+
+func _notification(what: int) -> void:
+	# perder o foco da janela (Alt+Tab) põe o jogo em pausa, como num jogo de PC
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and not UI.is_open() and room != null and not OS.get_cmdline_user_args().has("--autotest"):
+		UI.open_pause(self)
 var npcs: Array = []
 var cutscene := false
 
@@ -289,6 +301,9 @@ func _physics_process(delta: float) -> void:
 		_update_transition(STEP); return
 	if hitstop_t > 0:
 		hitstop_t -= delta
+		for a in actors.get_children():
+			if a is Actor:
+				a.prev_pos = a.pos
 		return
 	_step(STEP)
 
@@ -312,8 +327,10 @@ func _step(dt: float) -> void:
 func _process(delta: float) -> void:
 	if room == null:
 		return
+	_cam_zoom()
 	var look: float = player.facing * 28.0
-	cam.position = Vector2(player.cx + look, player.cy - 20)
+	var pp: Vector2 = player.draw_anchor(player.size / 2.0)
+	cam.position = Vector2(pp.x + look, pp.y - 20)
 	if shake_t > 0:
 		shake_t = maxf(0.0, shake_t - delta)
 		cam.offset = Vector2(randf_range(-1, 1), randf_range(-1, 1)) * 6.0 * shake_t
@@ -372,10 +389,14 @@ func hitstop(d: float) -> void:
 	hitstop_t = maxf(hitstop_t, d)
 
 func shake(k: float) -> void:
-	shake_t = maxf(shake_t, k)
+	shake_t = maxf(shake_t, k * float(Settings.get_v("shake")))
+	if Settings.get_v("vibration") and k > 0.2:
+		for j in Input.get_connected_joypads():
+			Input.start_joy_vibration(j, 0.2 * k, 0.6 * k, 0.12 + 0.2 * k)
 
 func flash_screen(c: Color, a: float) -> void:
-	flash_c = Color(c, a)
+	# G.flash: sem clarões intensos, no máximo 0,15
+	flash_c = Color(c, a if Settings.get_v("flashes") else minf(a, 0.15))
 
 func toast(s: String) -> void:
 	hud.toast(s)
@@ -461,6 +482,7 @@ func on_player_dead() -> void:
 	hud.died()
 
 func _respawn() -> void:
+	GameState.deaths += 1
 	GameState.hp = GameState.max_hp
 	player.hp = player.max_hp; player.dead = false; player.action = {}; player.burn = {}
 	player.iframes = 1.0
@@ -503,6 +525,7 @@ func _update_transition(dt: float) -> void:
 			player.action = keep
 			trn["phase"] = "in"; trn["t"] = 0.0
 			GameState.room = room.id
+			GameState.save()
 	else:
 		hud.fade = maxf(0.0, 1.0 - trn["t"] / 0.12)
 		player.tick(dt)

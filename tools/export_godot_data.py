@@ -9,7 +9,7 @@ JS = r"""() => {
   const clean = (o) => JSON.parse(JSON.stringify(o, fnText));
   return {
     rooms: clean(VS.ROOMS), sprites: clean(VS.SPRITE_META), regions: clean(VS.REGIONS || {}), items: clean(VS.ITEMS || {}),
-    lang_pt: clean(VS.LANG.pt || {}), lang_en: clean(VS.LANG.en || {}),
+    lang_pt: clean(VS.LANG.pt || {}), lang_en: clean(VS.LANG.en || {}), lang_es: clean(VS.LANG.es || {}), lang_fr: clean(VS.LANG.fr || {}),
     props: clean(VS.PROP_META || {}), structs: clean(VS.STRUCT_META || {}),
     consts: { TILE: VS.U.TILE, CELL_W: VS.U.CELL_W, CELL_H: VS.U.CELL_H },
   };

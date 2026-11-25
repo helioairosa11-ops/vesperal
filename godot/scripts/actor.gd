@@ -51,12 +51,22 @@ func physics(dt: float, no_gravity := false) -> Dictionary:
 
 ## chamado pelo World a cada passo (respeita a paragem de impacto)
 func tick(dt: float) -> void:
+	prev_pos = pos
 	t += dt
 	flash = maxf(0.0, flash - dt)
 
 func sync_node() -> void:
-	position = Vector2(cx, bottom)
+	position = draw_anchor(Vector2(size.x / 2.0, size.y))
 	queue_redraw()
+
+## posição de desenho interpolada entre os dois últimos passos da lógica (60/s): o movimento fica suave
+## mesmo com monitores de 120/144 Hz, como o atraso de interpolação do jogo web
+var prev_pos := Vector2.INF
+func draw_anchor(offset: Vector2) -> Vector2:
+	if prev_pos == Vector2.INF or prev_pos.distance_squared_to(pos) > 64.0 * 64.0:
+		return pos + offset
+	var k := Engine.get_physics_interpolation_fraction()
+	return prev_pos.lerp(pos, k) + offset
 
 ## caixa à frente do corpo (dx a partir do centro, dy a partir dos pés)
 func front(dx: float, dy: float, w: float, h: float) -> Rect2:

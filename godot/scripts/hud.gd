@@ -86,7 +86,7 @@ func _dlg_update(delta: float) -> void:
 		return
 	dlg["t"] += delta
 	if dlg["shown"] < dlg["full"].length():
-		dlg["shown"] = minf(dlg["full"].length(), dlg["shown"] + delta * 55.0)
+		dlg["shown"] = minf(dlg["full"].length(), dlg["shown"] + delta * 55.0 * float(Settings.get_v("text_speed")))
 		if randf() < 0.15:
 			Audio.sfx("ui_tab", 0.15)
 	elif dlg["i"] == dlg["lines"].size() - 1 and not dlg["choices"].is_empty() and not dlg["wait"]:
@@ -359,6 +359,11 @@ func _draw_hud() -> void:
 	c.draw_set_transform(Vector2.ZERO, 0, Vector2(K, K))
 	if fade > 0.001:
 		c.draw_rect(Rect2(0, 0, W, 360), Color(0, 0, 0, fade))
+	if Settings.get_v("show_fps"):
+		_text(font_body, "%d FPS" % Engine.get_frames_per_second(), Vector2(W - 34, 352), 8, Color(0.6, 1, 0.6, 0.8), true)
+	if Settings.get_v("show_timer"):
+		var pt := int(GameState.play_time)
+		_text(font_body, "%d:%02d:%02d" % [floori(pt / 3600.0), floori(pt / 60.0) % 60, pt % 60], Vector2(W - 34, 14), 9, Color(0.9, 0.85, 0.78, 0.8), true)
 
 ## texto desenhado à resolução real (sem esticar letras pequenas)
 func _text(f: Font, s: String, at: Vector2, size: int, col: Color, center := false) -> void:

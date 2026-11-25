@@ -14,8 +14,10 @@ config/icon="res://art/ui/logo_v.png"
 [autoload]
 
 Data="*res://scripts/data.gd"
+Settings="*res://scripts/settings.gd"
 GameState="*res://scripts/game_state.gd"
 Audio="*res://scripts/audio.gd"
+UI="*res://scripts/ui.gd"
 
 [display]
 

@@ -44,8 +44,8 @@ func setup(room_id: String) -> void:
 	var lp := "res://art/rooms/%s.json" % room_id
 	if FileAccess.file_exists(lp):
 		layers = JSON.parse_string(FileAccess.get_file_as_string(lp))
-		back_tex = Data.tex("res://art/rooms/%s_back.png" % room_id)
-		tiles_tex = Data.tex("res://art/rooms/%s_tiles.png" % room_id)
+		back_tex = load("res://art/rooms/%s_back.png" % room_id)
+		tiles_tex = load("res://art/rooms/%s_tiles.png" % room_id)
 	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	queue_redraw()
@@ -94,6 +94,15 @@ func is_hazard(tx: int, ty: int) -> bool:
 
 func solid_at(p: Vector2) -> bool:
 	return is_solid_tile(floori(p.x / T), floori(p.y / T))
+
+## linha de vista: nenhum tile sólido entre a e b (passos de 6 unidades)
+func ray_clear(a: Vector2, b: Vector2) -> bool:
+	var d := b - a
+	var n := int(ceil(d.length() / 6.0))
+	for i in range(1, n):
+		if solid_at(a + d * (float(i) / n)):
+			return false
+	return true
 
 func rect_solid(r: Rect2) -> bool:
 	var x0 := floori(r.position.x / T)

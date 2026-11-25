@@ -49,6 +49,24 @@ func _ready() -> void:
 			steps = [[0.5, "room", "r1_sanct"], [0.2, "place", "22"], [0.6, "shot", "n01_prompt"], [0.1, "tap", "interact"], [0.6, "shot", "n02_typing"],
 				[1.8, "shot", "n03_line1"], [0.1, "tap", "interact"], [0.1, "tap", "interact"], [1.0, "shot", "n04_line2"],
 				[0.1, "room", "r1_market"], [0.2, "place", "7"], [0.6, "shot", "n05_hrolf_prompt"], [0.1, "tap", "interact"], [2.0, "shot", "n06_hrolf"], [0.3, "quit", ""]]
+		"fuzz":
+			# 90 s de jogo ao acaso: corre, salta, ataca, esquiva, apara, cura e muda de sala
+			var acts := ["left", "right", "jump", "attack", "dodge", "parry", "heal", "down", "up"]
+			var rooms := ["r1_wake", "r1_street", "r1_plaza", "r1_market", "r1_cemetery", "r1_sanct", "r1_chapel", "r1_bridge", "r1_crypt", "r1_belfry", "r1_coveiro"]
+			for i in 900:
+				if i % 75 == 0:
+					steps.append([0.05, "room", rooms[int(i / 75.0) % rooms.size()]])
+				var a: String = acts[randi() % acts.size()]
+				steps.append([randf_range(0.03, 0.15), "press", a])
+				steps.append([randf_range(0.03, 0.2), "release", a])
+		"ai":
+			steps = [[0.3, "room", "r1_street"], [0.2, "place", "30"], [0.1, "spawn", "husk"], [0.05, "spawn2", "husk:-5"], [0.05, "spawn2", "crawler:6"], [0.05, "spawn2", "sexton:-8"]]
+			for i in 12:
+				steps.append([0.5, "elog", ""])
+				if i == 4: steps.append([0.1, "press", "left"])
+				if i == 6: steps.append([0.1, "release", "left"])
+				if i % 3 == 2: steps.append([0.05, "tap", "attack"])
+			steps.append([0.2, "shot", "ai_end"])
 		"rooms":
 			steps = [[0.6, "shot", "r_wake"], [0.1, "room", "r1_street"], [0.8, "shot", "r_street"], [0.1, "room", "r1_sanct"], [0.8, "shot", "r_sanct"],
 				[0.1, "room", "r1_cemetery"], [0.8, "shot", "r_cemetery"], [0.1, "room", "r1_market"], [0.8, "shot", "r_market"], [0.5, "quit", ""]]
@@ -99,6 +117,18 @@ func _process(delta: float) -> void:
 			if is_instance_valid(last_enemy):
 				last_enemy.aggro = true; last_enemy.facing = -1 if last_enemy.cx > w.player.cx else 1
 				last_enemy.atk = {}; last_enemy.attack(s[2])
+		"spawn2":
+			var pr: PackedStringArray = String(s[2]).split(":")
+			var en2 = load("res://scripts/enemy.gd").new()
+			en2.world = w
+			en2.setup(pr[0], int(w.player.cx / 20.0) + int(pr[1]), int(w.player.bottom / 20.0) - 1)
+			w.actors.add_child(en2)
+		"elog":
+			var line := "t=%.1f P(%d)" % [Time.get_ticks_msec() / 1000.0, w.player.cx]
+			for a in w.actors.get_children():
+				if a != w.player and a.has_method("on_parried"):
+					line += " %s(%d,%s,%s)" % [a.kind, a.cx, a.atk.get("name", "-"), "A" if a.aggro else "p"]
+			log_lines.append(line)
 		"kill":
 			for a in w.actors.get_children():
 				if a != w.player and a.has_method("die") and not a.dead:

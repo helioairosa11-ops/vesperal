@@ -50,6 +50,9 @@ static func _c(v) -> Color:
 func emit(o: Dictionary) -> void:
 	if parts.size() > 900:
 		return
+	# sem partículas: só fica metade (as que dizem alguma coisa ao jogador continuam a aparecer)
+	if not Settings.get_v("particles") and randf() < 0.6:
+		return
 	var q := {"x": 0.0, "y": 0.0, "vx": 0.0, "vy": 0.0, "g": 0.0, "drag": 0.0, "life": 1.0, "size": 2.0, "color": Color.WHITE,
 		"add": false, "rot": 0.0, "vr": 0.0, "kind": "dot", "fade": true, "shrink": false, "alpha": 1.0, "grow": 0.0, "wobble": 0.0, "collide": false}
 	q.merge(o, true)

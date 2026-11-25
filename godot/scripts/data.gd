@@ -18,7 +18,7 @@ func _ready() -> void:
 	sprites = _json("res://data/sprites.json")
 	regions = _json("res://data/regions.json")
 	props = _json("res://data/props.json")
-	lang = _json("res://data/lang_pt.json")
+	set_lang("pt")
 	for id in rooms:
 		var d: Dictionary = rooms[id]
 		d["id"] = id
@@ -45,6 +45,18 @@ func t(key: String, params := {}) -> String:
 		out = out.replace("{%s}" % k, str(params[k]))
 	return out
 
+var lang_code := ""
+signal lang_changed
+func set_lang(code: String) -> void:
+	if code == lang_code:
+		return
+	if not FileAccess.file_exists("res://data/lang_%s.json" % code):
+		code = "en"
+	lang = _json("res://data/lang_%s.json" % code)
+	lang.merge(_json("res://data/lang_extra_%s.json" % code), true)
+	lang_code = code
+	lang_changed.emit()
+
 func has_key(key: String) -> bool:
 	return lang.has(key)
 
@@ -62,7 +74,7 @@ func tex(path: String) -> Texture2D:
 ## lista das imagens a pré-carregar (uma por fotograma, durante o menu) para a troca de sala não engasgar
 var _warm: Array = []
 func warm_up() -> void:
-	for dir in ["res://art/bg", "res://art/sprites", "res://art/tiles", "res://art/ui"]:
+	for dir in ["res://art/sprites", "res://art/ui"]:
 		var d := DirAccess.open(dir)
 		if d == null:
 			continue

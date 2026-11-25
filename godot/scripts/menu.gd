@@ -4,7 +4,7 @@ extends Control
 ## opções em EB Garamond centradas (a escolhida acende-se com um ponto de brasa), assinatura e dica.
 ## As medidas estão em px de CSS para um ecrã de 900 de altura e escalam com a janela.
 
-signal start_new
+signal start_new(slot: int, fresh: bool)
 signal continue_game
 
 var t := 0.0
@@ -36,15 +36,21 @@ func _ready() -> void:
 	gt.gradient = g; gt.fill = GradientTexture2D.FILL_RADIAL
 	gt.fill_from = Vector2(0.5, 0.5); gt.fill_to = Vector2(1, 0.5); gt.width = 128; gt.height = 128
 	glow = gt
-	if GameState.has_save():
-		items.append({"label": Data.t("mm_continue"), "cb": func(): continue_game.emit()})
-	items.append({"label": Data.t("mm_play"), "cb": func(): start_new.emit()})
-	items.append({"label": Data.t("mm_settings"), "cb": func(): panel = "options"})
-	items.append({"label": Data.t("mm_credits"), "cb": func(): panel = "credits"; Audio.play_music("credits")})
-	items.append({"label": Data.t("mm_quit"), "cb": func(): get_tree().quit()})
+	_build_items()
+	Data.lang_changed.connect(_build_items)
 	_make_title_node()
 	Audio.play_music("menu")
 	Audio.set_ambience("sanct")
+
+func _build_items() -> void:
+	items.clear()
+	if GameState.has_save():
+		items.append({"label": Data.t("mm_continue"), "cb": func(): continue_game.emit()})
+	items.append({"label": Data.t("mm_play"), "cb": func(): UI.open_slots(func(i: int, fresh: bool): start_new.emit(i, fresh))})
+	items.append({"label": Data.t("mm_settings"), "cb": func(): UI.open_settings()})
+	items.append({"label": Data.t("mm_credits"), "cb": func(): UI.open_credits()})
+	items.append({"label": Data.t("mm_quit"), "cb": func(): get_tree().quit()})
+	focus = clampi(focus, 0, items.size() - 1)
 
 func _fit() -> void:
 	position = Vector2.ZERO
@@ -57,6 +63,8 @@ func _process(delta: float) -> void:
 
 # ------------------------------------------------------------------ entrada
 func _gui_input(e: InputEvent) -> void:
+	if UI.is_open():
+		return
 	if e is InputEventMouseMotion and panel == "":
 		var i := _item_at(e.position)
 		if i >= 0 and i != focus:
@@ -69,6 +77,8 @@ func _gui_input(e: InputEvent) -> void:
 			_activate(i)
 
 func _unhandled_input(e: InputEvent) -> void:
+	if UI.is_open():
+		return
 	if not e.is_pressed() or e.is_echo():
 		return
 	if panel != "":

@@ -56,7 +56,7 @@ func tick(dt: float) -> void:
 		world.fx.burst(Vector2(cx, cy), 8, Color(0.45, 0.36, 0.28) if kind == "clod" else color, 90.0, kind != "clod")
 		queue_free()
 	if trail and randf() < 0.6:
-		world.fx.emit(Vector2(cx, cy), Vector2(randf_range(-10, 10), randf_range(-10, 10)), 0.35, size.x * 0.35, color, true)
+		world.fx.emit({"x": cx, "y": cy, "vx": randf_range(-10, 10), "vy": randf_range(-10, 10), "life": 0.35, "size": size.x * 0.35, "color": color, "add": true, "shrink": true})
 	elif fire and randf() < 0.6:
 		world.fx.ember(Vector2(cx, cy))
 
@@ -65,7 +65,7 @@ func queue_free_safe() -> void:
 	queue_free()
 
 func _process(_d: float) -> void:
-	position = Vector2(cx, cy)
+	position = draw_anchor(size / 2.0)
 	queue_redraw()
 
 func _draw() -> void:

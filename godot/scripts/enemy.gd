@@ -44,7 +44,9 @@ func setup(k: String, tx: int, ty: int) -> void:
 	facing = -1
 	team = "enemy"
 	cool = randf_range(0.3, 1.2)
+	want_face = [-1, 1].pick_random()
 	sh = Data.sheet(K.get("sheet", "en_" + k))
+	home_x = pos.x + size.x / 2.0
 
 var fx_add: Node2D
 var _sm: Dictionary = {}
@@ -240,7 +242,10 @@ func _update_attack(dt: float) -> void:
 			if atk["t"] >= s["rec"]:
 				_on_end(atk["name"])
 				atk = {}
-				cool = randf_range(0.4, 1.0)
+				cool = randf_range(0.5, 1.1)
+				# depois de golpear, às vezes dá um passo atrás (não fica colado à espera de levar)
+				if randf() < 0.4:
+					backoff_t = randf_range(0.2, 0.4)
 
 func _on_act(nm: String, s: Dictionary) -> void:
 	if s.get("shake", 0.0) > 0:
@@ -265,87 +270,246 @@ func _on_end(nm: String) -> void:
 	if kind == "wisp":
 		vel *= 0.3
 
+# ================================================================== IA
+## Perceção: vê a protagonista se estiver perto, à frente (ou muito perto, ouve-a) e sem paredes no meio.
+## Memória: depois de a perder de vista, vai ao último sítio onde a viu durante uns segundos e depois volta à ronda.
+## Combate: fica na sua distância (com margem para não tremer), espera a vez (no máximo dois a atacar ao mesmo
+## tempo), escolhe golpes conforme a distância sem repetir sempre o mesmo, recua depois de atacar, reage aos teus
+## golpes e às tuas esquivas, e nunca se atira de uma plataforma às cegas.
+var home_x := 0.0
+var last_seen := Vector2.INF
+var memory := 0.0
+var alert_t := 0.0
+var turn_t := 0.0
+var want_face := -1
+var last_atk := ""
+var backoff_t := 0.0
+var strafe_t := 0.0
+var react_cd := 0.0
+var hold := false
+
+func _sense(range_x: float, vert: float, hear := 46.0) -> bool:
+	if player == null or player.dead:
+		return false
+	var d := Vector2(dx(), dy())
+	if absf(d.x) > range_x or absf(d.y) > vert:
+		return false
+	var in_front := signf(d.x) == facing or absf(d.x) < 8
+	if not in_front and d.length() > hear and not aggro:
+		return false
+	return world.room.ray_clear(Vector2(cx, pos.y + 6), Vector2(player.cx, player.pos.y + 8))
+
+## percebe e atualiza o estado de alerta; devolve true quando está a combater
+func _perceive(dt: float, range_x: float, vert := 90.0) -> bool:
+	react_cd = maxf(0.0, react_cd - dt)
+	backoff_t = maxf(0.0, backoff_t - dt)
+	if _sense(range_x, vert):
+		if not aggro:
+			aggro = true; alert_t = 0.28    # um instante de surpresa antes de avançar
+			want_face = 1 if dx() > 0 else -1; facing = want_face
+		last_seen = Vector2(player.cx, player.bottom); memory = 3.0
+	elif aggro:
+		memory -= dt
+		if memory <= 0:
+			aggro = false; last_seen = Vector2.INF
+	alert_t = maxf(0.0, alert_t - dt)
+	return aggro
+
+## vira-se para a protagonista com um pequeno atraso (dá para lhe passar por trás)
+func _turn_to(target_x: float, dt: float, delay := 0.16) -> void:
+	var w := 1 if target_x > cx else -1
+	if w != facing:
+		turn_t += dt
+		if turn_t >= delay:
+			facing = w; turn_t = 0.0
+	else:
+		turn_t = 0.0
+
+## ainda há chão para onde vai? (deixa descer degraus pequenos, nunca abismos)
+func _safe_step(dir: int) -> bool:
+	var fx := pos.x + size.x + 3 if dir > 0 else pos.x - 3
+	if world.room.solid_at(Vector2(fx, bottom - 6)) or world.room.solid_at(Vector2(fx, pos.y + 4)):
+		return false
+	for k in range(0, 4):
+		var fy := bottom + 4 + k * 20
+		if world.room.solid_at(Vector2(fx, fy)) or world.room.is_platform(floori(fx / 20.0), floori(fy / 20.0)):
+			return true
+	return false
+
+## outro inimigo à frente, colado? (não se empilham)
+func _crowded(dir: int) -> bool:
+	for a in world.actors.get_children():
+		if a == self or not (a is Actor) or a.dead or a == world.player or not a.has_method("on_parried"):
+			continue
+		if absf(a.bottom - bottom) < 20 and signf(a.cx - cx) == dir and absf(a.cx - cx) < (size.x + a.size.x) * 0.5 + 6:
+			return true
+	return false
+
+func _go(dir: int, speed: float, dt: float) -> bool:
+	if dir == 0:
+		vel.x = move_toward(vel.x, 0, 900 * dt); return true
+	if not on_ground and not flying:
+		return true
+	if not _safe_step(dir) or _crowded(dir):
+		vel.x = move_toward(vel.x, 0, 1200 * dt); return false
+	vel.x = move_toward(vel.x, dir * speed, 1100 * dt)
+	return true
+
+## ronda calma perto de casa, com pausas
+func _patrol(dt: float, speed: float, radius := 90.0) -> void:
+	mode_t -= dt
+	if mode_t <= 0:
+		mode_t = randf_range(1.2, 3.2)
+		if absf(cx - home_x) > radius:
+			wander = 1 if home_x > cx else -1
+		else:
+			wander = [-1, 0, 0, 1].pick_random()
+		if wander != 0:
+			facing = wander
+	if not _go(wander, speed, dt):
+		wander = -wander if wander != 0 else 0
+		if wander != 0:
+			facing = wander
+		mode_t = minf(mode_t, randf_range(0.4, 1.0))
+
+## vez de atacar: no máximo dois inimigos a atacar a protagonista ao mesmo tempo
+func _can_take_turn() -> bool:
+	var n := 0
+	for a in world.actors.get_children():
+		if a != self and a is Actor and not a.dead and a.has_method("on_parried") and not a.atk.is_empty():
+			n += 1
+	return n < 2
+
+func _choose(options: Array) -> String:
+	# options: [[nome, peso]]; o último golpe pesa menos (variedade)
+	var total := 0.0
+	for o in options:
+		total += o[1] * (0.45 if o[0] == last_atk else 1.0)
+	var r := randf() * total
+	for o in options:
+		r -= o[1] * (0.45 if o[0] == last_atk else 1.0)
+		if r <= 0:
+			return o[0]
+	return options[0][0]
+
+func _start(nm: String) -> void:
+	last_atk = nm
+	attack(nm)
+
+## a protagonista está a atacar perto e à frente?
+func _player_threat(range_x: float) -> bool:
+	return player.action.get("type", "") == "attack" and absf(dx()) < range_x and signf(cx - player.cx) == player.facing
+
+## ataque de chão comum: aproxima-se até à distância do golpe, espera a vez, ataca, recua um pouco
+func _melee(dt: float, speed: float, reach: float, options_near: Array, options_far: Array, far_reach: float) -> void:
+	if alert_t > 0:
+		vel.x = move_toward(vel.x, 0, 900 * dt); return
+	var tx: float = player.cx if _sense(400, 140) else last_seen.x
+	_turn_to(tx, dt)
+	var d := absf(tx - cx)
+	var dir := 1 if tx > cx else -1
+	if backoff_t > 0:
+		_go(-dir, speed * 0.8, dt); return
+	var same_level := absf(dy()) < 34
+	if cool <= 0 and same_level and facing == dir and _can_take_turn():
+		if d < reach:
+			_start(_choose(options_near)); return
+		if not options_far.is_empty() and d < far_reach and d > reach * 0.9:
+			_start(_choose(options_far)); return
+	# distância de espera: um pouco fora do alcance enquanto não é a sua vez
+	var band := reach * (0.85 if cool <= 0 else 1.6)
+	if d > band + 8:
+		hold = false
+		if not _go(dir, speed, dt):
+			# não consegue chegar (abismo, parede): fica à beira, de frente, à espera
+			vel.x = move_toward(vel.x, 0, 900 * dt)
+	elif d < band - 12 and cool > 0:
+		_go(-dir, speed * 0.6, dt)
+	else:
+		vel.x = move_toward(vel.x, 0, 900 * dt)
+
 func _think_husk(dt: float) -> void:
 	if not atk.is_empty():
 		return
-	if sees(170):
-		aggro = true
-	if aggro and absf(dy()) < 100:
-		face()
-		var d := absf(dx())
-		if d < 34 and cool <= 0:
-			attack("lunge" if randf() < 0.3 else "swing")
-		elif d > 26:
-			walk(facing, 48, dt)
-		else:
-			walk(0, 0, dt)
-		if d > 320:
-			aggro = false
+	if _perceive(dt, 190):
+		# o Cinzento é lento e teimoso: avança, golpeia; às vezes lança-se de mais longe
+		var big := kind == "husk_big"
+		var reach := 30.0 * (1.7 if big else 1.0)
+		_melee(dt, 34.0 if big else 50.0, reach, [["swing", 3.0], ["lunge", 1.0]], [["lunge", 1.0]], reach * 2.4)
+		if cool > 0.25 and last_atk == "lunge" and randf() < 0.01:
+			backoff_t = 0.35
 	else:
-		mode_t -= dt
-		if mode_t <= 0:
-			mode_t = randf_range(1.5, 3.5); wander = [-1, 0, 1].pick_random()
-			if wander != 0:
-				facing = wander
-		if not walk(wander, 22, dt):
-			wander = -(wander if wander != 0 else 1)
+		_patrol(dt, 22)
 
 func _think_crawler(dt: float) -> void:
 	if not atk.is_empty():
 		return
-	if sees(200, 60):
-		aggro = true
 	surge_t -= dt
 	if surge_t <= 0:
 		surging = not surging
 		surge_t = randf_range(0.28, 0.42) if surging else randf_range(0.14, 0.3)
-	if aggro:
-		face()
+	if _perceive(dt, 210, 60):
+		if alert_t > 0:
+			return
+		_turn_to(player.cx, dt, 0.08)
 		var d := absf(dx())
-		if cool <= 0 and on_ground:
+		var dir := 1 if dx() > 0 else -1
+		# rastejante nervoso: se a protagonista ataca perto, salta para trás
+		if react_cd <= 0 and _player_threat(40) and on_ground and randf() < 0.55:
+			vel = Vector2(-dir * 170, -120); react_cd = 1.2; return
+		if backoff_t > 0:
+			_go(-dir, 120, dt); return
+		if cool <= 0 and on_ground and absf(dy()) < 30 and _can_take_turn():
 			if d < 26:
-				attack("bite"); return
-			if d > 44 and d < 92 and absf(dy()) < 30:
-				attack("pounce"); vel.y = -160; return
-		walk(0 if d < 22 else facing, 118.0 if surging else 10.0, dt)
-		if d > 320:
-			aggro = false
-	elif not walk(facing, 46.0 if surging else 0.0, dt):
-		facing *= -1
+				_start("bite"); backoff_t = 0.0; return
+			if d > 44 and d < 96:
+				_start("pounce"); vel.y = -160; return
+		# avança aos arrancos e, depois de morder, afasta-se para voltar a atacar
+		if d > 30:
+			_go(dir, 118.0 if surging else 12.0, dt)
+		elif cool > 0:
+			_go(-dir, 70, dt)
+	else:
+		if not _go(facing, 46.0 if surging else 0.0, dt):
+			facing *= -1
 
 func _think_wisp(dt: float) -> void:
-	if sees(230, 160):
-		aggro = true
-	if not atk.is_empty():
-		if atk["name"] != "dive" or atk["phase"] == "rec":
-			vel *= 0.92
-		return
-	if aggro:
-		var side := -1 if player.cx > cx else 1
-		fly_to(Vector2(player.cx + side * 90, player.cy - 60 + sin(anim * 2.0) * 20.0), 80, dt)
-		if cool <= 0:
-			var d := Vector2(player.cx - cx, player.cy - cy).length()
-			attack("dive" if d < 120 and randf() < 0.45 else "spit")
+	if _perceive(dt, 240, 170):
+		if not atk.is_empty():
+			if atk["name"] != "dive" or atk["phase"] == "rec":
+				vel *= 0.92
+			return
+		# chama errante: mantém-se de lado e acima, muda de lado de vez em quando, e foge se a protagonista se aproxima
+		strafe_t -= dt
+		if strafe_t <= 0:
+			strafe_t = randf_range(2.0, 3.5)
+			want_face = -want_face if randf() < 0.5 else want_face
+		var side := want_face if want_face != 0 else 1
+		var target := Vector2(player.cx + side * 96, player.cy - 64 + sin(anim * 2.0) * 18.0)
+		if Vector2(dx(), dy()).length() < 50:
+			target = Vector2(cx, cy) - Vector2(dx(), dy()).normalized() * 80.0
+		fly_to(target, 90, dt)
 		face()
+		if cool <= 0 and _can_take_turn():
+			var d := Vector2(dx(), dy()).length()
+			_start("dive" if d < 130 and randf() < 0.4 and last_atk != "dive" else "spit")
 	else:
 		vel = vel.lerp(Vector2(sin(anim) * 12.0, cos(anim * 1.3) * 8.0), 0.05)
 
 func _think_sexton(dt: float) -> void:
 	if not atk.is_empty():
 		return
-	if sees(200):
-		aggro = true
-	if aggro:
-		face()
+	if _perceive(dt, 210):
+		# o Sacristão guarda distância: varre de longe, bate no chão quando estás parado perto ou depois de levar golpes
 		var d := absf(dx())
-		if d < 22 and cool < 0.6:
-			walk(-facing, 55, dt); return
-		if d < 54 and cool <= 0:
-			attack("slam" if absf(player.vel.x) < 20 and randf() < 0.55 else "sweep")
-		elif d > 40:
-			walk(facing, 40, dt)
-		else:
-			walk(0, 0, dt)
+		if d < 24 and cool > 0.3 and react_cd <= 0:
+			backoff_t = 0.4; react_cd = 1.0
+		var slam_w := 2.0 if absf(player.vel.x) < 20 else 0.6
+		if last_hit_t < 0.8:
+			slam_w += 1.5
+		_melee(dt, 40, 50, [["sweep", 2.0], ["slam", slam_w]], [], 0.0)
+	else:
+		_patrol(dt, 18, 60)
 
 # ------------------------------------------------------------------ dano
 func on_hit(box: Dictionary) -> bool:
@@ -453,9 +617,9 @@ func _timed(an: String) -> Dictionary:
 func _process(delta: float) -> void:
 	anim_kt += delta
 	if K.get("center", false):
-		position = Vector2(cx, cy)
+		position = draw_anchor(size / 2.0)
 	else:
-		position = Vector2(cx, bottom)
+		position = draw_anchor(Vector2(size.x / 2.0, size.y))
 	if eye_light:
 		var f := current_frame()
 		var e = Data.point(f, "eye")
@@ -508,7 +672,7 @@ func _draw_add() -> void:
 		Data.draw_frame(fx_add, sh, f, Color(1, 1, 1, 0.75))
 		fx_add.draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
 	_draw_smear(f)
-	if dead or atk.is_empty() or atk["phase"] != "wind":
+	if dead or atk.is_empty() or atk["phase"] != "wind" or not Settings.get_v("telegraphs"):
 		return
 	var st: Dictionary = atk["s"]
 	var kind_t: String = st.get("tell", "")
