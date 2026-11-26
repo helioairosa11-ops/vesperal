@@ -116,7 +116,11 @@ func _dlg_input(e: InputEvent) -> bool:
 	return false
 
 ## caixa do diálogo: a moldura larga da interface, retrato na oval dourada e placa com o nome de quem fala
-const PORTRAITS := {"npc_ione": "ione", "npc_hrolf": "hrolf", "npc_maren": "maren", "npc_teodoro": "teodoro"}
+const PORTRAITS := {
+	# só os chefes que falam têm retrato (como no jogo web); as pessoas falam sem retrato
+	# chefes que falam: retrato tirado da arte nova (tools/make_portraits.py)
+	"boss_aldric": "boss_aldric", "boss_caedmon": "boss_caedmon", "boss_corvin": "boss_corvin", "boss_elowen": "boss_elowen",
+	"boss_gemeos": "boss_gemeos", "boss_hilde": "boss_hilde", "boss_ozias": "boss_ozias", "boss_seraphine": "boss_seraphine"}
 func _draw_dialogue(_W: float) -> void:
 	if dlg.is_empty():
 		return

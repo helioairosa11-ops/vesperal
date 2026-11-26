@@ -200,11 +200,14 @@
     const vg = c.createLinearGradient(0, 120, 0, 180); vg.addColorStop(0, 'rgba(8,6,10,0)'); vg.addColorStop(1, 'rgba(8,6,10,0.9)'); c.fillStyle = vg; c.fillRect(0, 0, 180, 180);
     return (bossPortraits[id] = cv);
   }
+  const PAINTED = new Set(['boss_aldric', 'boss_caedmon', 'boss_corvin', 'boss_elowen', 'boss_gemeos', 'boss_hilde', 'boss_ozias', 'boss_seraphine']);
   function setPortrait(el, s) {
     const box = el.querySelector('.dlg-portrait'); box.innerHTML = '';
     let node = null;
     // as pessoas (NPC) falam sem retrato; só os chefes mostram o rosto ao falar
-    if (s && /^boss_/.test(s)) { const cv = bossPortrait(s.slice(5)); if (cv) { node = document.createElement('canvas'); node.width = node.height = 180; node.getContext('2d').drawImage(cv, 0, 0); } }
+    // só os chefes que falam têm retrato desenhado (assets/portraits/boss_<id>.png, da arte nova); os outros, recorte da folha
+    if (s && PAINTED.has(s)) { node = document.createElement('img'); node.src = 'assets/portraits/' + s + '.png?v=' + (window.VS_BUILD || ''); node.alt = ''; }
+    else if (s && /^boss_/.test(s)) { const cv = bossPortrait(s.slice(5)); if (cv) { node = document.createElement('canvas'); node.width = node.height = 180; node.getContext('2d').drawImage(cv, 0, 0); } }
     if (node) box.appendChild(node);
     el.classList.toggle('has-portrait', !!node);
   }
