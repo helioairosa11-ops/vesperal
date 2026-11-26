@@ -82,6 +82,9 @@ func _ready() -> void:
 			steps = [[0.4, "room", "r1_street"], [0.2, "place", "8"], [0.1, "give", "oil"], [0.1, "give", "incense"], [0.1, "use", "oil"], [0.1, "use", "incense"], [0.6, "shot", "i01_buffs"], [0.3, "quit", ""]]
 		"rest":
 			steps = [[0.4, "room", "r1_sanct"], [0.2, "place", "14"], [0.6, "tap", "interact"], [1.0, "shot", "a01_rest"], [0.1, "uiact", "0"], [1.0, "shot", "a02_inv"], [0.3, "quit", ""]]
+		"walkers":
+			steps = [[0.4, "room", "r1_street"], [0.2, "place", "4"], [0.2, "spawn2", "husk:12"], [0.05, "spawn2", "sexton:16"], [0.05, "spawn2", "hound:20"], [0.05, "spawn2", "sentinel:24"],
+				[0.35, "shot", "w01"], [0.12, "shot", "w02"], [0.12, "shot", "w03"], [0.12, "shot", "w04"], [0.3, "quit", ""]]
 		"npcs":
 			# Maren nas Muralhas (dá a medalha), Teodoro na Estufa (escolhe ir ter com a irmã), os dois no Santuário
 			steps = [[0.4, "room", "r2_gate"], [0.2, "place", "22"], [0.6, "shot", "m01_maren"], [0.1, "tap", "interact"], [2.0, "shot", "m02_maren_talk"],

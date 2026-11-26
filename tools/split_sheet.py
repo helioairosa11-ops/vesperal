@@ -134,6 +134,21 @@ if __name__ == '__main__':
         rgba = np.dstack([np.clip(col, 0, 255), a]).astype(np.uint8)
     else:
         rgba = key_magenta(g, '--nopurple' in sys.argv)
+    # grelha desenhada pelo gerador (linhas finas a separar as células): linhas/colunas quase todas opacas saem
+    al = rgba[..., 3] > 0
+    for axis in (0, 1):
+        frac = al.mean(axis=1 - axis)
+        lines = np.where(frac > 0.85)[0]
+        for i in lines:
+            if axis == 0: rgba[i, :, 3] = 0
+            else: rgba[:, i, 3] = 0
+    if '--grid' in sys.argv:   # também linhas mais curtas, de célula a célula
+        al = rgba[..., 3] > 0
+        for axis in (0, 1):
+            frac = al.mean(axis=1 - axis)
+            for i in np.where(frac > 0.6)[0]:
+                if axis == 0: rgba[i, :, 3] = 0
+                else: rgba[:, i, 3] = 0
     # corta primeiro em faixas horizontais (uma por fila), pela linha com menos figura entre filas
     nb = len(wants) if len(args) > 4 else 0
     bands = [rgba]
