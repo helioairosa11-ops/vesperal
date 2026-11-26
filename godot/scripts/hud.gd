@@ -337,6 +337,16 @@ func _draw_hud() -> void:
 	var ay := by + 43.0
 	c.draw_texture_rect(_img("hud_ash"), Rect2(bx + 4, ay - 1, 14, 14), false)
 	_text(font_body, str(GameState.ash), Vector2(bx + 21, ay + 11), 11, Color("#e8dcc8"))
+	# ---- óleo / incenso em uso: ícone com os segundos que faltam
+	var bxp := bx + 4.0
+	for bid in ["oil", "incense"]:
+		if GameState.buffs.get(bid, 0.0) > 0:
+			var left: float = GameState.buffs[bid]
+			var ic: Texture2D = Data.tex("res://art/icons/%s.png" % bid)
+			var al := 1.0 if left > 5.0 else 0.5 + 0.5 * sin(tsec * 10.0)
+			c.draw_texture_rect(ic, Rect2(bxp, ay + 16, 16, 16), false, Color(1, 1, 1, al))
+			_text(font_body, str(ceili(left)), Vector2(bxp + 18, ay + 28), 9, Color("#e8dcc8"))
+			bxp += 40.0
 	# ---- queimadura
 	if not p.burn.is_empty():
 		_text(font_body, "a arder", Vector2(bx + 30, by + 60), 9, Color(1, 0.6, 0.3, 0.6 + 0.4 * sin(tsec * 10.0)))

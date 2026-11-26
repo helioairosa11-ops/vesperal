@@ -13,6 +13,7 @@ var abilities: Dictionary = {"dash": false, "double": false}
 var room := "r1_wake"
 var spawn := Vector2(-1, -1)
 var altar_room := ""
+var buffs: Dictionary = {}   # efeitos com tempo: oil (golpes +30%), incense (dano recebido -30%)
 # inventário (como o GameState do jogo web): itens contáveis, armas, relíquias e ranhuras
 var items: Dictionary = {}
 var weapons: Array = ["desperto"]
@@ -62,6 +63,10 @@ func _process(delta: float) -> void:
 		return
 	if get_tree().current_scene and get_tree().current_scene.get("world") != null:
 		play_time += delta
+		for b in buffs.keys():
+			buffs[b] -= delta
+			if buffs[b] <= 0:
+				buffs.erase(b)
 
 ## migração: a gravação antiga (uma só) passa para a memória 1
 func _ready() -> void:

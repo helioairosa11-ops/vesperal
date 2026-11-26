@@ -78,6 +78,8 @@ func _ready() -> void:
 			# encosta a uma parede (sala r1_street, muro à direita) e trepa com cima
 			steps = [[0.4, "room", "r1_street"], [0.2, "place", "16"], [0.1, "press", "right"], [0.4, "press", "up"], [0.25, "shot", "k01_climb"],
 				[0.2, "shot", "k02_climb"], [0.8, "shot", "k03_top"], [0.1, "release", "up"], [0.1, "release", "right"], [0.3, "quit", ""]]
+		"items":
+			steps = [[0.4, "room", "r1_street"], [0.2, "place", "8"], [0.1, "give", "oil"], [0.1, "give", "incense"], [0.1, "use", "oil"], [0.1, "use", "incense"], [0.6, "shot", "i01_buffs"], [0.3, "quit", ""]]
 		"npcs":
 			# Maren nas Muralhas (dá a medalha), Teodoro na Estufa (escolhe ir ter com a irmã), os dois no Santuário
 			steps = [[0.4, "room", "r2_gate"], [0.2, "place", "22"], [0.6, "shot", "m01_maren"], [0.1, "tap", "interact"], [2.0, "shot", "m02_maren_talk"],
@@ -141,6 +143,10 @@ func _process(delta: float) -> void:
 			w.player.pos = Vector2(8 * 20, 15 * 20 - w.player.size.y)
 		"room":
 			w.load_room(s[2], Vector2.INF)
+		"give":
+			GameState.give(String(s[2]))
+		"use":
+			UI._use({"world": w}, String(s[2]))
 		"flag":
 			var kv: PackedStringArray = String(s[2]).split("=")
 			GameState.flags[kv[0]] = int(kv[1])

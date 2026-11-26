@@ -346,7 +346,7 @@ func _update_action(dt: float) -> void:
 					r = Rect2(cx + b[0], bottom + b[1] + b[3] - 34, b[2], b[3])
 				else:
 					r = front(b[0], b[1], b[2], b[3])
-				attack_boxes.append({"rect": r, "dmg": BASE_DMG * d["mult"], "id": action["id"], "knock": d["knock"], "kind": d.get("kind", "slash"), "pogo": d.get("pogo", false), "hitstop": d.get("hitstop", 0.05), "src": self})
+				attack_boxes.append({"rect": r, "dmg": BASE_DMG * d["mult"] * (1.3 if GameState.buffs.get("oil", 0.0) > 0 else 1.0), "id": action["id"], "knock": d["knock"], "kind": d.get("kind", "slash"), "pogo": d.get("pogo", false), "hitstop": d.get("hitstop", 0.05), "src": self})
 				if action["t"] >= action["act"]:
 					action["phase"] = "rec"; action["t"] = 0.0; action["lunge_v"] = 0.0
 			elif action["phase"] == "rec" and action["t"] >= action["rec"]:
@@ -432,7 +432,7 @@ func is_fire(box: Dictionary) -> bool:
 func _take_damage(box: Dictionary) -> void:
 	if dead or iframes > 0:
 		return
-	var dmg: float = box.get("dmg", 10.0)
+	var dmg: float = box.get("dmg", 10.0) * (0.7 if GameState.buffs.get("incense", 0.0) > 0 else 1.0)
 	hp = maxf(0.0, hp - dmg); GameState.hp = int(hp)
 	flash = 0.15
 	iframes = C["IFRAMES"]

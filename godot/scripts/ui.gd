@@ -928,11 +928,23 @@ func _use(p: Dictionary, id: String) -> void:
 				_inv_msg(p, Data.t("msg_full_hp")); return
 			w.player.hp = minf(w.player.max_hp, w.player.hp + 40); st.hp = int(w.player.hp)
 			Audio.sfx("heal")
+		"oil":
+			st.buffs["oil"] = 60.0; Audio.sfx("fire")
+		"incense":
+			st.buffs["incense"] = 60.0; Audio.sfx("chime")
+		"feather":
+			# pena: volta ao último altar onde se descansou (não durante um chefe)
+			if w == null or w.boss_active:
+				_inv_msg(p, Data.t("msg_cant_now")); return
+			st.take(id); close_all()
+			w.load_room(st.altar_room if st.altar_room != "" else "r1_wake", Vector2.INF)
+			return
 		_:
 			return
 	st.take(id)
 	_inv_msg(p, Data.t("msg_used", {"item": Data.t("item_%s_name" % id)}))
-	_inv_build(p)
+	if p.has("tab"):
+		_inv_build(p)
 
 func _read_letter(p: Dictionary, id: String) -> void:
 	var w = p.get("world")
