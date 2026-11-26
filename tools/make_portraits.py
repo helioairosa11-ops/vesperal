@@ -16,7 +16,11 @@ BOSSES = ['coveiro', 'matilheira', 'caedmon', 'automato', 'hilde', 'mariposa', '
 FRAME = {}
 # cabeças marcadas à mão (centro x, centro y em píxeis do quadro, lado em fração da altura da figura)
 HEAD_PX = {'maren': (50, 24, 0.27), 'coveiro': (114, 30, 0.34), 'matilheira': (214, 52, 0.44),
-           'caedmon': (126, 36, 0.32), 'automato': (62, 60, 0.36), 'mariposa': (176, 70, 0.42)}
+           'caedmon': (126, 36, 0.32), 'automato': (62, 60, 0.36), 'mariposa': (176, 70, 0.42),
+           'seraphine': (98, 30, 0.27), 'aldric': (139, 32, 0.27)}
+# chefes com arte nova pintada: o retrato sai da pose original em alta resolução (o quadro do jogo é pequeno e fica aos quadrados)
+SRC_POSE = {'seraphine': ('tools/art/poses/seraphine/si_r0_0.png', (150, 70, 0.42)),
+            'aldric': ('tools/art/poses/aldric/ai_r0_0.png', (190, 68, 0.40))}
 
 def meta(name):
     s = (ROOT / 'assets' / 'sprites' / f'{name}.js').read_text(encoding='utf-8')
@@ -50,8 +54,13 @@ def head_box(im, f, m, key):
     return int(cx - side / 2), int(cy - side / 2), int(side)
 
 def make(name, key):
-    im, f, m = frame_img(name)
-    x, y, side = head_box(im, f, m, key)
+    if key in SRC_POSE:
+        path, (cx, cy, sz) = SRC_POSE[key]
+        im = Image.open(ROOT / path).convert('RGBA')
+        side = int(im.height * sz); x, y = int(cx - side / 2), int(cy - side / 2)
+    else:
+        im, f, m = frame_img(name)
+        x, y, side = head_box(im, f, m, key)
     # o chefe olha para a direita na folha; o retrato fica à esquerda da caixa a olhar para o texto (direita)
     crop = Image.new('RGBA', (side, side), (0, 0, 0, 0))
     crop.alpha_composite(im, (-x, -y))
