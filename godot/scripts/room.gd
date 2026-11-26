@@ -277,9 +277,48 @@ func _draw_layers() -> void:
 		elif f["t"] == "fire":
 			_fire_art(f["flames"], float(f["hk"]), float(f["seed"]))
 	draw_texture_rect(tiles_tex, Rect2(Vector2.ZERO, sz), false)
+	_draw_planks()
 	# blocos partidos (paredes falsas desfeitas): tapa com o fundo escuro
 	for b in broken:
 		draw_rect(Rect2(b.x * T, b.y * T, T, T), Color(0, 0, 0, 0))
+
+## plataformas de madeira (=): tábuas com veio, juntas, pregos, rebordo claro e sombra por baixo,
+## por cima da trave lisa do jogo web
+func _draw_planks() -> void:
+	var wood := Color("#4a3426"); var wood_d := Color("#2e1f17"); var wood_l := Color("#7a5a40")
+	var snow: bool = String(def.get("region", "r1")) == "r1"
+	for ty in h:
+		var tx := 0
+		while tx < grid[ty].size():
+			if grid[ty][tx] != "=":
+				tx += 1; continue
+			var x0 := tx
+			while tx < grid[ty].size() and grid[ty][tx] == "=":
+				tx += 1
+			var x := x0 * T; var w := (tx - x0) * T; var y := ty * T
+			draw_rect(Rect2(x - 1, y + 5, w + 2, 4), Color(0, 0, 0, 0.35))
+			draw_rect(Rect2(x - 1, y - 0.5, w + 2, 5.5), wood_d)
+			draw_rect(Rect2(x, y, w, 4.5), wood)
+			draw_rect(Rect2(x, y, w, 1), wood_l)
+			draw_rect(Rect2(x, y + 3.5, w, 1), Color(wood_d, 0.9))
+			var k := 0
+			var px := float(x)
+			while px < x + w:
+				var pw := 11.0 + float((x0 * 7 + k * 13) % 9)
+				var e := minf(px + pw, x + w)
+				# veio
+				draw_line(Vector2(px + 1, y + 2), Vector2(e - 2, y + 2.2), Color(wood_d, 0.55), 0.5)
+				if e < x + w:
+					draw_line(Vector2(e, y), Vector2(e, y + 4.5), wood_d, 0.8)
+					draw_rect(Rect2(e - 2.2, y + 1.2, 0.9, 0.9), Color("#9a948c"))
+					draw_rect(Rect2(e + 1.3, y + 1.2, 0.9, 0.9), Color("#9a948c"))
+				px = e; k += 1
+			if snow:
+				var sx := float(x)
+				while sx < x + w:
+					var sw := 3.0 + float((int(sx) * 31) % 7)
+					draw_rect(Rect2(sx, y - 1, minf(sw, x + w - sx), 1), Color(0.86, 0.88, 0.92, 0.55))
+					sx += sw + 2.0 + float((int(sx) * 17) % 5)
 
 func _q(p0: Vector2, c0: Vector2, p1: Vector2, out: PackedVector2Array) -> void:
 	for i in 6:
