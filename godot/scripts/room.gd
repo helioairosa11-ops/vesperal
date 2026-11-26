@@ -282,11 +282,18 @@ func _draw_layers() -> void:
 	for b in broken:
 		draw_rect(Rect2(b.x * T, b.y * T, T, T), Color(0, 0, 0, 0))
 
-## plataformas de madeira (=): tábuas com veio, juntas, pregos, rebordo claro e sombra por baixo,
-## por cima da trave lisa do jogo web
+## plataformas (=): tira pintada do material da região (pontas + meio repetido), alinhada pela linha onde se pisa
+const PLAT_MAT := {"r1": "wood", "r2": "stone", "r3": "grate", "r4": "swamp", "r5": "wood", "r6": "cathedral", "r7": "marble"}
+static var _plat_meta: Dictionary = {}
 func _draw_planks() -> void:
-	var wood := Color("#4a3426"); var wood_d := Color("#2e1f17"); var wood_l := Color("#7a5a40")
-	var snow: bool = String(def.get("region", "r1")) == "r1"
+	if _plat_meta.is_empty():
+		var fj := FileAccess.open("res://data/platforms.json", FileAccess.READ)
+		if fj: _plat_meta = JSON.parse_string(fj.get_as_text())
+	var reg := String(def.get("region", "r1"))
+	var mat: String = PLAT_MAT.get(reg, "wood")
+	var M: Dictionary = _plat_meta.get(mat, {})
+	var tex := Data.tex("res://art/tiles/plat_%s.png" % mat) if not M.is_empty() else null
+	var snow: bool = reg == "r1"
 	for ty in h:
 		var tx := 0
 		while tx < grid[ty].size():
@@ -295,30 +302,33 @@ func _draw_planks() -> void:
 			var x0 := tx
 			while tx < grid[ty].size() and grid[ty][tx] == "=":
 				tx += 1
-			var x := x0 * T; var w := (tx - x0) * T; var y := ty * T
-			draw_rect(Rect2(x - 1, y + 5, w + 2, 4), Color(0, 0, 0, 0.35))
-			draw_rect(Rect2(x - 1, y - 0.5, w + 2, 5.5), wood_d)
-			draw_rect(Rect2(x, y, w, 4.5), wood)
-			draw_rect(Rect2(x, y, w, 1), wood_l)
-			draw_rect(Rect2(x, y + 3.5, w, 1), Color(wood_d, 0.9))
-			var k := 0
-			var px := float(x)
-			while px < x + w:
-				var pw := 11.0 + float((x0 * 7 + k * 13) % 9)
-				var e := minf(px + pw, x + w)
-				# veio
-				draw_line(Vector2(px + 1, y + 2), Vector2(e - 2, y + 2.2), Color(wood_d, 0.55), 0.5)
-				if e < x + w:
-					draw_line(Vector2(e, y), Vector2(e, y + 4.5), wood_d, 0.8)
-					draw_rect(Rect2(e - 2.2, y + 1.2, 0.9, 0.9), Color("#9a948c"))
-					draw_rect(Rect2(e + 1.3, y + 1.2, 0.9, 0.9), Color("#9a948c"))
-				px = e; k += 1
+			var x := x0 * T - 1.5; var w := (tx - x0) * T + 3.0; var y := ty * T
+			if tex == null:
+				draw_rect(Rect2(x, y, w, 5), Color("#4a3426")); continue
+			var dn: float = M["dens"]; var sw: float = M["w"]; var sh2: float = M["h"]; var cap: float = M["cap"]
+			var top := y - float(M["top"]) / dn; var hh := sh2 / dn
+			# sombra suave por baixo
+			draw_rect(Rect2(x + 2, y + 4, w - 4, 4), Color(0, 0, 0, 0.22))
+			var capw := minf(cap / dn, w / 2.0)
+			draw_texture_rect_region(tex, Rect2(x, top, capw, hh), Rect2(0, 0, capw * dn, sh2))
+			draw_texture_rect_region(tex, Rect2(x + w - capw, top, capw, hh), Rect2(sw - capw * dn, 0, capw * dn, sh2))
+			# meio: pedaços seguidos da tira, a começar num sítio diferente em cada plataforma
+			var mid0 := cap; var mid1 := sw - cap
+			var src := mid0 + float((x0 * 37 + ty * 11) % int(mid1 - mid0))
+			var px := x + capw
+			while px < x + w - capw - 0.01:
+				var left_w := (x + w - capw) - px
+				var avail := (mid1 - src) / dn
+				var seg := minf(left_w, avail)
+				draw_texture_rect_region(tex, Rect2(px, top, seg, hh), Rect2(src, 0, seg * dn, sh2))
+				px += seg; src += seg * dn
+				if src >= mid1 - 0.5: src = mid0
 			if snow:
-				var sx := float(x)
-				while sx < x + w:
-					var sw := 3.0 + float((int(sx) * 31) % 7)
-					draw_rect(Rect2(sx, y - 1, minf(sw, x + w - sx), 1), Color(0.86, 0.88, 0.92, 0.55))
-					sx += sw + 2.0 + float((int(sx) * 17) % 5)
+				var sx := float(x + 2)
+				while sx < x + w - 2:
+					var sw2 := 3.0 + float((int(sx) * 31) % 7)
+					draw_rect(Rect2(sx, y - 1, minf(sw2, x + w - 2 - sx), 1), Color(0.86, 0.88, 0.92, 0.5))
+					sx += sw2 + 3.0 + float((int(sx) * 17) % 6)
 
 func _q(p0: Vector2, c0: Vector2, p1: Vector2, out: PackedVector2Array) -> void:
 	for i in 6:

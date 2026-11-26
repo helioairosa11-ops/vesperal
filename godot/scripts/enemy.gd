@@ -350,7 +350,7 @@ func tick(dt: float) -> void:
 			queue_free()
 		return
 	if not flying:
-		_dist += absf(vel.x) * dt
+		_dist += vel.x * facing * dt   # a recuar de frente, o passo anda para trás
 	cool = maxf(0.0, cool - dt)
 	if stagger > 0:
 		stagger -= dt
@@ -637,7 +637,7 @@ func _melee(dt: float, speed: float, reach: float, options_near: Array, options_
 			# não consegue chegar (abismo, parede): fica à beira, de frente, à espera
 			vel.x = move_toward(vel.x, 0, 900 * dt)
 	elif d < band - 12 and cool > 0:
-		_go(-dir, speed * 0.6, dt)
+		_go(-dir, speed * 0.45, dt)
 	else:
 		vel.x = move_toward(vel.x, 0, 900 * dt)
 
