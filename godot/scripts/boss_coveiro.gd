@@ -64,7 +64,7 @@ func tick(dt: float) -> void:
 			world.fx.dust(Vector2(cx + randf_range(-20, 20), bottom), 1)
 		if intro_t > 1.6:
 			intro = false
-			world.shake(0.4); world.audio.sfx("roar")
+			world.shake(0.4); world.audio.sfx("cov_roar_fire" if phase > 0 else "cov_roar")
 		t += dt
 		return
 	super.tick(dt)
@@ -77,7 +77,7 @@ func tick(dt: float) -> void:
 			sh = sh_p2
 			world.fx.burst(Vector2(cx, cy), 40, Color(1, 0.55, 0.2), 160.0, true)
 			world.flash_screen(Color(1, 0.6, 0.3), 0.35)
-			world.shake(0.45); world.audio.sfx("roar")
+			world.shake(0.45); world.audio.sfx("cov_roar_fire" if phase > 0 else "cov_roar")
 			cool = 0.2
 	if dazed and stagger <= 0:
 		dazed = false
@@ -103,15 +103,15 @@ func _think_boss(dt: float) -> void:
 func _on_act(nm: String, _s: Dictionary) -> void:
 	match nm:
 		"slam":
-			world.shake(0.45); world.audio.sfx("crush")
+			world.shake(0.45); world.audio.sfx("cov_slam_fire" if phase > 0 else "cov_slam")
 			var x := cx + facing * 66
 			world.fx.dust(Vector2(x, bottom - 2), 22)
 			if phase > 0:
 				world.fx.burst(Vector2(x, bottom - 6), 16, Color(1, 0.5, 0.15), 140.0, true)
 		"sweep":
-			world.audio.sfx("swing_heavy")
+			world.audio.sfx("cov_swing_fire" if phase > 0 else "cov_swing")
 		"clods":
-			world.audio.sfx("swing")
+			world.audio.sfx("cov_swing_light")
 			var n := 3 if phase > 0 else 2
 			var dir := signf(player.cx - cx)
 			if dir == 0:
@@ -121,7 +121,7 @@ func _on_act(nm: String, _s: Dictionary) -> void:
 					"grav": 650.0, "size": Vector2(10, 10), "dmg": 12.0, "kind": "clod", "life": 3.0, "fire": phase > 0})
 		"burrow":
 			underground = true; hittable = false
-			world.audio.sfx("crush")
+			world.audio.sfx("cov_burrow")
 			world.fx.dust(Vector2(cx, bottom), 20)
 
 func _during(nm: String, _s: Dictionary, _dt: float) -> void:
@@ -129,6 +129,8 @@ func _during(nm: String, _s: Dictionary, _dt: float) -> void:
 		world.fx.dust(Vector2(cx + facing * randf_range(10, 70), bottom - 1), 1)
 	if nm == "burrow":
 		var a := atk
+		if a["t"] >= 0.45 and not a.get("emerge_snd", false):
+			a["emerge_snd"] = true; world.audio.sfx("cov_emerge")
 		if a["t"] < 1.0:
 			vel.x = 0; target_x = player.cx
 			if randf() < 0.5:
@@ -137,7 +139,7 @@ func _during(nm: String, _s: Dictionary, _dt: float) -> void:
 			a["emerged"] = true
 			pos.x = clampf(target_x - size.x / 2, 40, world.room.size_px().x - size.x - 40)
 			underground = false; hittable = true
-			world.shake(0.5); world.audio.sfx("crush")
+			world.shake(0.5)
 			world.fx.dust(Vector2(cx, bottom), 30)
 		if a.get("emerged", false) and a["t"] < 1.2:
 			attack_boxes.append({"rect": Rect2(pos.x - 8, pos.y - 20, size.x + 16, size.y + 20), "dmg": 24.0, "id": a["id"], "unblockable": true, "parryable": false, "knock": 220.0, "src": self, "fire": phase > 0})
@@ -164,7 +166,7 @@ func on_parried() -> void:
 		parry_n = 0
 		do_stagger(2.4, true); dazed = true
 		world.flash_screen(Color(1, 0.96, 0.88), 0.3)
-		world.hitstop(0.12); world.audio.sfx("stagger")
+		world.hitstop(0.12); world.audio.sfx("cov_stagger")
 	else:
 		do_stagger(0.7, true)
 		vel.x = -facing * 80.0

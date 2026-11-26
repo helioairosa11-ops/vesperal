@@ -481,7 +481,7 @@ func _boss_logic() -> void:
 		_refresh_doors()
 
 func on_boss_defeated(b) -> void:
-	audio.sfx("boss_die"); shake(0.8); flash_screen(Color.WHITE, 0.6); hitstop(0.4)
+	audio.sfx("boss_die"); audio.sfx("cov_death"); shake(0.8); flash_screen(Color.WHITE, 0.6); hitstop(0.4)
 	fx.burst(Vector2(b.cx, b.cy), 60, Color(1, 0.7, 0.4), 220.0, true)
 	boss_active = false
 	hud.boss = null
