@@ -201,6 +201,26 @@ static func kinds() -> Dictionary:
 			"attacks": {"swoop": {"wind": 0.3, "act": 0.5, "rec": 0.3, "dmg": 9, "tell": "", "body": true, "sfx": "wind"}},
 			"think": "_think_raven",
 		},
+		# ---------------- Região 6 (Catedral)
+		"penitent": {
+			"cfg": {"w": 16, "h": 32, "hp": 55, "poise": 22, "ash": 30}, "eye": Color(1, 0.6, 0.25),
+			"attacks": {
+				"c1": {"wind": 0.35, "act": 0.12, "rec": 0.15, "dmg": 12, "hb": [0, 8, 34, 22], "lunge": 90.0, "tell": "", "sfx": "whip", "next": "c2"},
+				"c2": {"wind": 0.2, "act": 0.12, "rec": 0.18, "dmg": 12, "hb": [0, 8, 34, 22], "lunge": 90.0, "tell": "", "sfx": "whip", "next": "c3"},
+				"c3": {"wind": 0.55, "act": 0.15, "rec": 0.75, "dmg": 18, "hb": [0, 0, 40, 30], "lunge": 140.0, "tell": "white", "sfx": "swing_heavy"},
+			},
+			"think": "_think_penitent",
+		},
+		"vitrail": {
+			"cfg": {"w": 18, "h": 26, "hp": 40, "poise": 16, "ash": 28, "flying": true}, "center": true, "heavy_weak": true,
+			"attacks": {"shards": {"wind": 0.75, "act": 0.05, "rec": 0.8, "tell": "", "sfx": "glass"}},
+			"think": "_think_vitrail",
+		},
+		"choir": {
+			"cfg": {"w": 16, "h": 16, "hp": 30, "poise": 10, "ash": 20, "flying": true}, "center": true,
+			"attacks": {"sing": {"wind": 0.9, "act": 0.05, "rec": 1.0, "tell": "", "sfx": "choir_hit"}},
+			"think": "_think_choir",
+		},
 	}
 	# gigante (husk_big): o mesmo Cinzento a 1,85×, mais vida e golpes mais fortes
 	var big: Dictionary = _kinds["husk"].duplicate(true)
@@ -328,6 +348,9 @@ func _update_attack(dt: float) -> void:
 			vel.x = move_toward(vel.x, 0, 900 * dt)
 			if atk["t"] >= s["rec"]:
 				_on_end(atk["name"])
+				if s.has("next"):
+					var nx: String = s["next"]
+					atk = {}; _start(nx); return
 				atk = {}
 				cool = randf_range(0.5, 1.1)
 				# depois de golpear, às vezes dá um passo atrás (não fica colado à espera de levar)
@@ -361,6 +384,15 @@ func _on_act(nm: String, s: Dictionary) -> void:
 	if kind == "acolyte" and nm == "ring":
 		for sd in [-1, 1]:
 			world.spawn_projectile({"pos": Vector2(cx, cy), "vel": Vector2(sd * 170.0, 0), "size": Vector2(10, 26), "dmg": 12.0, "kind": "wave", "color": Color("#e8d090"), "life": 2.2})
+	if kind == "vitrail" and nm == "shards":
+		var a0 := (Vector2(player.cx, player.cy) - Vector2(cx, cy)).angle()
+		for i in [-1, 0, 1]:
+			var a: float = a0 + i * 0.22
+			world.spawn_projectile({"pos": Vector2(cx, cy), "vel": Vector2(cos(a), sin(a)) * 230.0, "size": Vector2(7, 7), "dmg": 11.0, "kind": "glass", "color": Color(["#ff6080", "#6080ff", "#ffd060"].pick_random()), "life": 3.0})
+	if kind == "choir" and nm == "sing":
+		for i in 6:
+			var a2: float = i / 6.0 * TAU + anim
+			world.spawn_projectile({"pos": Vector2(cx, cy), "vel": Vector2(cos(a2), sin(a2)) * 110.0, "size": Vector2(9, 9), "dmg": 10.0, "kind": "note", "color": Color("#d0a0ff"), "life": 3.0, "solid": false})
 	if kind == "moth" and nm == "dive":
 		vel = (Vector2(player.cx, player.cy) - Vector2(cx, cy)).normalized() * 260.0
 	if kind == "thornmaid" and nm == "burst":
@@ -837,6 +869,47 @@ func _think_raven(dt: float) -> void:
 		vel = Vector2.ZERO
 	facing = 1 if vel.x > 0 else -1
 
+# ---------------- Região 6
+## Penitente: avança depressa e encadeia três golpes (o último aparável)
+func _think_penitent(dt: float) -> void:
+	if not atk.is_empty():
+		return
+	if _perceive(dt, 230):
+		_melee(dt, 70, 50, [["c1", 1.0]], [], 0.0)
+	else:
+		_patrol(dt, 20, 60)
+
+var blink_t := 3.0
+## Vitral: flutua, desaparece num clarão e reaparece perto, dispara três estilhaços (frágil a golpes pesados)
+func _think_vitrail(dt: float) -> void:
+	if not _perceive(dt, 280, 200):
+		fly_to(Vector2(home_x, pos.y + sin(anim) * 2.0), 30, dt); return
+	face()
+	blink_t -= dt
+	if blink_t <= 0 and atk.is_empty():
+		blink_t = randf_range(3, 5)
+		world.audio.sfx("light", 0.4); world.fx.burst(Vector2(cx, cy), 14, Color("#c0a0ff"), 100.0, true)
+		var old := pos
+		var sz: Vector2 = world.room.size_px()
+		pos = Vector2(clampf(player.cx + [-1, 1].pick_random() * randf_range(90, 140), 20, sz.x - 40), clampf(player.cy - randf_range(50, 90), 20, sz.y - 60))
+		if world.room.rect_solid(Rect2(pos, size)):
+			pos = old
+		world.fx.burst(Vector2(cx, cy), 14, Color("#c0a0ff"), 100.0, true)
+	if atk.is_empty():
+		vel.x *= 0.9; vel.y = sin(anim * 2.0) * 10.0
+		if cool <= 0:
+			_start("shards")
+
+## Coro: anjo cantor que paira por cima e solta notas em círculo
+func _think_choir(dt: float) -> void:
+	if _perceive(dt, 260, 200):
+		var p = player
+		fly_to(Vector2(p.cx + sin(anim * 0.6) * 100.0, p.cy - 80.0), 60, dt)
+		if cool <= 0 and atk.is_empty():
+			_start("sing")
+	else:
+		fly_to(Vector2(home_x, pos.y + sin(anim) * 2.0), 30, dt)
+
 # ------------------------------------------------------------------ dano
 func on_hit(box: Dictionary) -> bool:
 	if dead or not hittable:
@@ -887,8 +960,8 @@ func on_hit(box: Dictionary) -> bool:
 func is_boss() -> bool:
 	return false
 
-func damage_mult(_box: Dictionary) -> float:
-	return 1.0
+func damage_mult(box: Dictionary) -> float:
+	return 1.6 if K.get("heavy_weak", false) and box.get("kind", "") == "heavy" else 1.0
 
 func is_heavy() -> bool:
 	return K.get("heavy", false)

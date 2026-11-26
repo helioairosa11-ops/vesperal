@@ -3,7 +3,7 @@ extends Node2D
 
 const T := 20
 const STEP := 1.0 / 60.0
-const ENEMY_KINDS := ["husk", "crawler", "wisp", "sexton", "husk_big", "sentinel", "crossbow", "hound", "thrall", "slag", "smelter", "thornmaid", "drowned", "moth", "gargoyle", "acolyte", "raven"]
+const ENEMY_KINDS := ["husk", "crawler", "wisp", "sexton", "husk_big", "sentinel", "crossbow", "hound", "thrall", "slag", "smelter", "thornmaid", "drowned", "moth", "gargoyle", "acolyte", "raven", "penitent", "vitrail", "choir"]
 
 var room: Room
 var player
