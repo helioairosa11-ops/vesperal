@@ -1424,6 +1424,7 @@ def t_extreme(R, b):
     new_game(pg, slot=1); pg.evaluate('VSDebug.allAbilities(); VSDebug.god(true)')
     pg.evaluate('VS.state.bosses.aldric = true')
     warp(pg, 'r7_throne')
+    wait(pg, 'T.p().onGround', 4)   # a arena da Seraphine mede-se pela posição da protagonista: só depois de pousar
     pg.evaluate("(() => { const p = T.p(), TT = VS.U.TILE; const e = VS.Bosses.spawn({ boss: 'seraphine', x: Math.floor(p.cx / TT) + 6, y: Math.floor((p.bottom - 1) / TT) - 3 }, T.g()); e.intro = false; T.g().startBoss && T.g().startBoss(e); T.S = e; e.cool = 99; e.atk = null; e.phase = 1; })()")
     frames(pg, 5)
     pg.evaluate("(() => { const e = T.S; e.cool = 99; e.atk = null; e.attack('stoptime'); })()")
