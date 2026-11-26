@@ -1,0 +1,107 @@
+{
+ "idle": [
+  "tools/art/poses/aldric/ai_r0_0.png",
+  "tools/art/poses/aldric/ai_r0_1.png",
+  "tools/art/poses/aldric/ai_r0_2.png",
+  "tools/art/poses/aldric/ai_r0_3.png"
+ ],
+ "move": [
+  "tools/art/poses/aldric/ai_r1_0.png",
+  "tools/art/poses/aldric/ai_r1_1.png",
+  "tools/art/poses/aldric/ai_r1_2.png",
+  "tools/art/poses/aldric/ai_r1_3.png"
+ ],
+ "atk_sweep": [
+  "tools/art/poses/aldric/asw_r0_0.png",
+  "tools/art/poses/aldric/asw_r0_1.png",
+  "tools/art/poses/aldric/asw_r0_2.png",
+  "tools/art/poses/aldric/asw_r0_3.png"
+ ],
+ "atk_sweep2": [
+  "tools/art/poses/aldric/asw_r1_0.png",
+  "tools/art/poses/aldric/asw_r1_1.png",
+  "tools/art/poses/aldric/asw_r1_2.png",
+  "tools/art/poses/aldric/asw_r1_3.png"
+ ],
+ "atk_overhead": [
+  "tools/art/poses/aldric/ao_r0_0.png",
+  "tools/art/poses/aldric/ao_r0_1.png",
+  "tools/art/poses/aldric/ao_r0_2.png",
+  "tools/art/poses/aldric/ao_r0_3.png"
+ ],
+ "atk_grab": [
+  "tools/art/poses/aldric/ao_r1_0.png",
+  "tools/art/poses/aldric/ao_r1_1.png",
+  "tools/art/poses/aldric/ao_r1_2.png",
+  "tools/art/poses/aldric/ao_r1_3.png"
+ ],
+ "atk_leap": [
+  "tools/art/poses/aldric/alp_r0_0.png",
+  "tools/art/poses/aldric/alp_r0_1.png",
+  "tools/art/poses/aldric/alp_r0_2.png",
+  "tools/art/poses/aldric/alp_r0_3.png",
+  "tools/art/poses/aldric/alp_r1_0.png",
+  "tools/art/poses/aldric/alp_r1_1.png",
+  "tools/art/poses/aldric/alp_r1_2.png",
+  "tools/art/poses/aldric/alp_r1_3.png"
+ ],
+ "atk_charge": [
+  "tools/art/poses/aldric/ach_r0_0.png",
+  "tools/art/poses/aldric/ach_r0_1.png",
+  "tools/art/poses/aldric/ach_r0_2.png",
+  "tools/art/poses/aldric/ach_r0_3.png"
+ ],
+ "charge_run": [
+  "tools/art/poses/aldric/ach_r1_0.png",
+  "tools/art/poses/aldric/ach_r1_1.png",
+  "tools/art/poses/aldric/ach_r1_2.png",
+  "tools/art/poses/aldric/ach_r1_3.png"
+ ],
+ "knock_fall": [
+  "tools/art/poses/aldric/akn_r0_0.png",
+  "tools/art/poses/aldric/akn_r0_1.png",
+  "tools/art/poses/aldric/akn_r0_2.png"
+ ],
+ "knock_down": [
+  "tools/art/poses/aldric/akn_r0_3.png",
+  "tools/art/poses/aldric/akn_r1_0.png"
+ ],
+ "knock_getup": [
+  "tools/art/poses/aldric/akn_r1_1.png",
+  "tools/art/poses/aldric/akn_r1_2.png",
+  "tools/art/poses/aldric/akn_r1_3.png"
+ ],
+ "kneel_rise": [
+  "tools/art/poses/aldric/akn_r1_0.png",
+  "tools/art/poses/aldric/akn_r1_1.png",
+  "tools/art/poses/aldric/akn_r1_2.png",
+  "tools/art/poses/aldric/akn_r1_3.png"
+ ],
+ "atk_echo": [
+  "tools/art/poses/aldric/aet_r0_0.png",
+  "tools/art/poses/aldric/aet_r0_1.png",
+  "tools/art/poses/aldric/aet_r0_2.png"
+ ],
+ "atk_thrust": [
+  "tools/art/poses/aldric/aet_r1_0.png",
+  "tools/art/poses/aldric/aet_r1_1.png",
+  "tools/art/poses/aldric/aet_r1_2.png",
+  "tools/art/poses/aldric/aet_r1_3.png"
+ ],
+ "hurt": [
+  "tools/art/poses/aldric/ahd_r0_0.png",
+  "tools/art/poses/aldric/ahd_r0_1.png"
+ ],
+ "stagger": [
+  "tools/art/poses/aldric/ahd_r0_1.png",
+  "tools/art/poses/aldric/ahd_r0_2.png"
+ ],
+ "death": [
+  "tools/art/poses/aldric/ahd_r0_1.png",
+  "tools/art/poses/aldric/ahd_r0_2.png",
+  "tools/art/poses/aldric/ahd_r1_0.png",
+  "tools/art/poses/aldric/ahd_r1_1.png",
+  "tools/art/poses/aldric/ahd_r1_2.png",
+  "tools/art/poses/aldric/ahd_r1_3.png"
+ ]
+}

@@ -1,7 +1,8 @@
 """Separa uma folha de poses do Gemini (fundo magenta) em figuras recortadas, por filas e da esquerda para a direita.
 Recorte: chave do magenta com margem de cor, tira o halo rosado das orlas (despill), tapa furinhos dentro da figura,
 junta peças soltas da mesma pose (trepadeiras, faíscas) por proximidade.
-Uso: python3 tools/split_sheet.py <imagem> <pasta_saida> <prefixo> [poses_por_fila, ex. 4 ou 4,5]
+Uso: python3 tools/split_sheet.py <imagem> <pasta_saida> <prefixo> [poses_por_fila, ex. 4 ou 4,5] [--nopurple] [--green]
+--green: fundo verde puro #00FF00 (o recorte troca os canais para usar a mesma chave e devolve as cores originais)
 Saída: <prefixo>_r<fila>_<n>.png (RGBA, recortado)"""
 import sys, pathlib
 import numpy as np
@@ -118,7 +119,21 @@ if __name__ == '__main__':
     wants = [int(v) for v in args[4].split(',')] if len(args) > 4 else [0]
     out.mkdir(parents=True, exist_ok=True)
     g = np.asarray(Image.open(src).convert('RGB')).astype(int)
-    rgba = key_magenta(g, '--nopurple' in sys.argv)
+    if '--green' in sys.argv:
+        # verde puro passa a magenta: R'=G, G'=max(R,B), B'=G; a chave dá o alfa, as cores vêm do original
+        t = np.dstack([g[..., 1], np.maximum(g[..., 0], g[..., 2]), g[..., 1]])
+        a = key_magenta(t)[..., 3]
+        col = g.astype(float).copy()
+        # despill verde nas orlas: o verde nunca passa muito do maior dos outros dois
+        edge = ndi.binary_dilation(a == 0, iterations=3) & (a > 0)
+        lim = np.maximum(col[..., 0], col[..., 2]) + 12
+        gr = col[..., 1]; gr[edge] = np.minimum(gr[edge], lim[edge]); gr[(a > 0) & (gr > lim + 50)] = lim[(a > 0) & (gr > lim + 50)]
+        a[(a > 0) & edge & (g[..., 1] - np.maximum(g[..., 0], g[..., 2]) > 90)] = 0
+        # nenhum destes chefes tem verde: qualquer píxel claramente verde é resto do fundo
+        a[(g[..., 1] - np.maximum(g[..., 0], g[..., 2])) > 40] = 0
+        rgba = np.dstack([np.clip(col, 0, 255), a]).astype(np.uint8)
+    else:
+        rgba = key_magenta(g, '--nopurple' in sys.argv)
     # corta primeiro em faixas horizontais (uma por fila), pela linha com menos figura entre filas
     nb = len(wants) if len(args) > 4 else 0
     bands = [rgba]
