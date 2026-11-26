@@ -134,6 +134,25 @@ static func kinds() -> Dictionary:
 			"attacks": {"bite": {"wind": 0.32, "act": 0.22, "rec": 0.45, "dmg": 13, "hb": [4, 2, 20, 14], "lunge": 280.0, "tell": "", "hop": -160.0}},
 			"think": "_think_hound",
 		},
+		# ---------------- Região 3 (Forjas)
+		"thrall": {
+			"cfg": {"w": 20, "h": 34, "hp": 75, "poise": 40, "ash": 32}, "eye": Color(1, 0.48, 0.19), "heavy": true,
+			"attacks": {
+				"slam": {"wind": 0.85, "act": 0.14, "rec": 0.9, "dmg": 24, "hb": [6, 0, 30, 30], "tell": "red", "armor": true, "shake": 0.3, "waves": true},
+				"swipe": {"wind": 0.5, "act": 0.16, "rec": 0.6, "dmg": 16, "hb": [0, 8, 36, 22], "tell": "white", "lunge": 60.0, "sfx": "swing_heavy"},
+			},
+			"think": "_think_thrall",
+		},
+		"slag": {
+			"cfg": {"w": 18, "h": 14, "hp": 24, "poise": 6, "ash": 10, "contact": 11}, "eye": Color(1, 0.4, 0.1),
+			"attacks": {},
+			"think": "_think_slag",
+		},
+		"smelter": {
+			"cfg": {"w": 16, "h": 30, "hp": 36, "poise": 14, "ash": 22}, "eye": Color(1, 0.45, 0.15),
+			"attacks": {"lob": {"wind": 0.7, "act": 0.05, "rec": 0.8, "tell": "", "sfx": "swing"}},
+			"think": "_think_smelter",
+		},
 	}
 	# gigante (husk_big): o mesmo Cinzento a 1,85×, mais vida e golpes mais fortes
 	var big: Dictionary = _kinds["husk"].duplicate(true)
@@ -279,6 +298,13 @@ func _on_act(nm: String, s: Dictionary) -> void:
 	if kind == "crossbow" and nm == "shoot":
 		var o := Vector2(cx + facing * 12, pos.y + 12)
 		world.spawn_projectile({"pos": o, "vel": Vector2(facing * 330.0, 0), "size": Vector2(12, 4), "dmg": 15.0, "kind": "bolt", "color": Color("#c0b090"), "life": 3.0})
+	if s.get("waves", false):
+		# o martelo no chão solta duas ondas de choque, uma para cada lado
+		for sd in [-1, 1]:
+			world.spawn_projectile({"pos": Vector2(cx + facing * 22, bottom - 6), "vel": Vector2(sd * 170.0, 0), "size": Vector2(14, 10), "dmg": 12.0, "kind": "shockwave", "color": Color("#ff8040"), "life": 1.1, "solid": false, "parryable": false})
+	if kind == "smelter" and nm == "lob":
+		var ddx: float = player.cx - cx
+		world.spawn_projectile({"pos": Vector2(cx, pos.y + 4), "vel": Vector2(ddx / 0.9, -330.0), "grav": 700.0, "size": Vector2(10, 10), "dmg": 15.0, "kind": "molten", "color": Color("#ff7020"), "life": 3.0, "parryable": false, "fire": true, "on_wall": "fire"})
 	if s.has("hop") and on_ground:
 		vel.y = s["hop"]
 	if kind == "wisp" and nm == "dive":
@@ -594,6 +620,46 @@ func _think_hound(dt: float) -> void:
 	else:
 		_patrol(dt, 25, 90)
 
+# ---------------- Região 3
+## Escravo da Forja: lento e pesado, martela o chão (ondas para os dois lados) ou varre
+func _think_thrall(dt: float) -> void:
+	if not atk.is_empty():
+		return
+	if _perceive(dt, 220):
+		_melee(dt, 32, 48, [["slam", 1.0], ["swipe", 1.0]], [], 0.0)
+	else:
+		_patrol(dt, 14, 50)
+
+var hop_t := 0.8
+## Escória: salta aos saltos para cima de quem a vê; ao morrer parte-se em duas mais pequenas
+func _think_slag(dt: float) -> void:
+	_perceive(dt, 220, 100)
+	hop_t -= dt
+	if on_ground:
+		vel.x = move_toward(vel.x, 0, 600 * dt)
+		if hop_t <= 0:
+			hop_t = randf_range(0.7, 1.3)
+			if aggro: face()
+			else: facing = [-1, 1].pick_random()
+			vel.y = -randf_range(240, 330); vel.x = facing * randf_range(80, 130)
+			world.audio.sfx("splash", 0.2)
+
+## Fundidor: fica longe e atira metal fundido em arco (deixa fogo onde cai)
+func _think_smelter(dt: float) -> void:
+	if not atk.is_empty():
+		return
+	if _perceive(dt, 280, 140):
+		if alert_t > 0:
+			return
+		face()
+		var d := absf(dx())
+		if d < 60: _go(-facing, 50, dt)
+		else: vel.x = move_toward(vel.x, 0, 900 * dt)
+		if cool <= 0 and d < 300 and _can_take_turn():
+			_start("lob")
+	else:
+		_patrol(dt, 14, 50)
+
 # ------------------------------------------------------------------ dano
 func on_hit(box: Dictionary) -> bool:
 	if dead or not hittable:
@@ -648,7 +714,7 @@ func damage_mult(_box: Dictionary) -> float:
 	return 1.0
 
 func is_heavy() -> bool:
-	return false
+	return K.get("heavy", false)
 
 func do_stagger(dur: float, from_parry: bool) -> void:
 	stagger = dur; atk = {}; parried = from_parry

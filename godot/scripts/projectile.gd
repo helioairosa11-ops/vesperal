@@ -12,6 +12,9 @@ var sh: Dictionary
 var light: PointLight2D
 var color := Color("#ffb060")
 var trail := false
+var parryable := true
+var solid := true
+var on_wall := ""   # "fire": deixa uma poça de fogo onde bate (o metal fundido do Fundidor)
 # igual a PROJ em js/render/enemy_render.js: [animação, modo, tamanho nominal]
 const PROJ := {
 	"bolt": ["bolt", "dir", 12], "orb": ["orb", "", 9], "spark": ["spark", "dir", 12], "molten": ["molten", "spin", 10], "ingot": ["ingot", "spin", 10],
@@ -27,6 +30,7 @@ func setup(o: Dictionary) -> void:
 	dmg = o.get("dmg", 10.0); life = o.get("life", 3.0); kind = o.get("kind", "orb")
 	fire = o.get("fire", false); grav = o.get("grav", 0.0)
 	color = o.get("color", Color("#ffb060")); trail = o.get("trail", false)
+	parryable = o.get("parryable", true); solid = o.get("solid", true); on_wall = o.get("on_wall", "")
 	team = "enemy"
 	aid = Actor.new_attack_id()
 	sh = Data.sheet("fx_proj")
@@ -51,8 +55,10 @@ func tick(dt: float) -> void:
 	pos += vel * dt
 	spin += dt * 8.0
 	attack_boxes.clear()
-	attack_boxes.append({"rect": Rect2(pos, size), "dmg": dmg, "id": aid, "parryable": true, "knock": 150.0, "src": self, "projectile": true, "fire": fire})
-	if world.room.solid_at(Vector2(cx, cy)):
+	attack_boxes.append({"rect": Rect2(pos, size), "dmg": dmg, "id": aid, "parryable": parryable, "knock": 150.0, "src": self, "projectile": true, "fire": fire})
+	if solid and world.room.solid_at(Vector2(cx, cy)):
+		if on_wall == "fire":
+			world.spawn_projectile({"pos": Vector2(cx, cy - 6), "size": Vector2(20, 8), "dmg": 8.0, "kind": "fire", "color": Color("#ff6010"), "life": 1.5, "solid": false, "parryable": false, "fire": true})
 		world.fx.burst(Vector2(cx, cy), 8, Color(0.45, 0.36, 0.28) if kind == "clod" else color, 90.0, kind != "clod")
 		queue_free()
 	if trail and randf() < 0.6:
