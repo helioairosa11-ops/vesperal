@@ -4,6 +4,7 @@ extends Actor
 const C := {
 	"RUN": 160.0, "ACC_G": 1700.0, "ACC_A": 1350.0, "FRIC": 2100.0,
 	"GRAV": 1350.0, "FALL_MUL": 1.2, "MAXFALL": 480.0, "JUMP": -452.0, "JUMP_CUT": 0.42, "DOUBLE": -412.0,
+	"CLIMB_UP": 58.0, "CLIMB_UP_G": 80.0, "CLIMB_DOWN": 150.0, "CLIMB_STAM": 1.4, "CLIMB_STAM_G": 3.0, "CLIMB_HOP": -300.0,
 	"COYOTE": 0.12, "JUMP_BUF": 0.15, "WALL_SLIDE": 70.0, "WALL_JVX": 240.0, "WALL_JVY": -430.0, "WALL_LOCK": 0.16,
 	"PARRY": 0.2, "PARRY_LATE": 0.07, "IFRAMES": 0.9,
 }
@@ -36,6 +37,10 @@ var combo := ""
 var combo_t := 0.0
 var crouch := false
 var wall_dir := 0
+var climbing := false
+var climb_side := 1
+var climb_phase := 0.0
+var climb_stam := 3.0
 var wall_lock := 0.0
 var burn := {}
 var anim_key := "idle"
@@ -170,12 +175,33 @@ func tick(dt: float) -> void:
 	max_fall = C["MAXFALL"]
 	if action.get("type", "") == "dodge" and action.get("air", false):
 		grav = 0.0
+	# parede (como no jogo web, player.js): agarra-se e trepa — cima sobe, baixo desliza, nada fica agarrada — com
+	# fôlego limitado (renova-se no chão); no topo sobe por cima do rebordo. A Garra (abilities.wall) dá mais fôlego,
+	# subida mais rápida, o impulso pela parede acima e o salto de parede.
 	wall_dir = 0
-	if not on_ground and ax != 0 and vel.y > 0 and action.is_empty():
-		var probe := Rect2(pos + Vector2(ax * 2, 2), size - Vector2(0, 8))
-		if world.room.rect_solid(probe):
-			wall_dir = int(ax)
-			max_fall = C["WALL_SLIDE"]
+	var garra: bool = GameState.abilities.get("wall", false)
+	var climb_now := false
+	if on_ground and up and ax != 0 and action.is_empty() and not crouch and _touch_wall(int(ax)):
+		on_ground = false; pos.y -= 1; vel.y = -30; climbing = true; climb_side = int(ax)
+	if not on_ground and (action.is_empty() or action.get("type", "") == "attack"):
+		var wd: int = int(ax) if ax != 0 else (climb_side if climbing and (up or down) else 0)
+		if wd != 0 and _touch_wall(wd) and (vel.y > -40 or climbing):
+			wall_dir = wd; air_dash = false; double_used = false
+			if action.is_empty() and climb_stam > 0:
+				climb_now = true; climb_side = wd; facing = wd
+				vel.y = -(C["CLIMB_UP_G"] if garra else C["CLIMB_UP"]) if up else (C["CLIMB_DOWN"] if down else 0.0)
+				grav = 0.0
+				climb_stam -= dt * (1.0 if up else (0.0 if down else 0.32))
+				if up or down:
+					climb_phase = fmod(climb_phase + dt * (1.8 if up else 2.6), 1.0)
+				# topo da parede: a cabeça já passa o rebordo → sobe por cima
+				if (up or int(ax) == wd) and not down and not world.room.rect_solid(Rect2(pos + Vector2(wd * 2, -4), Vector2(size.x, 10))):
+					vel.y = -250; vel.x = wd * 110; wall_lock = 0.2; climb_now = false; world.audio.sfx("jump", 0.3)
+			else:
+				max_fall = C["WALL_SLIDE"]
+	climbing = climb_now
+	if on_ground:
+		climb_stam = C["CLIMB_STAM_G"] if garra else C["CLIMB_STAM"]; climbing = false
 	if vel.y > 0 and max_fall != C["WALL_SLIDE"] and action.get("type", "") != "dodge":
 		grav *= C["FALL_MUL"]
 	gravity = grav
@@ -189,7 +215,10 @@ func tick(dt: float) -> void:
 			get_tree().create_timer(0.25).timeout.connect(func(): drop_through = false)
 		elif coyote > 0:
 			_jump(C["JUMP"]); coyote = 0
+		elif climbing and up and GameState.abilities.get("wall", false) and climb_stam > 0.2:
+			vel.y = C["CLIMB_HOP"]; climb_stam -= 0.4; jump_buf = 0; world.audio.sfx("jump", 0.35)
 		elif wall_dir != 0:
+			climbing = false
 			vel.x = -wall_dir * C["WALL_JVX"]; facing = -wall_dir; wall_lock = C["WALL_LOCK"]
 			_jump(C["WALL_JVY"])
 		elif GameState.abilities.get("double", false) and not double_used:
@@ -447,6 +476,9 @@ func on_hit_enemy(box: Dictionary) -> void:
 		vel.y = -380; double_used = false; air_dash = false
 		action = {}
 
+func _touch_wall(d: int) -> bool:
+	return world.room.rect_solid(Rect2(pos + Vector2(d * 2, 2), size - Vector2(0, 8)))
+
 # ------------------------------------------------------------------ desenho
 func _current_frame() -> Dictionary:
 	var k := anim_key
@@ -464,6 +496,8 @@ func _current_frame() -> Dictionary:
 		return Data.frame(shw, nm, i0 + (i1 - i0) * clampf(action["t"] / maxf(d, 0.001), 0, 0.999))
 	if action.get("type", "") == "parry":
 		return Data.frame(shw, "parry", action["t"] * 18.0)
+	if k == "climb":
+		return Data.frame(sh, k, climb_phase * 6.0)
 	return Data.frame(sh, k, anim_t * float(sh["meta"]["anims"][k]["fps"]))
 
 func _pick_anim(dt: float) -> void:
@@ -478,7 +512,9 @@ func _pick_anim(dt: float) -> void:
 	elif tp == "heal":
 		k = "heal"
 	elif not on_ground:
-		if wall_dir != 0:
+		if climbing:
+			k = "climb" if absf(vel.y) > 5 else "climbIdle"
+		elif wall_dir != 0:
 			k = "wall"
 		elif vel.y < -60:
 			k = "double" if double_used else "jump"

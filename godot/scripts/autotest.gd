@@ -74,6 +74,10 @@ func _ready() -> void:
 			# tamanho: rastejante (×1,45), cinzento e os gigantes ao lado da protagonista
 			steps = [[0.4, "room", "r1_street"], [0.2, "place", "8"], [0.2, "spawn2", "crawler:3"], [0.05, "spawn2", "husk_big:7"], [0.05, "spawn2", "hound_big:-5"],
 				[0.6, "shot", "s01"], [0.3, "quit", ""]]
+		"climb":
+			# encosta a uma parede (sala r1_street, muro à direita) e trepa com cima
+			steps = [[0.4, "room", "r1_street"], [0.2, "place", "16"], [0.1, "press", "right"], [0.4, "press", "up"], [0.25, "shot", "k01_climb"],
+				[0.2, "shot", "k02_climb"], [0.8, "shot", "k03_top"], [0.1, "release", "up"], [0.1, "release", "right"], [0.3, "quit", ""]]
 		"npcs":
 			# Maren nas Muralhas (dá a medalha), Teodoro na Estufa (escolhe ir ter com a irmã), os dois no Santuário
 			steps = [[0.4, "room", "r2_gate"], [0.2, "place", "22"], [0.6, "shot", "m01_maren"], [0.1, "tap", "interact"], [2.0, "shot", "m02_maren_talk"],
