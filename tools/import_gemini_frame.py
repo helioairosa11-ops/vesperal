@@ -7,7 +7,8 @@ import numpy as np
 from PIL import Image
 import scipy.ndimage as ndi
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-src, name, idx, H = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4])
+src, name, idx = sys.argv[1], sys.argv[2], int(sys.argv[3])
+KARG = sys.argv[4]
 flip = len(sys.argv) > 5 and sys.argv[5] == 'espelhar'
 g = np.asarray(Image.open(src).convert('RGB')).astype(int)
 r, gg, b = g[..., 0], g[..., 1], g[..., 2]
@@ -22,7 +23,7 @@ crop[..., :3] = g[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
 crop[..., 3] = np.where(fg[ys.min():ys.max() + 1, xs.min():xs.max() + 1], 255, 0)
 # altura da figura (das botas ao cimo da cabeça, sem a pá) — o maior bloco de linhas cheias a partir de baixo
 im = Image.fromarray(crop)
-k = H / float(crop.shape[0])
+k = float(KARG[2:]) if KARG.startswith('k=') else int(KARG) / float(crop.shape[0])
 w2, h2 = max(1, round(crop.shape[1] * k)), max(1, round(crop.shape[0] * k))
 small = np.asarray(im.resize((w2, h2), Image.BOX)).astype(int)
 alpha = small[..., 3] > 110
