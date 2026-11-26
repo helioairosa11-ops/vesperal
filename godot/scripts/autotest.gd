@@ -67,6 +67,13 @@ func _ready() -> void:
 		"r6":
 			steps = [[0.4, "room", "r6_nave"], [0.2, "place", "10"], [0.2, "spawn2", "penitent:6"], [0.05, "spawn2", "vitrail:-5"], [0.05, "spawn2", "choir:3"],
 				[0.8, "shot", "c01"], [1.2, "shot", "c02"], [1.2, "shot", "c03"], [0.3, "quit", ""]]
+		"r7":
+			steps = [[0.4, "room", "r7_hall"], [0.2, "place", "10"], [0.2, "spawn2", "royalguard:6"], [0.05, "spawn2", "torch:-6"], [0.05, "spawn2", "courtier:3"],
+				[0.8, "shot", "p01"], [1.2, "shot", "p02"], [1.5, "shot", "p03"], [0.3, "quit", ""]]
+		"big":
+			# tamanho: rastejante (×1,45), cinzento e os gigantes ao lado da protagonista
+			steps = [[0.4, "room", "r1_street"], [0.2, "place", "8"], [0.2, "spawn2", "crawler:3"], [0.05, "spawn2", "husk_big:7"], [0.05, "spawn2", "hound_big:-5"],
+				[0.6, "shot", "s01"], [0.3, "quit", ""]]
 		"npcs":
 			# Maren nas Muralhas (dá a medalha), Teodoro na Estufa (escolhe ir ter com a irmã), os dois no Santuário
 			steps = [[0.4, "room", "r2_gate"], [0.2, "place", "22"], [0.6, "shot", "m01_maren"], [0.1, "tap", "interact"], [2.0, "shot", "m02_maren_talk"],

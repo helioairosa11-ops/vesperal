@@ -20,7 +20,8 @@ HEAD_PX = {'maren': (50, 24, 0.27), 'coveiro': (114, 30, 0.34), 'matilheira': (2
            'seraphine': (98, 30, 0.27), 'aldric': (139, 32, 0.27)}
 # chefes com arte nova pintada: o retrato sai da pose original em alta resolução (o quadro do jogo é pequeno e fica aos quadrados)
 SRC_POSE = {'seraphine': ('tools/art/poses/seraphine/si_r0_0.png', (150, 70, 0.42)),
-            'aldric': ('tools/art/poses/aldric/ai_r0_0.png', (190, 68, 0.40))}
+            'aldric': ('tools/art/poses/aldric/ai_r0_0.png', (190, 68, 0.40)),
+            'sineiro': ('tools/art/poses/sineiro/sn_r0_0.png', (172, 62, 0.40))}
 
 def meta(name):
     s = (ROOT / 'assets' / 'sprites' / f'{name}.js').read_text(encoding='utf-8')

@@ -1,0 +1,52 @@
+{
+ "idle": [
+  "tools/art/poses/sineiro/sn_r0_0.png",
+  "tools/art/poses/sineiro/sn_r0_1.png",
+  "tools/art/poses/sineiro/sn_r0_2.png",
+  "tools/art/poses/sineiro/sn_r0_3.png"
+ ],
+ "move": [
+  "tools/art/poses/sineiro/sn_r1_0.png",
+  "tools/art/poses/sineiro/sn_r1_1.png",
+  "tools/art/poses/sineiro/sn_r1_2.png",
+  "tools/art/poses/sineiro/sn_r1_3.png"
+ ],
+ "atk_swing": [
+  "tools/art/poses/sineiro/ss_r0_0.png",
+  "tools/art/poses/sineiro/ss_r0_1.png",
+  "tools/art/poses/sineiro/ss_r0_2.png",
+  "tools/art/poses/sineiro/ss_r0_3.png"
+ ],
+ "atk_ring": [
+  "tools/art/poses/sineiro/ss_r1_0.png",
+  "tools/art/poses/sineiro/ss_r1_1.png",
+  "tools/art/poses/sineiro/ss_r1_2.png",
+  "tools/art/poses/sineiro/ss_r1_3.png"
+ ],
+ "atk_stomp": [
+  "tools/art/poses/sineiro/sc_r0_0.png",
+  "tools/art/poses/sineiro/sc_r0_1.png",
+  "tools/art/poses/sineiro/sc_r0_2.png",
+  "tools/art/poses/sineiro/sc_r0_3.png"
+ ],
+ "atk_charge": [
+  "tools/art/poses/sineiro/sc_r1_0.png",
+  "tools/art/poses/sineiro/sc_r1_1.png",
+  "tools/art/poses/sineiro/sc_r1_2.png",
+  "tools/art/poses/sineiro/sc_r1_3.png"
+ ],
+ "hurt": [
+  "tools/art/poses/sineiro/sh_r0_0.png"
+ ],
+ "stagger": [
+  "tools/art/poses/sineiro/sh_r0_1.png",
+  "tools/art/poses/sineiro/sh_r0_2.png",
+  "tools/art/poses/sineiro/sh_r0_3.png"
+ ],
+ "death": [
+  "tools/art/poses/sineiro/sh_r1_0.png",
+  "tools/art/poses/sineiro/sh_r1_1.png",
+  "tools/art/poses/sineiro/sh_r1_2.png",
+  "tools/art/poses/sineiro/sh_r1_3.png"
+ ]
+}

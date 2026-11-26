@@ -6,6 +6,7 @@ extends Actor
 const TELL_LEAD := 0.42
 
 var kind := ""
+var base := ""   # tipo de base (os gigantes "_big" portam-se como o bicho normal)
 var K: Dictionary = {}
 var sh: Dictionary = {}
 var atk: Dictionary = {}
@@ -31,9 +32,11 @@ var surging := false
 
 func setup(k: String, tx: int, ty: int) -> void:
 	kind = k
+	base = k.trim_suffix("_big")
 	K = kinds()[k]
 	var c: Dictionary = K["cfg"]
-	size = Vector2(c["w"], c["h"])
+	bulk = float(K.get("size", 1.0))
+	size = Vector2(round(c["w"] * bulk), round(c["h"] * bulk))
 	pos = Vector2(tx * 20 + 10 - size.x / 2, (ty + 1) * 20 - size.y)
 	hp = c["hp"]; max_hp = hp
 	poise = c.get("poise", 20.0); poise_max = poise
@@ -47,9 +50,9 @@ func setup(k: String, tx: int, ty: int) -> void:
 	want_face = [-1, 1].pick_random()
 	sh = Data.sheet(K.get("sheet", "en_" + k))
 	home_x = pos.x + size.x / 2.0
-	if k == "gargoyle":
+	if base == "gargoyle":
 		perched = true; perch = pos
-	if k == "drowned":
+	if base == "drowned":
 		submerged = true; hittable = false; rise = 0.0
 
 var fx_add: Node2D
@@ -222,17 +225,51 @@ static func kinds() -> Dictionary:
 			"think": "_think_choir",
 		},
 	}
-	# gigante (husk_big): o mesmo Cinzento a 1,85×, mais vida e golpes mais fortes
-	var big: Dictionary = _kinds["husk"].duplicate(true)
-	big["sheet"] = "en_husk_big"
-	big["cfg"] = {"w": 26, "h": 56, "hp": 130, "poise": 70, "ash": 75}
-	for an in big["attacks"]:
-		var a: Dictionary = big["attacks"][an]
-		a["dmg"] = round(a["dmg"] * 1.6)
-		a["hb"] = (a["hb"] as Array).map(func(v): return v * 1.85)
-		a["wind"] = a["wind"] * 1.2
-	_kinds["husk_big"] = big
+	# ---------------- Região 7 (Palácio)
+	_kinds["royalguard"] = {
+		"cfg": {"w": 18, "h": 36, "hp": 95, "poise": 45, "ash": 45}, "eye": Color(1, 0.82, 0.44), "heavy": true, "guard": true,
+		"attacks": {
+			"sweep": {"wind": 0.6, "act": 0.18, "rec": 0.6, "dmg": 18, "hb": [-6, 4, 56, 24], "tell": "white", "sfx": "swing_heavy", "unguard": true},
+			"thrust": {"wind": 0.75, "act": 0.16, "rec": 0.7, "dmg": 24, "hb": [4, 14, 56, 8], "lunge": 220.0, "tell": "red", "unguard": true},
+			"overhead": {"wind": 0.7, "act": 0.14, "rec": 0.75, "dmg": 22, "hb": [6, 0, 36, 40], "tell": "white", "sfx": "swing_heavy", "armor": true, "unguard": true, "shake": 0.2},
+		},
+		"think": "_think_royalguard",
+	}
+	_kinds["courtier"] = {
+		"cfg": {"w": 14, "h": 30, "hp": 30, "poise": 10, "ash": 24, "flying": true}, "eye": Color(0.5, 0.56, 1),
+		"attacks": {"stab": {"wind": 0.45, "act": 0.12, "rec": 0.5, "dmg": 15, "hb": [0, 10, 26, 12], "tell": "white", "lunge": 120.0}},
+		"think": "_think_courtier",
+	}
+	_kinds["torch"] = {
+		"cfg": {"w": 14, "h": 28, "hp": 26, "poise": 8, "ash": 18}, "eye": Color(1, 0.45, 0.15),
+		"attacks": {"burst": {"wind": 0.8, "act": 0.15, "rec": 0.2, "dmg": 22, "hb": [-34, -4, 68, 60], "tell": "red", "sfx": "explode", "centered": true, "shake": 0.35}},
+		"think": "_think_torch",
+	}
+	# os de garras são um bocado maiores (como no jogo web: KINDS.crawler.size etc.)
+	_kinds["crawler"]["size"] = 1.45; _kinds["gargoyle"]["size"] = 1.35; _kinds["drowned"]["size"] = 1.3
+	# variantes grandes: o mesmo bicho muito maior, mais lento a armar o golpe e muito mais duro (giant() em enemies.js)
+	_giant("husk", {"size": 1.85, "cfg": {"hp": 130, "poise": 70, "ash": 75}, "dmg": 1.6, "speed": 0.8, "slow": 1.15})
+	_giant("hound", {"size": 1.75, "cfg": {"hp": 115, "poise": 50, "ash": 80}, "dmg": 1.5, "speed": 0.9, "slow": 1.1})
+	_giant("thrall", {"size": 1.55, "cfg": {"hp": 230, "poise": 110, "ash": 120}, "dmg": 1.4, "speed": 0.8, "slow": 1.12})
+	_giant("drowned", {"size": 1.8, "cfg": {"hp": 150, "poise": 70, "ash": 95}, "dmg": 1.5, "speed": 0.85, "slow": 1.15})
+	_giant("gargoyle", {"size": 1.75, "cfg": {"hp": 150, "poise": 70, "ash": 110}, "dmg": 1.45, "speed": 0.85, "slow": 1.1})
+	_giant("penitent", {"size": 1.65, "cfg": {"hp": 190, "poise": 80, "ash": 120}, "dmg": 1.45, "speed": 0.75, "slow": 1.15})
+	_giant("royalguard", {"size": 1.5, "cfg": {"hp": 280, "poise": 130, "ash": 170}, "dmg": 1.35, "speed": 0.85, "slow": 1.1})
 	return _kinds
+
+static func _giant(base: String, o: Dictionary) -> void:
+	var B: Dictionary = _kinds[base]
+	var K2: Dictionary = B.duplicate(true)
+	K2["sheet"] = "en_%s_big" % base; K2["size"] = o["size"]; K2["dmg_mult"] = o["dmg"]; K2["speed_mult"] = o["speed"]; K2["heavy"] = true; K2["big"] = true
+	var c: Dictionary = K2["cfg"]
+	for k in o["cfg"]:
+		c[k] = o["cfg"][k]
+	var slow: float = o["slow"]
+	for an in K2["attacks"]:
+		var a: Dictionary = K2["attacks"][an]
+		a["wind"] = a["wind"] * slow; a["rec"] = a["rec"] * (1.0 + (slow - 1.0) * 0.6)
+		if a.get("sfx", "whip") == "whip": a["sfx"] = "swing_heavy"
+	_kinds[base + "_big"] = K2
 
 var player:
 	get: return world.player
@@ -265,7 +302,7 @@ func walk(dir: int, speed: float, dt: float) -> bool:
 		vel.x = move_toward(vel.x, 0, 900 * dt); return true
 	if (on_ground and ledge_ahead(dir)) or wall_ahead(dir):
 		vel.x = 0; return false
-	vel.x = move_toward(vel.x, dir * speed, 1100 * dt)
+	vel.x = move_toward(vel.x, dir * speed * K.get("speed_mult", 1.0), 1100 * dt)
 	return true
 
 func fly_to(target: Vector2, speed: float, dt: float) -> void:
@@ -293,7 +330,7 @@ func tick(dt: float) -> void:
 		if not flying:
 			physics(dt, false)
 		if _death_t > 0.3 and not is_boss():
-			world.fx.dissolve(self, MATS.get(kind, {}).get("ashCol", "#ff9040"))
+			world.fx.dissolve(self, MATS.get(base, {}).get("ashCol", "#ff9040"))
 		if _death_t > 0.7 and not is_boss():
 			queue_free()
 		return
@@ -335,8 +372,8 @@ func _update_attack(dt: float) -> void:
 		"act":
 			if s.has("hb"):
 				var b: Array = s["hb"]
-				var rr: Rect2 = Rect2(cx + b[0], bottom - b[3], b[2], b[3]) if s.get("centered", false) else front(b[0], b[1], b[2], b[3])
-				attack_boxes.append({"rect": rr, "dmg": s["dmg"], "id": atk["id"], "parryable": s.get("tell", "") != "red", "unblockable": s.get("tell", "") == "red", "knock": 170.0, "src": self, "fire": s.get("fire", false)})
+				var rr: Rect2 = Rect2(cx + b[0] * bulk, bottom - b[3] * bulk, b[2] * bulk, b[3] * bulk) if s.get("centered", false) else front(b[0] * bulk, b[1] * bulk, b[2] * bulk, b[3] * bulk)
+				attack_boxes.append({"rect": rr, "dmg": round(s["dmg"] * K.get("dmg_mult", 1.0)), "id": atk["id"], "parryable": s.get("tell", "") != "red", "unblockable": s.get("tell", "") == "red", "knock": 170.0, "src": self, "fire": s.get("fire", false)})
 			if s.get("body", false):
 				attack_boxes.append({"rect": Rect2(pos - Vector2(2, 2), size + Vector2(4, 4)), "dmg": s["dmg"], "id": atk["id"], "parryable": true, "knock": 160.0, "src": self})
 			_during(atk["name"], s, dt)
@@ -363,44 +400,48 @@ func _on_act(nm: String, s: Dictionary) -> void:
 		world.fx.dust(Vector2(cx + facing * 26, bottom), 10)
 	else:
 		world.audio.sfx(String(s.get("sfx", "swing")))
-	if kind == "wisp" and nm == "spit":
+	if base == "wisp" and nm == "spit":
 		var a := (Vector2(player.cx, player.cy) - Vector2(cx, cy)).normalized()
 		world.audio.sfx("shoot")
 		world.spawn_projectile({"pos": Vector2(cx + facing * 2, cy + 2), "vel": a * 150.0, "size": Vector2(9, 9), "dmg": 12.0, "kind": "orb", "color": Color("#ff9040"), "trail": true, "life": 4.0})
-	if kind == "crossbow" and nm == "shoot":
+	if base == "crossbow" and nm == "shoot":
 		var o := Vector2(cx + facing * 12, pos.y + 12)
 		world.spawn_projectile({"pos": o, "vel": Vector2(facing * 330.0, 0), "size": Vector2(12, 4), "dmg": 15.0, "kind": "bolt", "color": Color("#c0b090"), "life": 3.0})
 	if s.get("waves", false):
 		# o martelo no chão solta duas ondas de choque, uma para cada lado
 		for sd in [-1, 1]:
 			world.spawn_projectile({"pos": Vector2(cx + facing * 22, bottom - 6), "vel": Vector2(sd * 170.0, 0), "size": Vector2(14, 10), "dmg": 12.0, "kind": "shockwave", "color": Color("#ff8040"), "life": 1.1, "solid": false, "parryable": false})
-	if kind == "smelter" and nm == "lob":
+	if base == "smelter" and nm == "lob":
 		var ddx: float = player.cx - cx
 		world.spawn_projectile({"pos": Vector2(cx, pos.y + 4), "vel": Vector2(ddx / 0.9, -330.0), "grav": 700.0, "size": Vector2(10, 10), "dmg": 15.0, "kind": "molten", "color": Color("#ff7020"), "life": 3.0, "parryable": false, "fire": true, "on_wall": "fire"})
 	if s.has("hop") and on_ground:
 		vel.y = s["hop"]
-	if (kind == "gargoyle" and nm == "dive") or (kind == "raven" and nm == "swoop"):
-		vel = (Vector2(player.cx, player.cy) - Vector2(cx, cy)).normalized() * (320.0 if kind == "gargoyle" else 240.0)
-	if kind == "acolyte" and nm == "ring":
+	if (base == "gargoyle" and nm == "dive") or (base == "raven" and nm == "swoop"):
+		vel = (Vector2(player.cx, player.cy) - Vector2(cx, cy)).normalized() * (320.0 if base == "gargoyle" else 240.0)
+	if base == "acolyte" and nm == "ring":
 		for sd in [-1, 1]:
 			world.spawn_projectile({"pos": Vector2(cx, cy), "vel": Vector2(sd * 170.0, 0), "size": Vector2(10, 26), "dmg": 12.0, "kind": "wave", "color": Color("#e8d090"), "life": 2.2})
-	if kind == "vitrail" and nm == "shards":
+	if base == "vitrail" and nm == "shards":
 		var a0 := (Vector2(player.cx, player.cy) - Vector2(cx, cy)).angle()
 		for i in [-1, 0, 1]:
 			var a: float = a0 + i * 0.22
 			world.spawn_projectile({"pos": Vector2(cx, cy), "vel": Vector2(cos(a), sin(a)) * 230.0, "size": Vector2(7, 7), "dmg": 11.0, "kind": "glass", "color": Color(["#ff6080", "#6080ff", "#ffd060"].pick_random()), "life": 3.0})
-	if kind == "choir" and nm == "sing":
+	if base == "choir" and nm == "sing":
 		for i in 6:
 			var a2: float = i / 6.0 * TAU + anim
 			world.spawn_projectile({"pos": Vector2(cx, cy), "vel": Vector2(cos(a2), sin(a2)) * 110.0, "size": Vector2(9, 9), "dmg": 10.0, "kind": "note", "color": Color("#d0a0ff"), "life": 3.0, "solid": false})
-	if kind == "moth" and nm == "dive":
+	if base == "moth" and nm == "dive":
 		vel = (Vector2(player.cx, player.cy) - Vector2(cx, cy)).normalized() * 260.0
-	if kind == "thornmaid" and nm == "burst":
+	if base == "thornmaid" and nm == "burst":
 		world.audio.sfx("break", 0.5); world.fx.dust(Vector2(cx, bottom), 14)
-	if kind == "wisp" and nm == "dive":
+	if base == "wisp" and nm == "dive":
 		var a2 := (Vector2(player.cx, player.cy) - Vector2(cx, cy)).normalized()
 		vel = a2 * 260.0
 
+var fade := 0.0
+var vanish_t := 0.5
+var placed := false
+var bulk := 1.0   # tamanho do bicho (os grandes e os de garras): corpo, desenho e golpes
 var guarding := false
 var anim_override := ""
 var anim_idx := 0.0
@@ -416,11 +457,15 @@ func _during(_name: String, _s: Dictionary, _dt: float) -> void:
 	pass
 
 func _on_end(nm: String) -> void:
-	if kind == "crawler" and nm == "bite":
+	if base == "torch" and nm == "burst":
+		die(); return
+	if base == "courtier" and nm == "stab":
+		vanish_t = 0.8
+	if base == "crawler" and nm == "bite":
 		vel.x = -facing * 110.0
-	if kind in ["wisp", "moth", "raven"]:
+	if base in ["wisp", "moth", "raven"]:
 		vel *= 0.3
-	if kind == "gargoyle" and nm == "dive":
+	if base == "gargoyle" and nm == "dive":
 		returning = true
 
 # ================================================================== IA
@@ -586,7 +631,7 @@ func _think_husk(dt: float) -> void:
 		return
 	if _perceive(dt, 190):
 		# o Cinzento é lento e teimoso: avança, golpeia; às vezes lança-se de mais longe
-		var big := kind == "husk_big"
+		var big: bool = K.get("big", false)
 		var reach := 30.0 * (1.7 if big else 1.0)
 		_melee(dt, 34.0 if big else 50.0, reach, [["swing", 3.0], ["lunge", 1.0]], [["lunge", 1.0]], reach * 2.4)
 		if cool > 0.25 and last_atk == "lunge" and randf() < 0.01:
@@ -910,6 +955,50 @@ func _think_choir(dt: float) -> void:
 	else:
 		fly_to(Vector2(home_x, pos.y + sin(anim) * 2.0), 30, dt)
 
+# ---------------- Região 7
+## Guarda Real: escudo erguido até golpear; três golpes pesados à escolha
+func _think_royalguard(dt: float) -> void:
+	if not atk.is_empty():
+		guarding = not atk["s"].get("unguard", false) or atk["phase"] == "rec"
+		return
+	guarding = true
+	if _perceive(dt, 240):
+		_melee(dt, 34, 64, [["sweep", 1.0], ["thrust", 1.0], ["overhead", 1.0]], [], 0.0)
+	else:
+		_patrol(dt, 14, 50)
+
+## Cortesão: fantasma que se apaga, reaparece nas costas da protagonista e apunhala
+func _think_courtier(dt: float) -> void:
+	hittable = fade >= 0.5
+	modulate.a = 0.08 + 0.82 * clampf(fade, 0, 1)
+	if not _perceive(dt, 260, 160):
+		fade = move_toward(fade, 0.4, dt); return
+	if not atk.is_empty():
+		fade = move_toward(fade, 1.0, dt * 4.0); vel.y = 0; return
+	vanish_t -= dt
+	if vanish_t > 0:
+		fade = move_toward(fade, 0.0, dt * 3.0); vel *= 0.9; return
+	if fade <= 0.01 and not placed:
+		var p = player
+		pos = Vector2(p.cx - p.facing * 34 - size.x / 2.0, p.bottom - size.y)
+		if world.room.rect_solid(Rect2(pos, size)):
+			pos.x = p.cx + p.facing * 34 - size.x / 2.0
+		placed = true
+	fade = move_toward(fade, 1.0, dt * 2.5)
+	if fade >= 1.0:
+		placed = false; face(); _start("stab")
+
+## Archote Vivo: corre para a protagonista e explode
+func _think_torch(dt: float) -> void:
+	if not atk.is_empty():
+		vel.x = 0; return
+	if _perceive(dt, 240):
+		face()
+		if absf(dx()) < 34: _start("burst")
+		else: _go(facing, 95, dt)
+	if randf() < 0.35:
+		world.fx.ember(Vector2(cx + randf_range(-6, 6), pos.y + randf_range(-8, 10)))
+
 # ------------------------------------------------------------------ dano
 func on_hit(box: Dictionary) -> bool:
 	if dead or not hittable:
@@ -932,7 +1021,7 @@ func on_hit(box: Dictionary) -> bool:
 	last_hit_t = 0.0
 	aggro = true
 	var heavy: bool = box.get("kind", "") in ["heavy", "riposte"]
-	var mat: String = MATS.get(kind, {}).get("mat", "flesh")
+	var mat: String = MATS.get(base, {}).get("mat", "flesh")
 	world.audio.sfx("hit_heavy" if heavy else "hit")
 	world.audio.sfx({"armor": "hit_metal", "stone": "hit_stone", "spirit": "hit_spirit", "wax": "hit_soft", "wood": "hit_wood"}.get(mat, "enemy_hurt"), 0.5)
 	if is_boss():
@@ -1064,7 +1153,7 @@ func _draw() -> void:
 		return
 	var f := current_frame()
 	var mod := Color.WHITE
-	draw_set_transform(Vector2.ZERO, 0, Vector2(facing, 1))
+	draw_set_transform(Vector2.ZERO, 0, Vector2(facing * bulk, bulk))
 	Data.draw_frame(self, sh, f, mod)
 	draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
 
