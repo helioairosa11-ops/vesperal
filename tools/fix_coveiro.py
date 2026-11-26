@@ -182,6 +182,38 @@ def remove_smear(a, rect, lum_min=105):
         todo = todo & ~fill
     reg[..., 3][todo] = 0
 
+def extend_up(a, y_edge, x0, x1, slope, rows, shrink_l=0.0, shrink_r=0.0, src_rows=3):
+    """continua para cima, para fora do recorte antigo, uma peça cortada no topo (braço, cabo): repete a linha de
+    cima deslocada na direção da peça (slope = px para a direita por linha), estreitando se for preciso"""
+    band = a[y_edge:y_edge + src_rows, x0:x1 + 1].copy()
+    for k in range(1, rows + 1):
+        row = band[(k - 1) % src_rows].copy()
+        dx = int(round(slope * k))
+        l = int(round(shrink_l * k)); r = int(round(shrink_r * k))
+        if l + r >= row.shape[0] - 2:
+            break
+        if l: row[:l] = 0
+        if r: row[row.shape[0] - r:] = 0
+        y = y_edge - k
+        xs = x0 + dx
+        dst = a[y, xs:xs + row.shape[0]]
+        m = (row[:, 3] > 0) & (dst[:, 3] < 200)
+        dst[m] = row[m]
+    # contorno escuro nas bordas novas
+    reg = a[max(0, y_edge - rows - 2):y_edge + 1]
+    mask = reg[..., 3] > 100
+    edge = mask & ~ndi.binary_erosion(mask)
+    reg[edge, :3] = (reg[edge, :3] * 0.45).astype(np.uint8)
+
+def paste_piece(a, src, rect, at):
+    """cola por cima um pedaço (só a parte opaca)"""
+    x0, y0, x1, y1 = rect
+    piece = src[y0:y1, x0:x1]
+    px, py = at
+    dst = a[py:py + piece.shape[0], px:px + piece.shape[1]]
+    m = piece[..., 3] > 60
+    dst[m] = piece[m]
+
 def mirror_band_end(a, x0, y0, x1, y1, xs_from, min_y=0):
     """refaz o fim de um monte de terra espelhando o início do mesmo monte (mesma textura e mesma altura,
     sem degrau): o píxel (x, y) recebe o de (xs_from - (x - x0), y) se for terra (castanho)"""
@@ -245,6 +277,12 @@ def fixes(name, i, a, box, frames):
             top_y = Y(14) - (rect[3] - rect[1])
             paste(a, src, rect, (int(round(X(153.5) - cxp)), top_y), flip_v=True, under=False)
         if i == 19:
+            # golpe de cima: o braço levantado e o cabo saíam pelo topo; continuam para cima e fecham numa mão
+            src19 = frames[19][0]
+            extend_up(a, Y(0), X(116), X(124), -1.0, 16)               # cabo
+            extend_up(a, Y(0), X(71), X(98), 1.8, 10, shrink_l=1.4, shrink_r=0.3)   # braço (manga até ao pulso)
+            paste_piece(a, src19, (X(157), Y(30), X(176), Y(50)), (X(97), Y(-17)))  # punho (a outra mão do mesmo quadro)
+            # ponta do cabo por cima do punho
             fade_side(a, 'T', box, depth=14, seed=19, span=(X(195), X(w)))
             fade_side(a, 'R', box, depth=12, seed=91, span=(Y(0), Y(90)))
         if i in (51, 52):
@@ -276,7 +314,41 @@ def fixes(name, i, a, box, frames):
             low[ndi.binary_dilation(lil, iterations=1) & (low[..., 3] < 250)] = 0
             low[lil] = 0
         # a pá/tocha erguida, o fumo e as chamas saíam pelo topo: desvanecem (só nas colunas deles, a cabeça fica)
-        spans = {16: (X(130), X(w)), 38: (X(168), X(w)), 20: (X(150), X(w)), 19: (X(200), X(w)), 36: (X(0), X(w)), 37: (X(0), X(w)), 49: (X(0), X(w))}
+        if i == 16:
+            # pá em brasa levantada: a lâmina saía pelo topo; volta a lâmina do quadro 15 (virada, bico para cima)
+            src15, sb = frames[15]
+            rect = (sb[0] + 145, sb[1] + 98, sb[0] + 187, sb[1] + 140)
+            piece = src15[rect[1]:rect[3], rect[0]:rect[2]].copy()
+            lab, n = ndi.label(piece[..., 3] > 60, structure=np.ones((3, 3)))
+            mid = lab[piece.shape[0] // 2, piece.shape[1] // 2]
+            if mid:
+                piece[lab != mid] = 0
+            piece = piece[::-1]
+            ys, xs = np.where(piece[..., 3] > 100)
+            cxp = (xs.min() + xs.max()) / 2.0
+            erase(a, (X(146), Y(0), X(166), Y(6)))
+            px = int(round(X(154.5) - cxp)); py = Y(7) - piece.shape[0]
+            dst = a[py:py + piece.shape[0], px:px + piece.shape[1]]
+            mk = piece[..., 3] > 60
+            dst[mk] = piece[mk]
+            # bico: corta as esquinas de cima em V e põe contorno escuro
+            ys2, xs2 = np.where(a[py:py + piece.shape[0], px:px + piece.shape[1], 3] > 100)
+            top = py + ys2.min(); l = px + xs2.min(); r = px + xs2.max(); c = (l + r) / 2.0
+            for k in range(12):
+                half = (r - l) / 2.0 * (0.2 + 0.8 * k / 12.0)
+                for x in range(l - 1, r + 2):
+                    if abs(x - c) > half:
+                        a[top + k, x] = 0
+            reg = a[top:top + 14, l - 2:r + 3]
+            mm = reg[..., 3] > 100
+            ed = mm & ~ndi.binary_erosion(mm)
+            reg[ed, :3] = (reg[ed, :3] * 0.4).astype(np.uint8)
+        if i == 19:
+            src19 = frames[19][0]
+            extend_up(a, Y(0), X(116), X(124), -1.0, 16)
+            extend_up(a, Y(0), X(68), X(100), 1.8, 10, shrink_l=1.4, shrink_r=0.3)
+            paste_piece(a, src19, (X(152), Y(24), X(174), Y(46)), (X(97), Y(-18)))
+        spans = {38: (X(168), X(w)), 20: (X(150), X(w)), 19: (X(200), X(w)), 36: (X(0), X(w)), 37: (X(0), X(w)), 49: (X(0), X(w))}
         if i in spans:
             fade_side(a, 'T', box, depth=12, seed=i + 3, span=spans[i])
         if i == 19:
