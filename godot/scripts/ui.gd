@@ -702,7 +702,7 @@ func _draw_credits(_p: Dictionary, vs: Vector2, u: float, a: float) -> void:
 	text(c, f_label, Data.t("back"), Vector2(cx, br.get_center().y + 6.5 * u), 19 * u, Color("#fff3dc", a), 1, 0.05)
 
 # música licenciada dos chefes (CC-BY: o crédito tem de aparecer)
-const BOSS_MUSIC := "“Arcanos, Sorcerer of the Old Banished Woods” — Philémon Weber (Helmet), CC-BY 4.0\n“Chapel of Hate” — FoxSynergy, CC-BY 3.0\n“Demon Lord” — Scott Elliott (Scrabbit), CC-BY 4.0\n(OpenGameArt.org)"
+const BOSS_MUSIC := "“Arcanos, Sorcerer of the Old Banished Woods” — Philémon Weber (Helmet) (CC-BY 4.0) · “Epic Boss Battle” — Juhani Junkala (SubspaceAudio) (CC0) · “Heroic Demise” — Matthew Pablo (CC-BY 3.0) · “The Machine Has Become Self Aware” — HitCtrl (CC-BY 3.0) · “Demon Lord” — Scott Elliott (Scrabbit) (CC-BY 4.0) · “Dark Descent” — Matthew Pablo (CC-BY 3.0) · “Evil Approach” — nene (CC0) · “Fall of Nightmares” — nene, Helena Kesti & Matias Lindgren (CC0) · “Church Combat” — Centurion_of_war (CC-BY 4.0) · “Chapel of Hate” — FoxSynergy (CC-BY 3.0) · “Battle Theme A” — cynicmusic (CC0) · “Wasteland Showdown” — Matthew Pablo (CC-BY 3.0) · “New Sunrise” — nene (CC0) · “Solemn March” — Yubatake (CC-BY 4.0) · “Sigil” — Kistol (CC0) · OpenGameArt.org"
 
 # ================================================================== ecrãs
 func confirm(msg: String, yes: Callable) -> void:

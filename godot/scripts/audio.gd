@@ -87,7 +87,7 @@ func set_intensity(n: int) -> void:
 	play_music(id, 1.0)
 
 ## faixas licenciadas (um só ficheiro, sem versões mais intensas)
-const LICENSED := ["sb_coveiro", "b_caedmon", "b_hilde"]
+const LICENSED := ["sb_coveiro", "sb_matilheira", "b_caedmon", "sb_automato", "b_hilde", "sb_mariposa", "b_elowen", "sb_sineiro", "sb_vael", "b_ozias", "sb_gemeos", "b_aldric", "b_seraphine", "b_carpideira", "b_custodio"]
 
 func _music_path(id: String, lvl: int) -> String:
 	if lvl > 0 and not LICENSED.has(id) and ResourceLoader.exists("res://audio/music/%s_i%d.ogg" % [id, lvl]):

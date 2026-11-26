@@ -11,12 +11,24 @@ As fontes Cinzel e EB Garamond, que vão dentro do jogo (css/fonts.css), não es
 têm a sua própria, a SIL Open Font License 1.1 (textos em assets/fonts/OFL-Cinzel.txt e
 assets/fonts/OFL-EBGaramond.txt).
 
-A música dos chefes Coveiro, Caedmon e Hilde (assets/audio/music/ e godot/audio/music/sb_coveiro.ogg,
-b_caedmon.ogg, b_hilde.ogg) também não está sob esta licença: é de outros autores e mantém a sua:
-- "Arcanos, Sorcerer of the Old Banished Woods" — Philémon Weber (Helmet), CC-BY 4.0
-- "Chapel of Hate" — FoxSynergy, CC-BY 3.0
-- "Demon Lord" — Scott Elliott (Scrabbit), CC-BY 4.0
-(obtidas em OpenGameArt.org; cortadas no fim e com o volume ajustado)
+A música dos chefes (assets/audio/music/ e godot/audio/music/: sb_coveiro.ogg, sb_matilheira.ogg, b_caedmon.ogg, sb_automato.ogg, b_hilde.ogg, sb_mariposa.ogg, b_elowen.ogg, sb_sineiro.ogg, sb_vael.ogg, b_ozias.ogg, sb_gemeos.ogg, b_aldric.ogg, b_seraphine.ogg, b_carpideira.ogg, b_custodio.ogg)
+também não está sob esta licença: é de outros autores e mantém a sua:
+- "Arcanos, Sorcerer of the Old Banished Woods" — Philémon Weber (Helmet), CC-BY 4.0 (https://opengameart.org/content/dark-souls-type-boss-theme)
+- "Epic Boss Battle" — Juhani Junkala (SubspaceAudio), CC0 (https://opengameart.org/content/boss-battle-music)
+- "Heroic Demise" — Matthew Pablo, CC-BY 3.0 (https://opengameart.org/content/heroic-demise-updated-version)
+- "The Machine Has Become Self Aware" — HitCtrl, CC-BY 3.0 (https://opengameart.org/content/the-machine-has-become-self-aware)
+- "Demon Lord" — Scott Elliott (Scrabbit), CC-BY 4.0 (https://opengameart.org/content/demon-lord)
+- "Dark Descent" — Matthew Pablo, CC-BY 3.0 (https://opengameart.org/content/dark-descent)
+- "Evil Approach" — nene, CC0 (https://opengameart.org/content/evil-approach)
+- "Fall of Nightmares" — nene, Helena Kesti & Matias Lindgren, CC0 (https://opengameart.org/content/fall-of-nightmares-epic-orchestral)
+- "Church Combat" — Centurion_of_war, CC-BY 4.0 (https://opengameart.org/content/church-combat)
+- "Chapel of Hate" — FoxSynergy, CC-BY 3.0 (https://opengameart.org/content/chapel-of-hate)
+- "Battle Theme A" — cynicmusic, CC0 (https://opengameart.org/content/battle-theme-a)
+- "Wasteland Showdown" — Matthew Pablo, CC-BY 3.0 (https://opengameart.org/content/wasteland-showdown-battle-music)
+- "New Sunrise" — nene, CC0 (https://opengameart.org/content/new-sunrise)
+- "Solemn March" — Yubatake, CC-BY 4.0 (https://opengameart.org/content/solemn-march)
+- "Sigil" — Kistol, CC0 (https://opengameart.org/content/sigil)
+(obtidas em OpenGameArt.org; cortadas no início e no fim e com o volume ajustado)
 
 ------------------------------------------------------------------------------------------
 Texto integral da licença (versão oficial em inglês):

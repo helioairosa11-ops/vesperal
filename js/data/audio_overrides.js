@@ -9,8 +9,32 @@ window.VS = window.VS || {};
 window.VS.AUDIO_OVERRIDES = {
   // Coveiro: "Arcanos, Sorcerer of the Old Banished Woods" — Philémon Weber (Helmet), CC-BY 4.0
   sb_coveiro: 'assets/audio/music/sb_coveiro.ogg',
-  // Caedmon: "Chapel of Hate" — FoxSynergy, CC-BY 3.0
+  // Velha Matilheira: "Epic Boss Battle" — Juhani Junkala (SubspaceAudio), CC0
+  sb_matilheira: 'assets/audio/music/sb_matilheira.ogg',
+  // Sir Caedmon: "Heroic Demise" — Matthew Pablo, CC-BY 3.0
   b_caedmon: 'assets/audio/music/b_caedmon.ogg',
-  // Hilde: "Demon Lord" — Scott Elliott (Scrabbit), CC-BY 4.0
+  // Autómato do Fole: "The Machine Has Become Self Aware" — HitCtrl, CC-BY 3.0
+  sb_automato: 'assets/audio/music/sb_automato.ogg',
+  // Mestra Hilde: "Demon Lord" — Scott Elliott (Scrabbit), CC-BY 4.0
   b_hilde: 'assets/audio/music/b_hilde.ogg',
+  // Mãe-Mariposa: "Dark Descent" — Matthew Pablo, CC-BY 3.0
+  sb_mariposa: 'assets/audio/music/sb_mariposa.ogg',
+  // Ama Elowen: "Evil Approach" — nene, CC0
+  b_elowen: 'assets/audio/music/b_elowen.ogg',
+  // Sineiro: "Fall of Nightmares" — nene, Helena Kesti & Matias Lindgren, CC0
+  sb_sineiro: 'assets/audio/music/sb_sineiro.ogg',
+  // Inquisidora Vael: "Church Combat" — Centurion_of_war, CC-BY 4.0
+  sb_vael: 'assets/audio/music/sb_vael.ogg',
+  // Bispo Ozias: "Chapel of Hate" — FoxSynergy, CC-BY 3.0
+  b_ozias: 'assets/audio/music/b_ozias.ogg',
+  // Gémeos da Guarda: "Battle Theme A" — cynicmusic, CC0
+  sb_gemeos: 'assets/audio/music/sb_gemeos.ogg',
+  // Rei Aldric: "Wasteland Showdown" — Matthew Pablo, CC-BY 3.0
+  b_aldric: 'assets/audio/music/b_aldric.ogg',
+  // Eco de Seraphine: "New Sunrise" — nene, CC0
+  b_seraphine: 'assets/audio/music/b_seraphine.ogg',
+  // Carpideira: "Solemn March" — Yubatake, CC-BY 4.0
+  b_carpideira: 'assets/audio/music/b_carpideira.ogg',
+  // Custódio de Ouro: "Sigil" — Kistol, CC0
+  b_custodio: 'assets/audio/music/b_custodio.ogg',
 };

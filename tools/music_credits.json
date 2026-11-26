@@ -1,0 +1,17 @@
+[
+  {"id": "sb_coveiro", "boss": "Coveiro", "title": "Arcanos, Sorcerer of the Old Banished Woods", "author": "Philémon Weber (Helmet)", "license": "CC-BY 4.0", "url": "https://opengameart.org/content/dark-souls-type-boss-theme"},
+  {"id": "sb_matilheira", "boss": "Velha Matilheira", "title": "Epic Boss Battle", "author": "Juhani Junkala (SubspaceAudio)", "license": "CC0", "url": "https://opengameart.org/content/boss-battle-music"},
+  {"id": "b_caedmon", "boss": "Sir Caedmon", "title": "Heroic Demise", "author": "Matthew Pablo", "license": "CC-BY 3.0", "url": "https://opengameart.org/content/heroic-demise-updated-version"},
+  {"id": "sb_automato", "boss": "Autómato do Fole", "title": "The Machine Has Become Self Aware", "author": "HitCtrl", "license": "CC-BY 3.0", "url": "https://opengameart.org/content/the-machine-has-become-self-aware"},
+  {"id": "b_hilde", "boss": "Mestra Hilde", "title": "Demon Lord", "author": "Scott Elliott (Scrabbit)", "license": "CC-BY 4.0", "url": "https://opengameart.org/content/demon-lord"},
+  {"id": "sb_mariposa", "boss": "Mãe-Mariposa", "title": "Dark Descent", "author": "Matthew Pablo", "license": "CC-BY 3.0", "url": "https://opengameart.org/content/dark-descent"},
+  {"id": "b_elowen", "boss": "Ama Elowen", "title": "Evil Approach", "author": "nene", "license": "CC0", "url": "https://opengameart.org/content/evil-approach"},
+  {"id": "sb_sineiro", "boss": "Sineiro", "title": "Fall of Nightmares", "author": "nene, Helena Kesti & Matias Lindgren", "license": "CC0", "url": "https://opengameart.org/content/fall-of-nightmares-epic-orchestral"},
+  {"id": "sb_vael", "boss": "Inquisidora Vael", "title": "Church Combat", "author": "Centurion_of_war", "license": "CC-BY 4.0", "url": "https://opengameart.org/content/church-combat"},
+  {"id": "b_ozias", "boss": "Bispo Ozias", "title": "Chapel of Hate", "author": "FoxSynergy", "license": "CC-BY 3.0", "url": "https://opengameart.org/content/chapel-of-hate"},
+  {"id": "sb_gemeos", "boss": "Gémeos da Guarda", "title": "Battle Theme A", "author": "cynicmusic", "license": "CC0", "url": "https://opengameart.org/content/battle-theme-a"},
+  {"id": "b_aldric", "boss": "Rei Aldric", "title": "Wasteland Showdown", "author": "Matthew Pablo", "license": "CC-BY 3.0", "url": "https://opengameart.org/content/wasteland-showdown-battle-music"},
+  {"id": "b_seraphine", "boss": "Eco de Seraphine", "title": "New Sunrise", "author": "nene", "license": "CC0", "url": "https://opengameart.org/content/new-sunrise"},
+  {"id": "b_carpideira", "boss": "Carpideira", "title": "Solemn March", "author": "Yubatake", "license": "CC-BY 4.0", "url": "https://opengameart.org/content/solemn-march"},
+  {"id": "b_custodio", "boss": "Custódio de Ouro", "title": "Sigil", "author": "Kistol", "license": "CC0", "url": "https://opengameart.org/content/sigil"}
+]

@@ -41,7 +41,7 @@ Metroidvania 2D de fantasia sombria para o navegador. O Desperto acorda numa cov
 - Cada chefe tem a sua vida e as suas resistências (vulnerável ou resistente a lâminas, impacto, espírito ou centelhas, alguns com armadura) — vê-se no Diário
 - Habilidades novas: Investida Cortante (atacar a meio da esquiva), Contra-Luz (a riposta depois do parry solta um crescente de luz) e Instinto (a esquiva no último instante abranda o mundo)
 - Português, English, Español e Français
-- Música e sons sintetizados em tempo real (Web Audio) — três chefes usam música licenciada (ver Créditos); golpes com corpo e saturação, impactos grandes com cauda de reverberação, cada golpe um pouco diferente do anterior e níveis equilibrados entre gestos, impactos e chefes
+- Música e sons sintetizados em tempo real (Web Audio) — a música dos chefes (exceto o Corvin, cujos ataques seguem o ritmo da sua música sintetizada) vem de compositores independentes, com licença livre (ver Créditos); golpes com corpo e saturação, impactos grandes com cauda de reverberação, cada golpe um pouco diferente do anterior e níveis equilibrados entre gestos, impactos e chefes
 - Teclado, comando e ecrã tátil; gravação automática no navegador
 - Ocupa o ecrã todo, sem barras pretas: telemóveis largos, monitores ultralargos e tablets 4:3 veem mais do mundo em vez de faixas vazias
 - Funciona sem internet: tudo vem dentro do jogo, incluindo as fontes
@@ -96,10 +96,22 @@ Um jogo de **Lourence Manuel**.
 
 Música dos chefes (ficheiros em `assets/audio/music/` e `godot/audio/music/`, de OpenGameArt.org):
 - Coveiro — “Arcanos, Sorcerer of the Old Banished Woods”, de Philémon Weber (Helmet), [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/) — https://opengameart.org/content/dark-souls-type-boss-theme
-- Caedmon — “Chapel of Hate”, de FoxSynergy, [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/) — https://opengameart.org/content/chapel-of-hate
-- Hilde — “Demon Lord”, de Scott Elliott (Scrabbit), [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/) — https://opengameart.org/content/demon-lord
+- Velha Matilheira — “Epic Boss Battle”, de Juhani Junkala (SubspaceAudio), [CC0](https://creativecommons.org/publicdomain/zero/1.0/) — https://opengameart.org/content/boss-battle-music
+- Sir Caedmon — “Heroic Demise”, de Matthew Pablo, [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/) — https://opengameart.org/content/heroic-demise-updated-version
+- Autómato do Fole — “The Machine Has Become Self Aware”, de HitCtrl, [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/) — https://opengameart.org/content/the-machine-has-become-self-aware
+- Mestra Hilde — “Demon Lord”, de Scott Elliott (Scrabbit), [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/) — https://opengameart.org/content/demon-lord
+- Mãe-Mariposa — “Dark Descent”, de Matthew Pablo, [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/) — https://opengameart.org/content/dark-descent
+- Ama Elowen — “Evil Approach”, de nene, [CC0](https://creativecommons.org/publicdomain/zero/1.0/) — https://opengameart.org/content/evil-approach
+- Sineiro — “Fall of Nightmares”, de nene, Helena Kesti & Matias Lindgren, [CC0](https://creativecommons.org/publicdomain/zero/1.0/) — https://opengameart.org/content/fall-of-nightmares-epic-orchestral
+- Inquisidora Vael — “Church Combat”, de Centurion_of_war, [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/) — https://opengameart.org/content/church-combat
+- Bispo Ozias — “Chapel of Hate”, de FoxSynergy, [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/) — https://opengameart.org/content/chapel-of-hate
+- Gémeos da Guarda — “Battle Theme A”, de cynicmusic, [CC0](https://creativecommons.org/publicdomain/zero/1.0/) — https://opengameart.org/content/battle-theme-a
+- Rei Aldric — “Wasteland Showdown”, de Matthew Pablo, [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/) — https://opengameart.org/content/wasteland-showdown-battle-music
+- Eco de Seraphine — “New Sunrise”, de nene, [CC0](https://creativecommons.org/publicdomain/zero/1.0/) — https://opengameart.org/content/new-sunrise
+- Carpideira — “Solemn March”, de Yubatake, [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/) — https://opengameart.org/content/solemn-march
+- Custódio de Ouro — “Sigil”, de Kistol, [CC0](https://creativecommons.org/publicdomain/zero/1.0/) — https://opengameart.org/content/sigil
 
-As faixas foram cortadas no fim e o volume foi ajustado para o jogo.
+As faixas foram cortadas no início e no fim e o volume foi ajustado para o jogo.
 
 ## Licença
 
