@@ -85,6 +85,10 @@ func _ready() -> void:
 		"walkers":
 			steps = [[0.4, "room", "r1_street"], [0.2, "place", "4"], [0.2, "spawn2", "husk:12"], [0.05, "spawn2", "sexton:16"], [0.05, "spawn2", "hound:20"], [0.05, "spawn2", "sentinel:24"],
 				[0.35, "shot", "w01"], [0.12, "shot", "w02"], [0.12, "shot", "w03"], [0.12, "shot", "w04"], [0.3, "quit", ""]]
+		"walkers2":
+			steps = [[0.4, "room", "r1_market"], [0.2, "place", "6"], [0.2, "spawn2", "torch:10"], [0.05, "spawn2", "smelter:14"], [0.05, "spawn2", "acolyte:18"],
+				[0.05, "spawn2", "penitent:-8"], [0.05, "spawn2", "royalguard:-12"],
+				[0.3, "shot", "x01"], [0.12, "shot", "x02"], [0.12, "shot", "x03"], [0.12, "shot", "x04"], [0.3, "quit", ""]]
 		"npcs":
 			# Maren nas Muralhas (dá a medalha), Teodoro na Estufa (escolhe ir ter com a irmã), os dois no Santuário
 			steps = [[0.4, "room", "r2_gate"], [0.2, "place", "22"], [0.6, "shot", "m01_maren"], [0.1, "tap", "interact"], [2.0, "shot", "m02_maren_talk"],
@@ -134,6 +138,9 @@ func _process(delta: float) -> void:
 			img.save_png(shots_dir.path_join(s[2] + ".png"))
 			var p = w.player
 			log_lines.append("%s: room=%s hp=%d pos=(%d,%d) ground=%s act=%s" % [s[2], w.room.id, p.hp, p.cx, p.bottom, p.on_ground, p.action.get("type", "")])
+			for e in w.actors.get_children():
+				if e.get("kind") != null and e.get("base") != null:
+					log_lines.append("   en %s pos=(%d,%d) hp=%s ak=%s atk=%s vis=%s a=%.2f fade=%.2f" % [e.kind, e.position.x, e.position.y, str(e.get("hp")), e.anim_key, e.atk.get("name", ""), e.visible, e.modulate.a, e.fade])
 			if w.boss and is_instance_valid(w.boss):
 				log_lines.append("   boss hp=%d phase=%d atk=%s stagger=%.2f dazed=%s sheet=%s" % [w.boss.hp, w.boss.phase, w.boss.atk.get("name", ""), w.boss.stagger, w.boss.dazed, w.boss.sh["meta"]["name"]])
 		"press":
