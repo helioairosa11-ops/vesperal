@@ -13,6 +13,7 @@ WEB = ROOT / 'assets' / 'sprites'
 GD = ROOT / 'godot'
 GJSON = GD / 'data' / 'sprites.json'
 NO_PURPLE = {'en_b_coveiro', 'en_b_coveiro_p2', 'en_b_mariposa', 'en_moth', 'en_vitrail', 'en_b_seraphine', 'en_b_custodio'}
+NOT_CUT = {'en_b_mariposa'}  # asas com o bordo no topo: não é corte
 FORCE_CUT = {'en_b_coveiro': [], 'en_b_coveiro_p2': []}
 
 def defringe(a, passes=2):
@@ -78,6 +79,8 @@ def cut_frames(sh, frames, name):
     tops = np.array([r[0] for r in runs.values()])
     med = float(np.median(tops))
     cut = set(FORCE_CUT.get(name, []))
+    if name in NOT_CUT:
+        return cut
     for i, (t, l, r, w, h) in runs.items():
         # corte a direito: bem mais comprido do que o normal desta personagem
         if t >= max(18, med * 1.8 + 6):
