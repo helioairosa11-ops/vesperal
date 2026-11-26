@@ -18,6 +18,7 @@ var intro_t := 0.0
 var back_hint := false
 var sh_p1: Dictionary
 var sh_p2: Dictionary
+var step_t := 0.0
 
 func setup_boss(tx: int, ty: int) -> void:
 	kind = "coveiro"
@@ -91,6 +92,12 @@ func _think_boss(dt: float) -> void:
 	cool -= dt * (AGGR[phase] - 1.0)
 	if cool > 0:
 		walk(facing if d > 80 else 0, 42, dt)
+		# passos pesados enquanto anda
+		if d > 80 and not underground:
+			step_t -= dt
+			if step_t <= 0:
+				step_t = 0.55
+				world.audio.sfx("cov_step", 0.55)
 		return
 	var r := randf()
 	if d < 80:
