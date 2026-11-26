@@ -8,6 +8,17 @@ from PIL import Image
 import scipy.ndimage as ndi
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 src, name, idx, k = sys.argv[1], sys.argv[2], int(sys.argv[3]), float(sys.argv[4])
+WEB = '--web' in sys.argv
+import re
+if WEB:
+    JS = ROOT / 'assets' / 'sprites' / f'{name}.js'
+    jsrc = JS.read_text(encoding='utf-8')
+    mm = re.search(r'(VS\.SPRITE_META\[".*?"\] = )(\{.*\});', jsrc)
+    WMETA = json.loads(mm.group(2))
+    PNG = ROOT / 'assets' / 'sprites' / f'{name}.png'
+else:
+    PNG = ROOT / f'godot/art/sprites/{name}.png'
+
 g = np.asarray(Image.open(src).convert('RGB')).astype(int)
 r, gg, b = g[..., 0], g[..., 1], g[..., 2]
 mag = (r > 140) & (b > 140) & (gg < 130) & (r - gg > 60)
@@ -24,9 +35,12 @@ w2, h2 = round(crop.shape[1] * k), round(crop.shape[0] * k)
 small = np.asarray(Image.fromarray(crop).resize((w2, h2), Image.BOX)).astype(int)
 alpha = small[..., 3] > 110
 data = json.load(open(ROOT / 'godot/data/sprites.json', encoding='utf-8'))
-sheet = np.asarray(Image.open(ROOT / f'godot/art/sprites/{name}.png').convert('RGBA'))
+if WEB:
+    data[name] = WMETA
+sheet = np.asarray(Image.open(PNG).convert('RGBA'))
 pal = []
-for i in (14, 15, 17, 18):
+PAL_FR = [int(x) for x in (sys.argv[5].split(',') if len(sys.argv) > 5 and not sys.argv[5].startswith('--') else ['14', '15', '17', '18'])]
+for i in PAL_FR:
     f = data[name]['frames'][i]
     a = sheet[f['y']:f['y'] + f['h'], f['x']:f['x'] + f['w']].reshape(-1, 4)
     pal.append(a[a[:, 3] > 250][:, :3])
@@ -63,12 +77,15 @@ iy, ix = np.unravel_index(np.argmax(corr), corr.shape)
 dy = iy if iy < H - nh else iy - H
 dx = ix if ix < W - nw else ix - W
 s = data[name]['scale']
-SH = Image.open(ROOT / f'godot/art/sprites/{name}.png').convert('RGBA')
+SH = Image.open(PNG).convert('RGBA')
 big = Image.new('RGBA', (max(SH.size[0], nw), SH.size[1] + nh + 2))
 big.paste(SH, (0, 0)); big.paste(Image.fromarray(out), (0, SH.size[1] + 2))
-big.save(ROOT / f'godot/art/sprites/{name}.png', optimize=True)
+big.save(PNG, optimize=True)
 fr = dict(f)
 fr.update({'x': 0, 'y': SH.size[1] + 2, 'w': int(nw), 'h': int(nh), 'ox': f['ox'] + dx / s, 'oy': f['oy'] + dy / s})
 data[name]['frames'][idx] = fr
-json.dump(data, open(ROOT / 'godot/data/sprites.json', 'w', encoding='utf-8'), ensure_ascii=False)
+if WEB:
+    JS.write_text(jsrc[:mm.start(2)] + json.dumps(data[name], ensure_ascii=False, separators=(',', ':')) + jsrc[mm.end(2):], encoding='utf-8')
+else:
+    json.dump(data, open(ROOT / 'godot/data/sprites.json', 'w', encoding='utf-8'), ensure_ascii=False)
 print('ok', out.shape, 'deslocamento', dx, dy)
