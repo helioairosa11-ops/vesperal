@@ -1,0 +1,52 @@
+{
+ "idle": [
+  "tools/art/poses/custodio/ui_r0_0.png",
+  "tools/art/poses/custodio/ui_r0_1.png",
+  "tools/art/poses/custodio/ui_r0_2.png",
+  "tools/art/poses/custodio/ui_r0_3.png"
+ ],
+ "move": [
+  "tools/art/poses/custodio/ui_r1_0.png",
+  "tools/art/poses/custodio/ui_r1_1.png",
+  "tools/art/poses/custodio/ui_r1_2.png",
+  "tools/art/poses/custodio/ui_r1_3.png"
+ ],
+ "atk_charge": [
+  "tools/art/poses/custodio/uc_r0_0.png",
+  "tools/art/poses/custodio/uc_r0_1.png",
+  "tools/art/poses/custodio/uc_r0_2.png",
+  "tools/art/poses/custodio/uc_r0_3.png"
+ ],
+ "atk_cast": [
+  "tools/art/poses/custodio/uc_r1_0.png",
+  "tools/art/poses/custodio/uc_r1_1.png",
+  "tools/art/poses/custodio/uc_r1_2.png",
+  "tools/art/poses/custodio/uc_r1_5.png"
+ ],
+ "atk_blink": [
+  "tools/art/poses/custodio/ub_r0_0.png",
+  "tools/art/poses/custodio/ub_r0_1.png",
+  "tools/art/poses/custodio/ub_r0_3.png"
+ ],
+ "hurt": [
+  "tools/art/poses/custodio/ub_r1_0.png"
+ ],
+ "stagger": [
+  "tools/art/poses/custodio/ub_r1_1.png",
+  "tools/art/poses/custodio/ub_r1_2.png",
+  "tools/art/poses/custodio/ub_r1_3.png"
+ ],
+ "death": [
+  "tools/art/poses/custodio/ud_r0_0.png",
+  "tools/art/poses/custodio/ud_r0_1.png",
+  "tools/art/poses/custodio/ud_r0_2.png",
+  "tools/art/poses/custodio/ud_r0_3.png",
+  "tools/art/poses/custodio/ud_r0_4.png"
+ ],
+ "_scale": {
+  "ui_": 0.75,
+  "uc_": 0.75,
+  "ub_": 0.75,
+  "ud_": 0.4925176056338028
+ }
+}

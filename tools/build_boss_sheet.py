@@ -3,7 +3,8 @@ Mantém as animações do jogo (nomes, número de quadros, fps, fases) e os pont
 cada animação recebe as suas poses-chave, repetidas ao longo dos quadros antigos.
 Escala: a figura parada nova fica da mesma altura que a antiga. Posição: o centro da base (pés/raízes) fica onde estava.
 Uso: python3 tools/build_boss_sheet.py <chefe> <plano.json>
-plano.json: {"idle": ["pose1.png", ...], "move": [...], ...}  (animações em falta ficam com as poses de "idle")"""
+plano.json: {"idle": ["pose1.png", ...], "move": [...], ...}  (animações em falta ficam com as poses de "idle")
+  "_scale": {"prefixo_": 0.66}  (opcional) corrige o tamanho das poses de uma folha do Gemini desenhada maior ou menor"""
 import json, re, sys, pathlib
 import numpy as np
 from PIL import Image
@@ -50,7 +51,8 @@ def main():
     def get(path):
         if path not in poses:
             im = Image.open(path).convert('RGBA')
-            im = im.resize((max(1, round(im.width * k)), max(1, round(im.height * k))), Image.LANCZOS)
+            kk = k * next((v for pre, v in plan.get('_scale', {}).items() if pathlib.Path(path).name.startswith(pre)), 1.0)
+            im = im.resize((max(1, round(im.width * kk)), max(1, round(im.height * kk))), Image.LANCZOS)
             a = np.asarray(im).copy(); a[..., 3] = np.where(a[..., 3] > 110, 255, 0)
             bx = bbox(a); a = a[bx[1]:bx[3], bx[0]:bx[2]]
             poses[path] = a
