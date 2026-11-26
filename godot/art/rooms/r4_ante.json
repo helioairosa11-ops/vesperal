@@ -1,0 +1,1 @@
+{"id": "r4_ante", "pw": 640, "ph": 360, "S": 2.5, "region": "r4", "interior": true, "tileS": 2.5, "flames": [], "lights": [{"x": 350, "y": 294, "r": 40, "c": "#a0ffd0", "i": 0.85, "f": 1}], "front": [{"x": 117.59808734059334, "s": 0.6310338629409671, "top": true, "arena": false}], "dark": 0.55}

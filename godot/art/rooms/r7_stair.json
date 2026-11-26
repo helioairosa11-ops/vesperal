@@ -1,0 +1,1 @@
+{"id": "r7_stair", "pw": 640, "ph": 360, "S": 2.5, "region": "r7", "interior": true, "tileS": 2.5, "flames": [], "lights": [{"x": 50, "y": 288, "r": 75, "c": "#ffa050", "i": 0.85, "f": 1}], "front": [{"x": 432.7624423801899, "s": 0.09603951242752373, "top": false, "arena": false}], "dark": 0.5}

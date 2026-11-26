@@ -1,0 +1,1 @@
+{"id": "r4_bellcell", "pw": 640, "ph": 360, "S": 2.5, "region": "r4", "interior": true, "tileS": 2.5, "flames": [], "lights": [{"x": 550, "y": 294, "r": 40, "c": "#a0ffd0", "i": 0.85, "f": 1}], "front": [{"x": 27.9380764067173, "s": 0.19625263940542936, "top": true, "arena": false}], "dark": 0.6}

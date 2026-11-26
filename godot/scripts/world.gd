@@ -15,6 +15,10 @@ var audio
 var hud
 var cam: Camera2D
 var modulate_node: CanvasModulate
+const BG_REGION := {"city": "city", "sanct": "sanct", "ramparts": "ramparts", "forge": "forge", "garden": "garden",
+	"tower": "tower", "cathedral": "cathedral", "crypt": "crypt", "palace": "throne"}
+const BG_ROOM := {"r7_throne": "throne", "r6_dome": "dome", "r1_trials": "trials", "trials": "trials", "trials_bells": "trials",
+	"trials_dodge": "trials", "trials_echoes": "trials"}
 var bg_rect: TextureRect
 var backdrop
 var front
@@ -107,7 +111,8 @@ func load_room(id: String, global_pos: Vector2) -> void:
 	var dc: Color = Data.color(reg.get("darkColor", "#07060c"))
 	modulate_node.color = Color(1, 1, 1).lerp(dc, minf(0.96, dk))
 	hud.tint = Data.color(reg.get("tint", "rgba(0,0,0,0)"))
-	var bgk := "sanct" if reg.get("bg", "") == "sanct" else String(reg.get("bg", "city"))
+	# pintura de fundo de cada região (e das salas que têm a sua), como no jogo web (backgrounds.js: ART e ROOM_ART)
+	var bgk := String(BG_ROOM.get(id, BG_REGION.get(String(reg.get("bg", "city")), "city")))
 	var bgp := "res://art/bg/%s.jpg" % bgk
 	bg_rect.texture = Data.tex(bgp) if ResourceLoader.exists(bgp) else Data.tex("res://art/bg/city.jpg")
 	# câmara presa à sala
@@ -219,6 +224,10 @@ func _spawn_entities() -> void:
 				PL.set_meta("flicker", true)
 			room.add_child(PL)
 		backdrop.use_region(String(room.layers["region"]))
+		# salas com pintura própria (Cúpula, Trono, Provações)
+		var rk := String(BG_ROOM.get(room.id, ""))
+		if rk != "" and ResourceLoader.exists("res://art/bg/%s.jpg" % rk):
+			backdrop.art = Data.tex("res://art/bg/%s.jpg" % rk); backdrop.region_key = ""
 		front.items = room.layers.get("front", []); front.region = String(room.layers["region"])
 	else:
 		front.items = []
@@ -547,18 +556,40 @@ func _update_transition(dt: float) -> void:
 		if trn["t"] >= 0.12:
 			transition = {}; hud.fade = 0.0
 
-# ------------------------------------------------------------------ tempo (cinza a cair)
+# ------------------------------------------------------------------ tempo de cada região (como weather em js/data/regions.js)
+# n: quantas, v: queda (px/s), dx: vento, s: tamanho, c: cor, k: "dot" ponto | "streak" risco de chuva | "glow" brilho que pulsa
+const WEATHER := {
+	"ash": {"n": 60, "v": [8.0, 22.0], "dx": -4.0, "s": [0.6, 1.6], "c": Color(0.85, 0.8, 0.78, 0.5), "k": "dot"},
+	"rain": {"n": 110, "v": [260.0, 340.0], "dx": -40.0, "s": [7.0, 12.0], "c": Color(0.7, 0.8, 0.95, 0.35), "k": "streak"},
+	"embers": {"n": 26, "v": [-14.0, -6.0], "dx": 2.0, "s": [0.8, 1.6], "c": Color(1.0, 0.65, 0.3, 0.7), "k": "glow"},
+	"sparks": {"n": 34, "v": [-30.0, -12.0], "dx": 3.0, "s": [0.7, 1.4], "c": Color(1.0, 0.55, 0.2, 0.8), "k": "glow"},
+	"fireflies": {"n": 22, "v": [-4.0, 4.0], "dx": 0.0, "s": [1.0, 1.8], "c": Color(0.7, 1.0, 0.8, 0.75), "k": "glow"},
+	"wind": {"n": 40, "v": [10.0, 26.0], "dx": -70.0, "s": [0.6, 1.3], "c": Color(0.8, 0.78, 0.85, 0.4), "k": "dot"},
+	"incense": {"n": 24, "v": [-6.0, -2.0], "dx": 1.0, "s": [0.8, 1.6], "c": Color(1.0, 0.9, 0.7, 0.35), "k": "glow"},
+	"ashstorm": {"n": 90, "v": [20.0, 50.0], "dx": -60.0, "s": [0.7, 1.8], "c": Color(1.0, 0.55, 0.35, 0.55), "k": "dot"},
+	"dust": {"n": 22, "v": [2.0, 6.0], "dx": 0.5, "s": [0.6, 1.2], "c": Color(0.8, 0.8, 0.9, 0.3), "k": "dot"},
+}
+var weather_kind := {}
+
 func _init_weather() -> void:
 	weather.clear()
-	for i in 70:
-		weather.append({"p": Vector2(randf() * 700, randf() * 400), "s": randf_range(0.6, 1.6), "v": randf_range(8, 22), "ph": randf() * TAU})
+	var key := "ash"
+	if room != null:
+		key = String(room.reg.get("weather", "ash"))
+	weather_kind = WEATHER.get(key, WEATHER["ash"])
+	for i in int(weather_kind["n"]):
+		weather.append({"p": Vector2(randf() * 700, randf() * 400), "s": randf_range(weather_kind["s"][0], weather_kind["s"][1]),
+			"v": randf_range(weather_kind["v"][0], weather_kind["v"][1]), "ph": randf() * TAU})
 
 func _weather_step(dt: float) -> void:
+	var dx: float = weather_kind.get("dx", -4.0)
 	for w in weather:
 		w["ph"] += dt
-		w["p"] += Vector2(sin(w["ph"]) * 6.0 - 4.0, w["v"]) * dt
+		w["p"] += Vector2(sin(w["ph"]) * 6.0 + dx, w["v"]) * dt
 		if w["p"].y > 400: w["p"].y -= 420
+		if w["p"].y < -20: w["p"].y += 420
 		if w["p"].x < -20: w["p"].x += 720
+		if w["p"].x > 700: w["p"].x -= 720
 
 # ------------------------------------------------------------------ desenho de adereços, portões, urnas, altares
 func _draw_props() -> void:
@@ -603,8 +634,18 @@ func _draw_props() -> void:
 		props_node.draw_texture_rect(gtex, Rect2(r.position, Vector2(r.size.x, hh)), false, Color(0.8, 0.78, 0.8))
 	# cinza a cair à frente da câmara
 	var c := cam.get_screen_center_position() - Vector2(350, 200)
+	var wc: Color = weather_kind.get("c", Color(0.85, 0.8, 0.78, 0.5)); var wk: String = weather_kind.get("k", "dot")
 	for w in weather:
-		props_node.draw_rect(Rect2(c + w["p"], Vector2(w["s"], w["s"])), Color(0.85, 0.8, 0.78, 0.55))
+		var q: Vector2 = c + w["p"]
+		match wk:
+			"streak":
+				props_node.draw_line(q, q + Vector2(weather_kind["dx"], w["v"]).normalized() * w["s"], wc, 1.0)
+			"glow":
+				var a := 0.5 + 0.5 * sin(w["ph"] * 2.3)
+				props_node.draw_circle(q, w["s"] * 1.6, Color(wc.r, wc.g, wc.b, wc.a * 0.25 * a))
+				props_node.draw_rect(Rect2(q, Vector2(w["s"], w["s"])), Color(wc.r, wc.g, wc.b, wc.a * a))
+			_:
+				props_node.draw_rect(Rect2(q, Vector2(w["s"], w["s"])), wc)
 
 func _draw_prop_item(k: String, p: Vector2, ptex: Texture2D, S: float, pm: Dictionary, flip := false) -> void:
 	var items = pm["items"].get(k)

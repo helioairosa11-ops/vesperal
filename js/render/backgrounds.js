@@ -274,7 +274,7 @@
   };
   // base: deslocamento vertical fixo de todos os planos (o menu assenta-os no chão nos ecrãs mais altos)
   // pinturas de fundo por região (assets/bg): ficam no plano mais distante, por trás das silhuetas em paralaxe
-  const ART = { city: 'city', sanct: 'sanct', ramparts: 'ramparts', forge: 'forge', garden: 'garden', tower: 'tower', cathedral: 'cathedral', crypt: 'crypt' };
+  const ART = { city: 'city', sanct: 'sanct', ramparts: 'ramparts', forge: 'forge', garden: 'garden', tower: 'tower', cathedral: 'cathedral', crypt: 'crypt', palace: 'throne' };
   const ROOM_ART = { r7_throne: 'throne', r6_dome: 'dome', r1_trials: 'trials', trials: 'trials', trials_bells: 'trials', trials_dodge: 'trials', trials_echoes: 'trials' };
   BG.room = null;
   // salas com pintura própria (sala do trono): sem a parede de fundo dos interiores à frente da pintura

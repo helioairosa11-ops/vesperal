@@ -1,0 +1,1 @@
+{"id": "r2_watch", "pw": 640, "ph": 360, "S": 2.5, "region": "r2", "interior": false, "tileS": 2.5, "flames": [], "lights": [{"x": 50, "y": 68, "r": 75, "c": "#ffa050", "i": 0.85, "f": 1}], "front": [{"x": 447.81125202775, "s": 0.8970784570556134, "top": false, "arena": true}], "dark": 0.55}

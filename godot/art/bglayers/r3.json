@@ -1,0 +1,1 @@
+{"key": "r3", "LW": 960, "LH": 360, "art": "forge.jpg?v=20261125a", "sky": ["#0a0303", "#2a0b06", "#5a1a08"], "haze": "rgba(255,90,30,0.08)", "stoneDark": "#0f0908", "layers": [{"p": 0.05600000000000001, "topRow": false, "anim": true, "w": 2160, "h": 810}, {"p": 0.22, "topRow": true, "anim": false, "w": 2160, "h": 810}]}

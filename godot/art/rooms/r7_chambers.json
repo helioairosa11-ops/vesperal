@@ -1,0 +1,1 @@
+{"id": "r7_chambers", "pw": 640, "ph": 720, "S": 2.5, "region": "r7", "interior": true, "tileS": 2.5, "flames": [], "lights": [{"x": 590, "y": 488, "r": 75, "c": "#ffa050", "i": 0.85, "f": 1}, {"x": 590, "y": 528, "r": 75, "c": "#ffa050", "i": 0.85, "f": 1}], "front": [{"x": 282.8155156970024, "s": 0.33127089962363243, "top": false, "arena": false}], "dark": 0.66}

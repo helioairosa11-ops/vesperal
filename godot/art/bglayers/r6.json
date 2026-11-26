@@ -1,0 +1,1 @@
+{"key": "r6", "LW": 960, "LH": 360, "art": "cathedral.jpg?v=20261125a", "sky": ["#07040e", "#1c1030", "#3a2050"], "haze": "rgba(220,180,255,0.05)", "stoneDark": "#0e0a14", "layers": [{"p": 0.048, "topRow": false, "anim": true, "w": 2160, "h": 810}, {"p": 0.2, "topRow": false, "anim": false, "w": 2160, "h": 810}]}

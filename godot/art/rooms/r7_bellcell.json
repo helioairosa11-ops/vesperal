@@ -1,0 +1,1 @@
+{"id": "r7_bellcell", "pw": 640, "ph": 360, "S": 2.5, "region": "r7", "interior": true, "tileS": 2.5, "flames": [], "lights": [{"x": 250, "y": 82, "r": 120, "c": "#ffb060", "i": 0.85, "f": 1}, {"x": 490, "y": 158, "r": 75, "c": "#ffd080", "i": 0.85, "f": 1}], "front": [{"x": 562.8485186398029, "s": 0.30131831066682935, "top": false, "arena": false}], "dark": 0.6}

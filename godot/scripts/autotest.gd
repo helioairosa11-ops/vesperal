@@ -45,6 +45,12 @@ func _ready() -> void:
 				[0.8, "tap", "attack"], [0.07, "shot", "f04_hit"], [0.05, "shot", "f05_hit2"], [0.6, "press", "right"], [0.05, "tap", "dodge"], [0.07, "shot", "f06_dodge_inv"],
 				[0.12, "shot", "f07_dodge_end"], [0.1, "release", "right"], [0.4, "tap", "jump"], [0.08, "shot", "f08_jump"], [0.6, "shot", "f09_land"],
 				[0.1, "kill", ""], [0.35, "shot", "f10_dissolve"], [0.5, "quit", ""]]
+		"regions":
+			# uma sala de cada região: confirma a pintura de fundo certa em cada uma
+			steps = []
+			for r in ["r1_street", "r2_gate", "r3_foundry", "r4_pond", "r5_stairs", "r6_nave", "r6_dome", "r7_hall", "r7_throne", "r1_crypt"]:
+				steps.append([0.4, "room", r]); steps.append([0.2, "place", "10"]); steps.append([0.8, "shot", "rg_" + r])
+			steps.append([0.2, "quit", ""])
 		"npc":
 			steps = [[0.5, "room", "r1_sanct"], [0.2, "place", "22"], [0.6, "shot", "n01_prompt"], [0.1, "tap", "interact"], [0.6, "shot", "n02_typing"],
 				[1.8, "shot", "n03_line1"], [0.1, "tap", "interact"], [0.1, "tap", "interact"], [1.0, "shot", "n04_line2"],

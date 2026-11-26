@@ -1,0 +1,1 @@
+{"id": "r4_nursery", "pw": 640, "ph": 720, "S": 2.5, "region": "r4", "interior": true, "tileS": 2.5, "flames": [], "lights": [{"x": 310, "y": 654, "r": 40, "c": "#a0ffd0", "i": 0.85, "f": 1}, {"x": 470, "y": 174, "r": 55, "c": "#ffb060", "i": 0.85, "f": 1}], "front": [{"x": 50.61761990189552, "s": 0.8060198987368494, "top": true, "arena": false}], "dark": 0.62}
