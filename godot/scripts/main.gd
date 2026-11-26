@@ -10,6 +10,7 @@ func _ready() -> void:
 	if OS.get_cmdline_user_args().has("--autotest"):
 		GameState.new_game(); _start_world()
 		var at = load("res://scripts/autotest.gd").new()
+		at.process_mode = Node.PROCESS_MODE_ALWAYS   # continua com o jogo em pausa (menus)
 		at.main = self
 		add_child(at)
 		return

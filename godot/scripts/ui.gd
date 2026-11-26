@@ -852,7 +852,7 @@ func open_rest(world, altar_id: String, name_key: String) -> void:
 		{"label": Data.t("pause_inventory"), "action": func(): open_inventory(world)},
 		{"label": Data.t("rest_travel"), "disabled": lit.is_empty(), "action": func(): _open_travel(world, lit)},
 		{"label": Data.t("rest_leave"), "action": func(): close(p)},
-	], "foot": Data.t("rest_text"), "on_close": func(): world.get_tree().paused = false})
+	], "on_close": func(): world.get_tree().paused = false})
 
 func _open_travel(world, lit: Array) -> void:
 	var p := {}
