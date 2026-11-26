@@ -245,8 +245,14 @@ static func kinds() -> Dictionary:
 		"attacks": {"burst": {"wind": 0.8, "act": 0.15, "rec": 0.2, "dmg": 22, "hb": [-34, -4, 68, 60], "tell": "red", "sfx": "explode", "centered": true, "shake": 0.35}},
 		"think": "_think_torch",
 	}
-	# os de garras são um bocado maiores (como no jogo web: KINDS.crawler.size etc.)
-	_kinds["crawler"]["size"] = 1.45; _kinds["gargoyle"]["size"] = 1.35; _kinds["drowned"]["size"] = 1.3
+	# tamanho de cada tipo: os humanos ficam da altura da protagonista ou mais altos (antes eram mais baixos que ela),
+	# os pesados bem mais altos; os bichos de garras/voadores à proporção (altura da protagonista ≈ 36)
+	var SIZE := {"husk": 1.35, "sexton": 1.3, "sentinel": 1.2, "crossbow": 1.2, "hound": 1.35, "crawler": 1.6,
+		"thrall": 1.45, "slag": 1.4, "smelter": 1.3, "thornmaid": 1.15, "drowned": 1.3, "moth": 1.3,
+		"gargoyle": 1.4, "acolyte": 1.25, "raven": 1.3, "penitent": 1.35, "vitrail": 1.25, "choir": 1.3,
+		"royalguard": 1.1, "courtier": 1.25, "torch": 1.05, "wisp": 1.3}
+	for k in SIZE:
+		_kinds[k]["size"] = SIZE[k]
 	# variantes grandes: o mesmo bicho muito maior, mais lento a armar o golpe e muito mais duro (giant() em enemies.js)
 	_giant("husk", {"size": 1.85, "cfg": {"hp": 130, "poise": 70, "ash": 75}, "dmg": 1.6, "speed": 0.8, "slow": 1.15})
 	_giant("hound", {"size": 1.75, "cfg": {"hp": 115, "poise": 50, "ash": 80}, "dmg": 1.5, "speed": 0.9, "slow": 1.1})
@@ -257,10 +263,19 @@ static func kinds() -> Dictionary:
 	_giant("royalguard", {"size": 1.5, "cfg": {"hp": 280, "poise": 130, "ash": 170}, "dmg": 1.35, "speed": 0.85, "slow": 1.1})
 	return _kinds
 
+## a folha do gigante já é desenhada maior que a do bicho normal: desconta essa diferença para o tamanho final bater certo
+static func _big_sheet_ratio(base: String) -> float:
+	var a: Dictionary = Data.sprites.get("en_" + base, {}); var b: Dictionary = Data.sprites.get("en_%s_big" % base, {})
+	if a.is_empty() or b.is_empty():
+		return 1.0
+	var fa: Dictionary = a["frames"][a["anims"]["idle"]["frames"][0]]; var fb: Dictionary = b["frames"][b["anims"]["idle"]["frames"][0]]
+	var ha: float = fa["h"] / float(fa.get("s", a["scale"])); var hb: float = fb["h"] / float(fb.get("s", b["scale"]))
+	return maxf(0.5, hb / maxf(1.0, ha))
+
 static func _giant(base: String, o: Dictionary) -> void:
 	var B: Dictionary = _kinds[base]
 	var K2: Dictionary = B.duplicate(true)
-	K2["sheet"] = "en_%s_big" % base; K2["size"] = o["size"]; K2["dmg_mult"] = o["dmg"]; K2["speed_mult"] = o["speed"]; K2["heavy"] = true; K2["big"] = true
+	K2["sheet"] = "en_%s_big" % base; K2["size"] = o["size"] * float(B.get("size", 1.0)) / _big_sheet_ratio(base); K2["dmg_mult"] = o["dmg"]; K2["speed_mult"] = o["speed"]; K2["heavy"] = true; K2["big"] = true
 	var c: Dictionary = K2["cfg"]
 	for k in o["cfg"]:
 		c[k] = o["cfg"][k]

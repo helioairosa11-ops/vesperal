@@ -72,8 +72,8 @@ func _ready() -> void:
 				[0.8, "shot", "p01"], [1.2, "shot", "p02"], [1.5, "shot", "p03"], [0.3, "quit", ""]]
 		"big":
 			# tamanho: rastejante (×1,45), cinzento e os gigantes ao lado da protagonista
-			steps = [[0.4, "room", "r1_street"], [0.2, "place", "8"], [0.2, "spawn2", "crawler:3"], [0.05, "spawn2", "husk_big:7"], [0.05, "spawn2", "hound_big:-5"],
-				[0.6, "shot", "s01"], [0.3, "quit", ""]]
+			steps = [[0.4, "room", "r1_street"], [0.2, "place", "6"], [0.2, "spawn2", "husk:2"], [0.05, "spawn2", "crawler:4"], [0.05, "spawn2", "sexton:-3"], [0.05, "spawn2", "husk_big:9"],
+				[0.5, "shot", "s01"], [0.6, "shot", "s02"], [0.3, "quit", ""]]
 		"climb":
 			# encosta a uma parede (sala r1_street, muro à direita) e trepa com cima
 			steps = [[0.4, "room", "r1_street"], [0.2, "place", "16"], [0.1, "press", "right"], [0.4, "press", "up"], [0.25, "shot", "k01_climb"],
