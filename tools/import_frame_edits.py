@@ -21,11 +21,19 @@ for folder, name in SHEETS.items():
             continue
         fr = data[name]['frames'][int(m.group(1))]
         im = Image.open(f).convert('RGBA')
+        dy = 0
         if im.size != (fr['w'], fr['h']):
-            print('tamanho diferente, ignorado:', f.name, im.size, (fr['w'], fr['h']))
-            continue
-        sheet.paste(Image.new('RGBA', im.size, (0, 0, 0, 0)), (fr['x'], fr['y']))
-        sheet.paste(im, (fr['x'], fr['y']))
+            # mesma largura e mais baixo (a folha ganhou margem por cima): encosta pelo corpo e pela terra
+            if im.size[0] != fr['w'] or im.size[1] > fr['h']:
+                print('tamanho diferente, ignorado:', f.name, im.size, (fr['w'], fr['h']))
+                continue
+            import numpy as np
+            cur = np.asarray(sheet.crop((fr['x'], fr['y'], fr['x'] + fr['w'], fr['y'] + fr['h'])))[..., 3].astype(int)
+            ed = np.asarray(im)[..., 3].astype(int)
+            h2 = im.size[1] // 2
+            dy = min(range(fr['h'] - im.size[1] + 1), key=lambda k: np.abs(cur[k + h2:k + im.size[1]] - ed[h2:]).sum())
+        sheet.paste(Image.new('RGBA', (fr['w'], fr['h']), (0, 0, 0, 0)), (fr['x'], fr['y']))
+        sheet.paste(im, (fr['x'], fr['y'] + dy))
         n += 1
     sheet.save(path, optimize=True)
     print(name, 'quadros importados:', n)
