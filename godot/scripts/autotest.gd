@@ -80,6 +80,8 @@ func _ready() -> void:
 				[0.2, "shot", "k02_climb"], [0.8, "shot", "k03_top"], [0.1, "release", "up"], [0.1, "release", "right"], [0.3, "quit", ""]]
 		"items":
 			steps = [[0.4, "room", "r1_street"], [0.2, "place", "8"], [0.1, "give", "oil"], [0.1, "give", "incense"], [0.1, "use", "oil"], [0.1, "use", "incense"], [0.6, "shot", "i01_buffs"], [0.3, "quit", ""]]
+		"rest":
+			steps = [[0.4, "room", "r1_sanct"], [0.2, "place", "14"], [0.6, "tap", "interact"], [1.0, "shot", "a01_rest"], [0.1, "uiact", "0"], [1.0, "shot", "a02_inv"], [0.3, "quit", ""]]
 		"npcs":
 			# Maren nas Muralhas (dá a medalha), Teodoro na Estufa (escolhe ir ter com a irmã), os dois no Santuário
 			steps = [[0.4, "room", "r2_gate"], [0.2, "place", "22"], [0.6, "shot", "m01_maren"], [0.1, "tap", "interact"], [2.0, "shot", "m02_maren_talk"],
@@ -143,6 +145,10 @@ func _process(delta: float) -> void:
 			w.player.pos = Vector2(8 * 20, 15 * 20 - w.player.size.y)
 		"room":
 			w.load_room(s[2], Vector2.INF)
+		"uiact":
+			# carrega na opção n do menu aberto
+			var top: Dictionary = UI.stack[-1]
+			top["items"][int(s[2])]["action"].call()
 		"give":
 			GameState.give(String(s[2]))
 		"use":

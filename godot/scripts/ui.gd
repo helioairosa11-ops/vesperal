@@ -839,6 +839,35 @@ func open_pause(world) -> void:
 	], "foot": Data.t("pause_info", {"time": _fmt_time(GameState.play_time), "pct": GameState.completion(), "deaths": GameState.deaths}),
 		"on_close": func(): world.get_tree().paused = false})
 
+# ================================================================== descanso no altar (M.rest do jogo web)
+func open_rest(world, altar_id: String, name_key: String) -> void:
+	world.get_tree().paused = true
+	var p := {}
+	var lit := []
+	for rid in Data.rooms:
+		for e in Data.rooms[rid]["ents"]:
+			if e.get("t", "") == "altar" and GameState.flags.get("altar_" + String(e["id"]), false) and String(e["id"]) != altar_id:
+				lit.append({"room": rid, "e": e})
+	p = open({"title": Data.t(name_key), "width": 520.0, "row": 58.0, "items": [
+		{"label": Data.t("pause_inventory"), "action": func(): open_inventory(world)},
+		{"label": Data.t("rest_travel"), "disabled": lit.is_empty(), "action": func(): _open_travel(world, lit)},
+		{"label": Data.t("rest_leave"), "action": func(): close(p)},
+	], "foot": Data.t("rest_text"), "on_close": func(): world.get_tree().paused = false})
+
+func _open_travel(world, lit: Array) -> void:
+	var p := {}
+	var items := []
+	for a in lit:
+		var dest: Dictionary = a
+		items.append({"label": "%s  ·  %s" % [Data.t(String(dest["e"]["name"])), Data.t("reg_" + String(Data.rooms[dest["room"]]["region"]))],
+			"action": func():
+				close_all(); world.get_tree().paused = false
+				world.load_room(String(dest["room"]), Vector2.INF)
+				world.player.pos = Vector2(dest["e"]["x"] * 20 + 34, (dest["e"]["y"] + 1) * 20 - world.player.size.y)
+				world.player.vel = Vector2.ZERO})
+	items.append({"label": Data.t("back"), "action": func(): close(p)})
+	p = open({"title": Data.t("rest_travel"), "width": 560.0, "row": 54.0, "items": items})
+
 # ================================================================== inventário (M.inventory do jogo web, arte de IMG_3485)
 const INV_TABS := ["weapons", "relics", "consumables", "key", "quest"]
 const INV_TAB_ICON := {"weapons": "w_desperto", "relics": "r_lantern", "consumables": "salt", "key": "letter_3", "quest": "lost_bell"}
