@@ -1,0 +1,62 @@
+{
+ "idle": [
+  "tools/art/poses/seraphine/si_r0_0.png",
+  "tools/art/poses/seraphine/si_r0_1.png",
+  "tools/art/poses/seraphine/si_r0_2.png",
+  "tools/art/poses/seraphine/si_r0_3.png"
+ ],
+ "move": [
+  "tools/art/poses/seraphine/si_r1_0.png",
+  "tools/art/poses/seraphine/si_r1_1.png",
+  "tools/art/poses/seraphine/si_r1_2.png",
+  "tools/art/poses/seraphine/si_r1_3.png"
+ ],
+ "atk_burst": [
+  "tools/art/poses/seraphine/sb_r0_0.png",
+  "tools/art/poses/seraphine/sb_r0_1.png",
+  "tools/art/poses/seraphine/sb_r0_2.png",
+  "tools/art/poses/seraphine/sb_r0_3.png"
+ ],
+ "atk_lance": [
+  "tools/art/poses/seraphine/sb_r1_0.png",
+  "tools/art/poses/seraphine/sb_r1_1.png",
+  "tools/art/poses/seraphine/sb_r1_2.png",
+  "tools/art/poses/seraphine/sb_r1_3.png"
+ ],
+ "atk_embrace": [
+  "tools/art/poses/seraphine/se_r0_0.png",
+  "tools/art/poses/seraphine/se_r0_1.png",
+  "tools/art/poses/seraphine/se_r0_2.png",
+  "tools/art/poses/seraphine/se_r0_3.png"
+ ],
+ "atk_beams": [
+  "tools/art/poses/seraphine/se_r1_0.png",
+  "tools/art/poses/seraphine/se_r1_1.png",
+  "tools/art/poses/seraphine/se_r1_2.png",
+  "tools/art/poses/seraphine/se_r1_3.png"
+ ],
+ "dim": [
+  "tools/art/poses/seraphine/sd_r0_0.png",
+  "tools/art/poses/seraphine/sd_r0_1.png",
+  "tools/art/poses/seraphine/sd_r0_2.png",
+  "tools/art/poses/seraphine/sd_r0_3.png"
+ ],
+ "hurt": [
+  "tools/art/poses/seraphine/sd_r1_0.png"
+ ],
+ "stagger": [
+  "tools/art/poses/seraphine/sd_r1_1.png",
+  "tools/art/poses/seraphine/sd_r1_2.png",
+  "tools/art/poses/seraphine/sd_r1_3.png"
+ ],
+ "death": [
+  "tools/art/poses/seraphine/sx_r0_0.png",
+  "tools/art/poses/seraphine/sx_r0_1.png",
+  "tools/art/poses/seraphine/sx_r0_2.png",
+  "tools/art/poses/seraphine/sx_fade0.png",
+  "tools/art/poses/seraphine/sx_fade1.png"
+ ],
+ "_scale": {
+  "se_": 1.1278688524590164
+ }
+}
