@@ -269,6 +269,12 @@ def fixes(name, i, a, box, frames):
                 if 0 <= sy < src.shape[0]:
                     for_x0 = max(0, -dx); for_x1 = min(a.shape[1], src.shape[1] - dx)
                     a[yy, for_x0:for_x1] = src[sy, for_x0 + dx:for_x1 + dx]
+            # o quadro 12 traz uma mancha arroxeada por baixo dos pés: fora
+            low = a[Y(h - 14):, :]
+            c3 = low[..., :3].astype(int)
+            lil = (c3[..., 0] - c3[..., 1] > 14) & (c3[..., 2] - c3[..., 1] > 8)
+            low[ndi.binary_dilation(lil, iterations=1) & (low[..., 3] < 250)] = 0
+            low[lil] = 0
         # a pá/tocha erguida, o fumo e as chamas saíam pelo topo: desvanecem (só nas colunas deles, a cabeça fica)
         spans = {16: (X(130), X(w)), 38: (X(168), X(w)), 20: (X(150), X(w)), 19: (X(200), X(w)), 36: (X(0), X(w)), 37: (X(0), X(w)), 49: (X(0), X(w))}
         if i in spans:
