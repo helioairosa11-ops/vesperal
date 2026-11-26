@@ -1,0 +1,52 @@
+{
+ "idle": [
+  "tools/art/poses/carpideira/ci_r0_0.png",
+  "tools/art/poses/carpideira/ci_r0_1.png",
+  "tools/art/poses/carpideira/ci_r0_2.png",
+  "tools/art/poses/carpideira/ci_r0_3.png"
+ ],
+ "move": [
+  "tools/art/poses/carpideira/ci_r1_0.png",
+  "tools/art/poses/carpideira/ci_r1_1.png",
+  "tools/art/poses/carpideira/ci_r1_2.png",
+  "tools/art/poses/carpideira/ci_r1_3.png"
+ ],
+ "atk_scream": [
+  "tools/art/poses/carpideira/cs_r0_0.png",
+  "tools/art/poses/carpideira/cs_r0_1.png",
+  "tools/art/poses/carpideira/cs_r0_2.png",
+  "tools/art/poses/carpideira/cs_r0_3.png"
+ ],
+ "atk_tears": [
+  "tools/art/poses/carpideira/cs_r1_0.png",
+  "tools/art/poses/carpideira/cs_r1_1.png",
+  "tools/art/poses/carpideira/cs_r1_2.png",
+  "tools/art/poses/carpideira/cs_r1_3.png"
+ ],
+ "atk_grab": [
+  "tools/art/poses/carpideira/cg_r0_0.png",
+  "tools/art/poses/carpideira/cg_r0_1.png",
+  "tools/art/poses/carpideira/cg_r0_2.png",
+  "tools/art/poses/carpideira/cg_r0_3.png"
+ ],
+ "atk_rosary": [
+  "tools/art/poses/carpideira/cg_r1_0.png",
+  "tools/art/poses/carpideira/cg_r1_1.png",
+  "tools/art/poses/carpideira/cg_r1_2.png",
+  "tools/art/poses/carpideira/cg_r1_3.png"
+ ],
+ "hurt": [
+  "tools/art/poses/carpideira/cd_r0_0.png"
+ ],
+ "stagger": [
+  "tools/art/poses/carpideira/cd_r0_1.png",
+  "tools/art/poses/carpideira/cd_r0_2.png",
+  "tools/art/poses/carpideira/cd_r0_3.png"
+ ],
+ "death": [
+  "tools/art/poses/carpideira/cd_r1_0.png",
+  "tools/art/poses/carpideira/cd_r1_1.png",
+  "tools/art/poses/carpideira/cd_r1_2.png",
+  "tools/art/poses/carpideira/cd_r1_3.png"
+ ]
+}
