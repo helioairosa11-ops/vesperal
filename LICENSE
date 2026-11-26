@@ -30,6 +30,9 @@ também não está sob esta licença: é de outros autores e mantém a sua:
 - "Sigil" — Kistol, CC0 (https://opengameart.org/content/sigil)
 (obtidas em OpenGameArt.org; cortadas no início e no fim e com o volume ajustado)
 
+Os sons de impacto (godot/audio/sfx/ e js/data/sfx_samples.js, feitos com tools/build_impacts.py) usam gravações em
+domínio público (CC0) de OpenGameArt.org: Independent.nu, qubodup, rubberduck e StarNinjas.
+
 ------------------------------------------------------------------------------------------
 Texto integral da licença (versão oficial em inglês):
 ------------------------------------------------------------------------------------------

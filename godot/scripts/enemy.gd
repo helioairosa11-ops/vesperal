@@ -526,6 +526,8 @@ func on_hit(box: Dictionary) -> bool:
 	var mat: String = MATS.get(kind, {}).get("mat", "flesh")
 	world.audio.sfx("hit_heavy" if heavy else "hit")
 	world.audio.sfx({"armor": "hit_metal", "stone": "hit_stone", "spirit": "hit_spirit", "wax": "hit_soft", "wood": "hit_wood"}.get(mat, "enemy_hurt"), 0.5)
+	if is_boss():
+		world.audio.sfx("boss_hit", 0.75 if heavy else 0.55)   # peso extra num chefe
 	world.hitstop(box.get("hitstop", 0.085 if heavy else 0.05))
 	world.shake((0.24 if heavy else 0.1) * (1.15 if is_boss() else 1.0))
 	var src = box.get("src")

@@ -113,6 +113,10 @@ Música dos chefes (ficheiros em `assets/audio/music/` e `godot/audio/music/`, d
 
 As faixas foram cortadas no início e no fim e o volume foi ajustado para o jogo.
 
+Sons de impacto (golpes, pancadas, aparar, ser atingida), em camadas a partir de gravações CC0 de OpenGameArt.org
+(`tools/build_impacts.py`): Independent.nu (“37 hits/punches”, “8 wet squish, slurp impacts”), qubodup (“Impact”, “Punch”),
+rubberduck (“75 CC0 breaking / falling / hit sfx”) e StarNinjas (“20 Sword Sound Effects”).
+
 ## Licença
 
 [CC BY-NC-SA 4.0](LICENSE) — podes jogar, partilhar e adaptar o jogo, desde que dês o crédito ao autor, não o uses para fins comerciais e partilhes as adaptações com a mesma licença. As fontes (Cinzel e EB Garamond) têm a sua própria licença, a SIL Open Font License 1.1 (`assets/fonts/OFL-*.txt`).

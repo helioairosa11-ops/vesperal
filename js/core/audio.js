@@ -348,6 +348,7 @@
       A.buses[b] = g;
     });
     A.applyVolumes();
+    loadSamples();
     A.ready = true;
     A.timer = setInterval(A.tick, 25);
     document.addEventListener('visibilitychange', () => { if (!c) return; if (document.hidden) c.suspend(); else c.resume(); });
@@ -642,13 +643,49 @@
   };
   A.SFX = SFX;
 
+  // sons de impacto gravados (js/data/sfx_samples.js, de tools/build_impacts.py): descodificados uma vez a partir
+  // do próprio script (funciona também com o jogo aberto como ficheiro); se o navegador não os ler, fica o sintetizado
+  const SAMPLES = {}, lastVariant = {};
+  let samplesLoaded = false;
+  function loadSamples() {
+    if (samplesLoaded || !c || !VS.SFX_SAMPLES) return;
+    samplesLoaded = true;
+    Object.keys(VS.SFX_SAMPLES).forEach((k) => {
+      SAMPLES[k] = [];
+      VS.SFX_SAMPLES[k].forEach((b64, i) => {
+        try {
+          const bin = atob(b64), u = new Uint8Array(bin.length);
+          for (let j = 0; j < bin.length; j++) u[j] = bin.charCodeAt(j);
+          c.decodeAudioData(u.buffer).then((buf) => { SAMPLES[k][i] = buf; }).catch(() => { });
+        } catch (e) { }
+      });
+    });
+  }
+  function playSample(name, opts, now) {
+    const list = (SAMPLES[name] || []).filter(Boolean);
+    if (!list.length) return false;
+    let k = Math.floor(Math.random() * list.length);
+    if (list.length > 1 && k === lastVariant[name]) k = (k + 1) % list.length;
+    lastVariant[name] = k;
+    const src = c.createBufferSource(); src.buffer = list[k];
+    src.playbackRate.value = 0.93 + Math.random() * 0.14;
+    src.connect(out(opts.vol !== undefined ? opts.vol : 1, opts.pan || 0));
+    src.start(now + (opts.delay || 0));
+    return true;
+  }
+
+  A.samplesReady = () => Object.values(SAMPLES).reduce((n, l) => n + l.filter(Boolean).length, 0);
+
   A.sfx = function (name, opts) {
     if (!c || c.state !== 'running' || A.mute.sfx) return;
-    const fn = SFX[name]; if (!fn) { console.warn('sfx inexistente', name); return; }
+    const fn = SFX[name];
+    if (!fn && !SAMPLES[name]) { console.warn('sfx inexistente', name); return; }
     const now = c.currentTime;
     if (A.lastSfx[name] && now - A.lastSfx[name] < 0.03) return; // evita empilhamento no mesmo frame
     A.lastSfx[name] = now;
     opts = opts || {};
+    if (playSample(name, opts, now)) return;
+    if (!fn) return;
     try { fn(out(opts.vol !== undefined ? opts.vol : 1, opts.pan || 0), now + (opts.delay || 0), opts); } catch (e) { console.warn(e); }
   };
 
