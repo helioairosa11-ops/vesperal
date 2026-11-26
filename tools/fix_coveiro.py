@@ -14,7 +14,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 STAGE = ROOT / 'tools' / 'art' / 'orig' / 'godot_stage'
 SPR = ROOT / 'godot' / 'art' / 'sprites'
 DATA = ROOT / 'godot' / 'data' / 'sprites.json'
-P = 30                                    # margem nova à volta de cada quadro (px da folha)
+P = 64                                    # margem nova à volta de cada quadro (px da folha)
 rng = np.random.default_rng(11)
 
 def noise1d(n, scale=6.0, seed=0):
@@ -136,6 +136,65 @@ def anchor_shift(a, frames, src_i, dst_i, rect):
     m = dst[..., 3] < 10
     dst[m] = part[m]
 
+def band_from(a, frames, src_i, dst_i, x_from, y_top, ref_x):
+    """continua a terra com a do quadro src_i: alinhado na horizontal pela âncora e na vertical pelo fundo do
+    monte numa coluna de referência, para não ficar degrau; só entra onde aqui está vazio"""
+    fs, fd = META['frames'][src_i], META['frames'][dst_i]
+    s = META['scale']
+    src = frames[src_i][0]
+    dx = int(round((P - fs['ox'] * s) - (P - fd['ox'] * s)))
+    def bottom(img, x):
+        ys = np.where(img[:, x, 3] > 100)[0]
+        return ys.max() if len(ys) else None
+    bd = bottom(a, ref_x); bs = bottom(src, ref_x + dx)
+    dy = (bs - bd) if (bd is not None and bs is not None) else 0
+    for x in range(x_from, a.shape[1]):
+        sx = x + dx
+        if not (0 <= sx < src.shape[1]):
+            continue
+        for y in range(y_top, a.shape[0]):
+            sy = y + dy
+            if 0 <= sy < src.shape[0] and a[y, x, 3] < 10 and src[sy, sx, 3] > 0:
+                a[y, x] = src[sy, sx]
+
+def remove_smear(a, rect, lum_min=105):
+    """tira um rasto claro (cinza sem cor) dentro do retângulo: onde estava por cima do corpo, o buraco é tapado
+    com a cor dos vizinhos escuros; onde estava por cima do fundo, fica transparente"""
+    x0, y0, x1, y1 = rect
+    reg = a[y0:y1, x0:x1]
+    rgb = reg[..., :3].astype(int)
+    light = (rgb.mean(-1) > lum_min) & (np.abs(rgb[..., 0] - rgb[..., 2]) < 14) & (reg[..., 3] > 30)
+    light = ndi.binary_dilation(light, iterations=1) & (reg[..., 3] > 0)
+    solid = (reg[..., 3] > 200) & ~light
+    todo = light.copy()
+    for _ in range(12):
+        if not todo.any():
+            break
+        cnt = ndi.convolve(solid.astype(int), np.ones((3, 3), int), mode='constant')
+        acc = np.stack([ndi.convolve(np.where(solid, rgb[..., c], 0), np.ones((3, 3), int), mode='constant') for c in range(3)], -1)
+        fill = todo & (cnt >= 4)
+        if not fill.any():
+            break
+        rgb[fill] = (acc[fill] / cnt[fill][:, None]).astype(int)
+        reg[..., :3][fill] = rgb[fill].astype(np.uint8)
+        reg[..., 3][fill] = 255
+        solid = solid | fill
+        todo = todo & ~fill
+    reg[..., 3][todo] = 0
+
+def mirror_band_end(a, x0, y0, x1, y1, xs_from, min_y=0):
+    """refaz o fim de um monte de terra espelhando o início do mesmo monte (mesma textura e mesma altura,
+    sem degrau): o píxel (x, y) recebe o de (xs_from - (x - x0), y) se for terra (castanho)"""
+    src = a.copy()
+    for x in range(x0, x1):
+        xs = xs_from - (x - x0)
+        if xs < 0:
+            continue
+        for y in range(max(y0, min_y), y1):
+            p = src[y, xs]
+            if p[3] > 20 and int(p[0]) - int(p[2]) > 6 and a[y, x, 3] < 10:
+                a[y, x] = p
+
 def mirror_complete(a, rect, axis_x):
     """completa a metade cortada de uma peça simétrica (lâmina da pá) espelhando a outra metade"""
     x0, y0, x1, y1 = rect
@@ -162,15 +221,19 @@ def fixes(name, i, a, box, frames):
         if i == 8:
             # a mão e o cabo do quadro seguinte colados no canto de baixo à direita: tira-se esse canto e a terra
             # volta a ser a do quadro 9 (mesmo passo), alinhada pela âncora dos pés
-            erase(a, (X(140), Y(96), X(w), Y(h)))
-            anchor_shift(a, frames, 9, i, (X(140), Y(118), X(w) + 20, Y(h) + 6))
+            erase(a, (X(142), Y(96), X(w), Y(h)))
+            erase(a, (X(130), Y(147), X(w), Y(h)))
+            band_from(a, frames, 7, i, X(142), Y(110), X(128))
+            ragged(a, 'R', (x0, y0, X(198), y1), depth=7, rows=(Y(112), Y(h)), seed=8)
         if i == 16:
             # a pá levantada saía pelo topo: tira os restos cortados (lâmina e rasto) e põe a lâmina inteira
             # (a do quadro 0, virada para cima) no cimo do cabo
             erase(a, (X(98), Y(0), X(147), Y(10)))
             erase(a, (X(140), Y(0), X(168), Y(5)))
-            src, sb = frames[0]
-            rect = (sb[0] + 116, sb[1] + 104, sb[0] + 162, sb[1] + 132)
+            remove_smear(a, (X(82), Y(0), X(101), Y(27)))
+            remove_smear(a, (X(124), Y(46), X(147), Y(70)))
+            src, sb = frames[42]
+            rect = (sb[0] + 96, sb[1] + 116, sb[0] + 140, sb[1] + 173)
             src = src.copy()
             piece = src[rect[1]:rect[3], rect[0]:rect[2]]
             # só a lâmina: a peça ligada ao meio do recorte (sem terra nem cabo)
@@ -179,7 +242,8 @@ def fixes(name, i, a, box, frames):
             if mid:
                 piece[lab != mid] = 0
             cxp = np.average(np.where(piece[..., 3] > 100)[1])
-            paste(a, src, rect, (int(round(X(153.5) - cxp)), Y(8) - (rect[3] - rect[1])), flip_v=True, under=False)
+            top_y = Y(14) - (rect[3] - rect[1])
+            paste(a, src, rect, (int(round(X(153.5) - cxp)), top_y), flip_v=True, under=False)
         if i == 19:
             fade_side(a, 'T', box, depth=14, seed=19, span=(X(195), X(w)))
             fade_side(a, 'R', box, depth=12, seed=91, span=(Y(0), Y(90)))
@@ -187,8 +251,10 @@ def fixes(name, i, a, box, frames):
             fade_side(a, 'T', box, depth=8, seed=i)
     else:
         if i == 8:
-            erase(a, (X(139), Y(110), X(w), Y(h)))
-            anchor_shift(a, frames, 9, i, (X(139), Y(112), X(w) + 20, Y(h) + 6))
+            erase(a, (X(142), Y(100), X(w), Y(h)))
+            erase(a, (X(130), Y(149), X(w), Y(h)))
+            band_from(a, frames, 7, i, X(142), Y(110), X(128))
+            ragged(a, 'R', (x0, y0, X(198), y1), depth=7, rows=(Y(112), Y(h)), seed=28)
         if i == 11:
             # pá em brasa de outro quadro colada por cima das pernas: do cinto para baixo (pernas, pá, terra) passa a ser
             # o quadro 12, alinhado pela âncora; do cinto para cima fica o 11 — o corte fica escondido no cinto
