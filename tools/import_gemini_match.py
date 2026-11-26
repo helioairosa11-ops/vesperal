@@ -76,7 +76,7 @@ corr = np.real(ifft2(fft2(A) * np.conj(fft2(B))))
 iy, ix = np.unravel_index(np.argmax(corr), corr.shape)
 dy = iy if iy < H - nh else iy - H
 dx = ix if ix < W - nw else ix - W
-s = data[name]['scale']
+s = f.get('s', data[name]['scale'])
 SH = Image.open(PNG).convert('RGBA')
 big = Image.new('RGBA', (max(SH.size[0], nw), SH.size[1] + nh + 2))
 big.paste(SH, (0, 0)); big.paste(Image.fromarray(out), (0, SH.size[1] + 2))
