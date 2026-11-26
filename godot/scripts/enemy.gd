@@ -47,6 +47,8 @@ func setup(k: String, tx: int, ty: int) -> void:
 	want_face = [-1, 1].pick_random()
 	sh = Data.sheet(K.get("sheet", "en_" + k))
 	home_x = pos.x + size.x / 2.0
+	if k == "gargoyle":
+		perched = true; perch = pos
 	if k == "drowned":
 		submerged = true; hittable = false; rise = 0.0
 
@@ -176,6 +178,28 @@ static func kinds() -> Dictionary:
 			"cfg": {"w": 14, "h": 12, "hp": 15, "poise": 4, "ash": 9, "flying": true},
 			"attacks": {"dive": {"wind": 0.45, "act": 0.45, "rec": 0.4, "dmg": 11, "tell": "", "body": true, "sfx": "moth"}},
 			"think": "_think_moth",
+		},
+		# ---------------- Região 5 (Torre dos Sinos)
+		"gargoyle": {
+			"cfg": {"w": 20, "h": 22, "hp": 46, "poise": 22, "ash": 26, "flying": true}, "eye": Color(1, 0.31, 0.19), "center": true,
+			"attacks": {
+				"dive": {"wind": 0.55, "act": 0.6, "rec": 0.6, "dmg": 18, "tell": "red", "body": true, "sfx": "wind"},
+				"claw": {"wind": 0.4, "act": 0.14, "rec": 0.5, "dmg": 14, "hb": [0, 0, 26, 22], "tell": "white", "lunge": 90.0},
+			},
+			"think": "_think_gargoyle",
+		},
+		"acolyte": {
+			"cfg": {"w": 14, "h": 30, "hp": 34, "poise": 14, "ash": 20}, "eye": Color(1, 0.85, 0.63),
+			"attacks": {
+				"ring": {"wind": 0.7, "act": 0.05, "rec": 0.8, "tell": "", "sfx": "bell_small"},
+				"bash": {"wind": 0.4, "act": 0.12, "rec": 0.5, "dmg": 13, "hb": [0, 8, 24, 20], "tell": "white", "lunge": 80.0},
+			},
+			"think": "_think_acolyte",
+		},
+		"raven": {
+			"cfg": {"w": 12, "h": 9, "hp": 8, "poise": 2, "ash": 5, "flying": true}, "eye": Color(1, 0.6, 0.25), "center": true,
+			"attacks": {"swoop": {"wind": 0.3, "act": 0.5, "rec": 0.3, "dmg": 9, "tell": "", "body": true, "sfx": "wind"}},
+			"think": "_think_raven",
 		},
 	}
 	# gigante (husk_big): o mesmo Cinzento a 1,85×, mais vida e golpes mais fortes
@@ -332,6 +356,11 @@ func _on_act(nm: String, s: Dictionary) -> void:
 		world.spawn_projectile({"pos": Vector2(cx, pos.y + 4), "vel": Vector2(ddx / 0.9, -330.0), "grav": 700.0, "size": Vector2(10, 10), "dmg": 15.0, "kind": "molten", "color": Color("#ff7020"), "life": 3.0, "parryable": false, "fire": true, "on_wall": "fire"})
 	if s.has("hop") and on_ground:
 		vel.y = s["hop"]
+	if (kind == "gargoyle" and nm == "dive") or (kind == "raven" and nm == "swoop"):
+		vel = (Vector2(player.cx, player.cy) - Vector2(cx, cy)).normalized() * (320.0 if kind == "gargoyle" else 240.0)
+	if kind == "acolyte" and nm == "ring":
+		for sd in [-1, 1]:
+			world.spawn_projectile({"pos": Vector2(cx, cy), "vel": Vector2(sd * 170.0, 0), "size": Vector2(10, 26), "dmg": 12.0, "kind": "wave", "color": Color("#e8d090"), "life": 2.2})
 	if kind == "moth" and nm == "dive":
 		vel = (Vector2(player.cx, player.cy) - Vector2(cx, cy)).normalized() * 260.0
 	if kind == "thornmaid" and nm == "burst":
@@ -346,6 +375,9 @@ var anim_idx := 0.0
 var submerged := false     # o Afogado escondido debaixo de água (só se vê a ondulação)
 var rise := 1.0
 var open_t := false
+var perched := false
+var perch := Vector2.ZERO
+var returning := false
 var circle_t := 0.0
 
 func _during(_name: String, _s: Dictionary, _dt: float) -> void:
@@ -354,8 +386,10 @@ func _during(_name: String, _s: Dictionary, _dt: float) -> void:
 func _on_end(nm: String) -> void:
 	if kind == "crawler" and nm == "bite":
 		vel.x = -facing * 110.0
-	if kind == "wisp" or kind == "moth":
+	if kind in ["wisp", "moth", "raven"]:
 		vel *= 0.3
+	if kind == "gargoyle" and nm == "dive":
+		returning = true
 
 # ================================================================== IA
 ## Perceção: vê a protagonista se estiver perto, à frente (ou muito perto, ouve-a) e sem paredes no meio.
@@ -745,6 +779,63 @@ func _think_moth(dt: float) -> void:
 	else:
 		fly_to(Vector2(home_x + sin(t2) * 40.0, pos.y + sin(t2 * 2.1) * 4.0), 50, dt)
 	face()
+
+# ---------------- Região 5
+## Gárgula: pousada como estátua (não leva dano), acorda quando passam por baixo, mergulha e volta ao poleiro
+func _think_gargoyle(dt: float) -> void:
+	if perched:
+		vel = Vector2.ZERO; hittable = false; anim_override = "perch"; anim_idx = 0.0
+		if absf(dx()) < 90 and dy() > 0 and dy() < 220:
+			perched = false; hittable = true; anim_override = ""; aggro = true
+			world.audio.sfx("roar", 0.4); _start("dive")
+		return
+	if not atk.is_empty():
+		if atk["phase"] == "wind":
+			vel.x *= 0.9; vel.y = -30
+		return
+	if returning:
+		fly_to(perch + size / 2.0, 160, dt)
+		if (Vector2(cx, cy) - perch - size / 2.0).length() < 8:
+			returning = false; cool = 1.0
+		if cool <= 0 and Vector2(dx(), dy()).length() < 160:
+			returning = false
+		return
+	var p = player
+	face()
+	fly_to(Vector2(p.cx - facing * 40, p.cy - 50), 120, dt)
+	if cool <= 0 and _can_take_turn():
+		_start("claw" if Vector2(dx(), dy()).length() < 50 else "dive")
+
+## Acólito dos Sinos: toca o sino (ondas para os dois lados) de longe, empurra de perto
+func _think_acolyte(dt: float) -> void:
+	if not atk.is_empty():
+		return
+	if _perceive(dt, 240):
+		if alert_t > 0:
+			return
+		face()
+		var d := absf(dx())
+		if cool <= 0 and _can_take_turn():
+			_start("bash" if d < 36 else "ring"); return
+		if d > 120: _go(facing, 40, dt)
+		elif d < 50: _go(-facing, 40, dt)
+		else: vel.x = move_toward(vel.x, 0, 900 * dt)
+	else:
+		_patrol(dt, 16, 50)
+
+## Corvo: em bando, dá voltas por cima da protagonista e pica
+func _think_raven(dt: float) -> void:
+	if not atk.is_empty():
+		return
+	var t2 := anim + home_x * 0.01
+	if _perceive(dt, 240, 180):
+		var p = player
+		fly_to(Vector2(p.cx + cos(t2 * 1.4) * 80.0, p.cy - 70.0 + sin(t2 * 2.0) * 20.0), 140, dt)
+		if cool <= 0:
+			_start("swoop")
+	else:
+		vel = Vector2.ZERO
+	facing = 1 if vel.x > 0 else -1
 
 # ------------------------------------------------------------------ dano
 func on_hit(box: Dictionary) -> bool:
