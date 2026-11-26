@@ -115,6 +115,25 @@ static func kinds() -> Dictionary:
 			},
 			"think": "_think_sexton",
 		},
+		# ---------------- Região 2 (Muralhas)
+		"sentinel": {
+			"cfg": {"w": 16, "h": 32, "hp": 50, "poise": 30, "ash": 22}, "eye": Color(1, 0.55, 0.3), "guard": true,
+			"attacks": {
+				"thrust": {"wind": 0.5, "act": 0.14, "rec": 0.55, "dmg": 16, "hb": [4, 12, 40, 8], "lunge": 120.0, "tell": "white", "unguard": true},
+				"bash": {"wind": 0.35, "act": 0.12, "rec": 0.5, "dmg": 10, "hb": [2, 6, 18, 24], "lunge": 160.0, "tell": "", "sfx": "shield"},
+			},
+			"think": "_think_sentinel",
+		},
+		"crossbow": {
+			"cfg": {"w": 14, "h": 30, "hp": 26, "poise": 10, "ash": 18}, "eye": Color(1, 0.55, 0.3),
+			"attacks": {"shoot": {"wind": 0.85, "act": 0.05, "rec": 0.9, "tell": "white", "sfx": "bolt"}},
+			"think": "_think_crossbow",
+		},
+		"hound": {
+			"cfg": {"w": 24, "h": 16, "hp": 28, "poise": 10, "ash": 16}, "eye": Color(1, 0.5, 0.3),
+			"attacks": {"bite": {"wind": 0.32, "act": 0.22, "rec": 0.45, "dmg": 13, "hb": [4, 2, 20, 14], "lunge": 280.0, "tell": "", "hop": -160.0}},
+			"think": "_think_hound",
+		},
 	}
 	# gigante (husk_big): o mesmo Cinzento a 1,85×, mais vida e golpes mais fortes
 	var big: Dictionary = _kinds["husk"].duplicate(true)
@@ -257,9 +276,17 @@ func _on_act(nm: String, s: Dictionary) -> void:
 		var a := (Vector2(player.cx, player.cy) - Vector2(cx, cy)).normalized()
 		world.audio.sfx("shoot")
 		world.spawn_projectile({"pos": Vector2(cx + facing * 2, cy + 2), "vel": a * 150.0, "size": Vector2(9, 9), "dmg": 12.0, "kind": "orb", "color": Color("#ff9040"), "trail": true, "life": 4.0})
+	if kind == "crossbow" and nm == "shoot":
+		var o := Vector2(cx + facing * 12, pos.y + 12)
+		world.spawn_projectile({"pos": o, "vel": Vector2(facing * 330.0, 0), "size": Vector2(12, 4), "dmg": 15.0, "kind": "bolt", "color": Color("#c0b090"), "life": 3.0})
+	if s.has("hop") and on_ground:
+		vel.y = s["hop"]
 	if kind == "wisp" and nm == "dive":
 		var a2 := (Vector2(player.cx, player.cy) - Vector2(cx, cy)).normalized()
 		vel = a2 * 260.0
+
+var guarding := false
+var circle_t := 0.0
 
 func _during(_name: String, _s: Dictionary, _dt: float) -> void:
 	pass
@@ -511,10 +538,76 @@ func _think_sexton(dt: float) -> void:
 	else:
 		_patrol(dt, 18, 60)
 
+# ---------------- Região 2
+## Sentinela: escudo sempre à frente (só baixa a guarda na estocada); se a encostam, empurra com o escudo
+func _think_sentinel(dt: float) -> void:
+	if not atk.is_empty():
+		guarding = not atk["s"].get("unguard", false) or atk["phase"] == "rec"
+		return
+	guarding = true
+	if _perceive(dt, 200):
+		var d := absf(dx())
+		if d < 26 and cool <= 0 and _can_take_turn():
+			_start("bash"); return
+		_melee(dt, 38, 52, [["thrust", 1.0]], [], 0.0)
+	else:
+		_patrol(dt, 18, 60)
+
+## Besteiro: mantém distância e dispara ao nível da protagonista
+func _think_crossbow(dt: float) -> void:
+	if not atk.is_empty():
+		return
+	if _perceive(dt, 300, 60):
+		if alert_t > 0:
+			return
+		face()
+		var d := absf(dx())
+		if d < 70:
+			_go(-facing, 60, dt)
+		else:
+			vel.x = move_toward(vel.x, 0, 900 * dt)
+		if cool <= 0 and absf(dy()) < 40 and d < 320 and _can_take_turn():
+			_start("shoot")
+	else:
+		_patrol(dt, 16, 50)
+
+## Cão de Cinza: uiva ao ver, rodeia a galope e salta quando lhe viram costas ou param
+func _think_hound(dt: float) -> void:
+	if not atk.is_empty():
+		return
+	var was := aggro
+	if _perceive(dt, 260, 80):
+		if not was:
+			world.audio.sfx("howl", 0.35); circle_t = randf_range(0.6, 1.2)
+		var p = player
+		var d := absf(dx())
+		var exposed: bool = ((p.facing > 0) == (cx < p.cx)) or absf(p.vel.x) < 10
+		circle_t -= dt
+		if d < 90 and cool <= 0 and on_ground and (exposed or circle_t <= 0) and _can_take_turn():
+			face(); _start("bite"); circle_t = randf_range(1.0, 1.8); return
+		if d < 60:
+			facing = 1 if cx > p.cx else -1; _go(facing, 110, dt)
+		elif d > 120:
+			face(); _go(facing, 150, dt)
+		else:
+			face(); _go(facing if sin(anim * 2.2) > 0 else -facing, 70, dt)
+	else:
+		_patrol(dt, 25, 90)
+
 # ------------------------------------------------------------------ dano
 func on_hit(box: Dictionary) -> bool:
 	if dead or not hittable:
 		return false
+	var src0 = box.get("src")
+	if K.get("guard", false) and guarding and stagger <= 0 and src0 != null and is_instance_valid(src0) and signf(src0.cx - cx) == facing:
+		if box.get("kind", "") in ["heavy", "riposte"]:
+			guarding = false; do_stagger(0.5, false)
+		else:
+			world.audio.sfx("shield"); world.fx.block(cx + facing * 8, cy - 2, -facing)
+			poise -= box.get("poise", 10.0) * 0.5
+			if poise <= 0:
+				poise = poise_max; do_stagger(0.6, false)
+			return true
 	var dmg: float = box["dmg"] * damage_mult(box)
 	if stagger > 0 and parried:
 		dmg *= 1.5

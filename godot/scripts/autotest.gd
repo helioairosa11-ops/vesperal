@@ -51,6 +51,10 @@ func _ready() -> void:
 			for r in ["r1_street", "r2_gate", "r3_foundry", "r4_pond", "r5_stairs", "r6_nave", "r6_dome", "r7_hall", "r7_throne", "r1_crypt"]:
 				steps.append([0.4, "room", r]); steps.append([0.2, "place", "10"]); steps.append([0.8, "shot", "rg_" + r])
 			steps.append([0.2, "quit", ""])
+		"r2":
+			# inimigos das Muralhas: sentinela de escudo, besteiro e cão
+			steps = [[0.4, "room", "r2_wall"], [0.2, "place", "6"], [0.2, "spawn2", "sentinel:5"], [0.05, "spawn2", "crossbow:12"], [0.05, "spawn2", "hound:-6"],
+				[1.2, "shot", "e01"], [0.1, "tap", "attack"], [0.2, "shot", "e02_block"], [1.2, "shot", "e03"], [1.5, "shot", "e04"], [0.3, "quit", ""]]
 		"npcs":
 			# Maren nas Muralhas (dá a medalha), Teodoro na Estufa (escolhe ir ter com a irmã), os dois no Santuário
 			steps = [[0.4, "room", "r2_gate"], [0.2, "place", "22"], [0.6, "shot", "m01_maren"], [0.1, "tap", "interact"], [2.0, "shot", "m02_maren_talk"],
