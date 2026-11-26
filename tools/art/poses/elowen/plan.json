@@ -1,0 +1,9 @@
+{"idle": ["tools/art/poses/elowen/el_r0_0.png","tools/art/poses/elowen/el_r0_1.png","tools/art/poses/elowen/el_r0_2.png","tools/art/poses/elowen/el_r0_3.png"],
+ "move": ["tools/art/poses/elowen/el_r1_0.png","tools/art/poses/elowen/el_r1_1.png","tools/art/poses/elowen/el_r1_2.png","tools/art/poses/elowen/el_r1_3.png"],
+ "atk_whip": ["tools/art/poses/elowen/elw_r0_0.png","tools/art/poses/elowen/elw_r0_1.png","tools/art/poses/elowen/elw_r0_2.png","tools/art/poses/elowen/elw_r0_3.png"],
+ "atk_thorns": ["tools/art/poses/elowen/elw_r1_0.png","tools/art/poses/elowen/elw_r1_1.png","tools/art/poses/elowen/elw_r1_2.png","tools/art/poses/elowen/elw_r1_3.png"],
+ "atk_seeds": ["tools/art/poses/elowen/els_r0_0.png","tools/art/poses/elowen/els_r0_1.png","tools/art/poses/elowen/els_r0_2.png","tools/art/poses/elowen/els_r0_3.png"],
+ "atk_lullaby": ["tools/art/poses/elowen/els_r1_0.png","tools/art/poses/elowen/els_r1_1.png","tools/art/poses/elowen/els_r1_2.png","tools/art/poses/elowen/els_r1_3.png"],
+ "hurt": ["tools/art/poses/elowen/eld_r0_0.png"],
+ "stagger": ["tools/art/poses/elowen/eld_r0_1.png","tools/art/poses/elowen/eld_r0_2.png","tools/art/poses/elowen/eld_r0_3.png"],
+ "death": ["tools/art/poses/elowen/eld_r1_0.png","tools/art/poses/elowen/eld_r1_1.png","tools/art/poses/elowen/eld_r1_2.png","tools/art/poses/elowen/eld_r1_3.png","tools/art/poses/elowen/eld_r1_4.png"]}
