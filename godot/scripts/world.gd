@@ -456,6 +456,12 @@ func _interact(_dt: float) -> void:
 					GameState.save()
 					audio.sfx("rest")
 					fx.burst_o(player.cx, player.bottom - 10, 18, {"color": "#ffb050", "speed": 70.0, "life": 0.8, "size": 1.4, "add": true})
+					# menu do altar: inventário, viajar para outro altar, levantar-se
+					var an := "altar_sanct"
+					for e in room.def["ents"]:
+						if e.get("t", "") == "altar" and String(e.get("id", "")) == String(best["id"]):
+							an = String(e.get("name", an))
+					UI.open_rest(self, String(best["id"]), an)
 				"inscription":
 					GameState.flags["ins_" + String(best["id"])] = true
 					var k2 := "ins_%s" % best["id"]
