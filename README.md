@@ -41,7 +41,7 @@ Metroidvania 2D de fantasia sombria para o navegador. O Desperto acorda numa cov
 - Cada chefe tem a sua vida e as suas resistências (vulnerável ou resistente a lâminas, impacto, espírito ou centelhas, alguns com armadura) — vê-se no Diário
 - Habilidades novas: Investida Cortante (atacar a meio da esquiva), Contra-Luz (a riposta depois do parry solta um crescente de luz) e Instinto (a esquiva no último instante abranda o mundo)
 - Português, English, Español e Français
-- Música e sons sintetizados em tempo real (Web Audio), sem ficheiros de áudio — golpes com corpo e saturação, impactos grandes com cauda de reverberação, cada golpe um pouco diferente do anterior e níveis equilibrados entre gestos, impactos e chefes
+- Música e sons sintetizados em tempo real (Web Audio) — três chefes usam música licenciada (ver Créditos); golpes com corpo e saturação, impactos grandes com cauda de reverberação, cada golpe um pouco diferente do anterior e níveis equilibrados entre gestos, impactos e chefes
 - Teclado, comando e ecrã tátil; gravação automática no navegador
 - Ocupa o ecrã todo, sem barras pretas: telemóveis largos, monitores ultralargos e tablets 4:3 veem mais do mundo em vez de faixas vazias
 - Funciona sem internet: tudo vem dentro do jogo, incluindo as fontes
@@ -93,6 +93,13 @@ As fontes Cinzel e EB Garamond (SIL Open Font License 1.1) vêm dentro do jogo, 
 ## Créditos
 
 Um jogo de **Lourence Manuel**.
+
+Música dos chefes (ficheiros em `assets/audio/music/` e `godot/audio/music/`, de OpenGameArt.org):
+- Coveiro — “Arcanos, Sorcerer of the Old Banished Woods”, de Philémon Weber (Helmet), [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/) — https://opengameart.org/content/dark-souls-type-boss-theme
+- Caedmon — “Chapel of Hate”, de FoxSynergy, [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/) — https://opengameart.org/content/chapel-of-hate
+- Hilde — “Demon Lord”, de Scott Elliott (Scrabbit), [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/) — https://opengameart.org/content/demon-lord
+
+As faixas foram cortadas no fim e o volume foi ajustado para o jogo.
 
 ## Licença
 

@@ -7,4 +7,10 @@
 'use strict';
 window.VS = window.VS || {};
 window.VS.AUDIO_OVERRIDES = {
+  // Coveiro: "Arcanos, Sorcerer of the Old Banished Woods" — Philémon Weber (Helmet), CC-BY 4.0
+  sb_coveiro: 'assets/audio/music/sb_coveiro.ogg',
+  // Caedmon: "Chapel of Hate" — FoxSynergy, CC-BY 3.0
+  b_caedmon: 'assets/audio/music/b_caedmon.ogg',
+  // Hilde: "Demon Lord" — Scott Elliott (Scrabbit), CC-BY 4.0
+  b_hilde: 'assets/audio/music/b_hilde.ogg',
 };

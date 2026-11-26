@@ -291,11 +291,16 @@ func _center(f: Font, s: String, cx: float, y: float, fs: float, col: Color) -> 
 
 func _draw_credits(W: float, H: float) -> void:
 	var u := H / 900.0
-	var r := _panel_box(W, H, 560 * u, 560 * u)
-	var y := r.position.y + 80 * u
+	var r := _panel_box(W, H, 760 * u, 700 * u)
+	var y := r.position.y + 60 * u
 	var cx := W / 2.0
 	var lines := [["VESPERAL", 40, f_title, Color("#f2dcae")], ["A Última Chama", 22, f_body, Color("#e9dfcf")], ["", 8, f_body, Color.WHITE],
 		["UM JOGO DE", 14, f_title, Color("#a99f92")], ["Lourence Manuel", 22, f_body, Color("#e9dfcf")], ["", 8, f_body, Color.WHITE],
+		["MÚSICA DOS CHEFES", 14, f_title, Color("#a99f92")],
+		["“Arcanos, Sorcerer of the Old Banished Woods” — Philémon Weber (Helmet) · CC-BY 4.0", 13, f_body, Color("#e9dfcf")],
+		["“Chapel of Hate” — FoxSynergy · CC-BY 3.0", 13, f_body, Color("#e9dfcf")],
+		["“Demon Lord” — Scott Elliott (Scrabbit) · CC-BY 4.0", 13, f_body, Color("#e9dfcf")],
+		["(OpenGameArt.org)", 12, f_body, Color("#a99f92")], ["", 8, f_body, Color.WHITE],
 		["AGRADECIMENTOS", 14, f_title, Color("#a99f92")], ["A quem acordar.", 20, f_body, Color("#e9dfcf")]]
 	for L in lines:
 		_center(L[2], L[0], cx, y, L[1] * u, L[3])

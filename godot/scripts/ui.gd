@@ -688,17 +688,21 @@ func _draw_credits(_p: Dictionary, vs: Vector2, u: float, a: float) -> void:
 	var y := r.position.y + 300.0 * k
 	text(c, f_ital, Data.t("subtitle"), Vector2(cx, y + 18 * u), 20 * u, Color(INK, a), 1)
 	y += 38 * u
-	var sections := [["cr_by", "Lourence Manuel"], ["cr_art_title", Data.t("cr_art")], ["cr_music_title", Data.t("cr_music")],
+	var sections := [["cr_by", "Lourence Manuel"], ["cr_art_title", Data.t("cr_art")], ["cr_music_title", Data.t("cr_music")], ["cr_bossmusic_title", BOSS_MUSIC],
 		["cr_engine_title", Data.t("cr_engine")], ["cr_langs_title", "English · Português · Español · Français"], ["cr_thanks_title", Data.t("cr_thanks")]]
 	var inner := w - 260.0 * k
 	for sct in sections:
 		text(c, f_label, Data.t(sct[0]), Vector2(cx, y + 18 * u), 17 * u, Color(EMBER, a), 1, 0.12)
-		y += 24 * u
-		y += para(c, f_body, String(sct[1]), Vector2(cx - inner / 2.0, y), inner, 18 * u, Color(INK, a), HORIZONTAL_ALIGNMENT_CENTER) + 16 * u
+		y += 22 * u
+		var pfs := (14.5 if sct[0] == "cr_bossmusic_title" else 18.0) * u
+		y += para(c, f_body, String(sct[1]), Vector2(cx - inner / 2.0, y), inner, pfs, Color(INK, a), HORIZONTAL_ALIGNMENT_CENTER) + 10 * u
 	var br := Rect2(cx - 110 * u, r.end.y - 190.0 * k - 50 * u, 220 * u, 48 * u)
 	_rects.append({"r": br, "i": 0})
 	plate(c, br.grow_individual(0, -3 * u, 0, -3 * u), true, a)
 	text(c, f_label, Data.t("back"), Vector2(cx, br.get_center().y + 6.5 * u), 19 * u, Color("#fff3dc", a), 1, 0.05)
+
+# música licenciada dos chefes (CC-BY: o crédito tem de aparecer)
+const BOSS_MUSIC := "“Arcanos, Sorcerer of the Old Banished Woods” — Philémon Weber (Helmet), CC-BY 4.0\n“Chapel of Hate” — FoxSynergy, CC-BY 3.0\n“Demon Lord” — Scott Elliott (Scrabbit), CC-BY 4.0\n(OpenGameArt.org)"
 
 # ================================================================== ecrãs
 func confirm(msg: String, yes: Callable) -> void:

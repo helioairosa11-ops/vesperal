@@ -11,6 +11,13 @@ As fontes Cinzel e EB Garamond, que vão dentro do jogo (css/fonts.css), não es
 têm a sua própria, a SIL Open Font License 1.1 (textos em assets/fonts/OFL-Cinzel.txt e
 assets/fonts/OFL-EBGaramond.txt).
 
+A música dos chefes Coveiro, Caedmon e Hilde (assets/audio/music/ e godot/audio/music/sb_coveiro.ogg,
+b_caedmon.ogg, b_hilde.ogg) também não está sob esta licença: é de outros autores e mantém a sua:
+- "Arcanos, Sorcerer of the Old Banished Woods" — Philémon Weber (Helmet), CC-BY 4.0
+- "Chapel of Hate" — FoxSynergy, CC-BY 3.0
+- "Demon Lord" — Scott Elliott (Scrabbit), CC-BY 4.0
+(obtidas em OpenGameArt.org; cortadas no fim e com o volume ajustado)
+
 ------------------------------------------------------------------------------------------
 Texto integral da licença (versão oficial em inglês):
 ------------------------------------------------------------------------------------------

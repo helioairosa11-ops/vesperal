@@ -60,8 +60,7 @@ func play_music(id: String, fade := 1.5) -> void:
 	var s: AudioStream = null
 	if id != "":
 		var path := "res://audio/music/%s.ogg" % id
-		if intensity > 0 and ResourceLoader.exists("res://audio/music/%s_i%d.ogg" % [id, intensity]):
-			path = "res://audio/music/%s_i%d.ogg" % [id, intensity]
+		path = _music_path(id, intensity)
 		s = _stream(path, true)
 	var old := music_a
 	music_a = music_b; music_b = old
@@ -78,10 +77,22 @@ func play_music(id: String, fade := 1.5) -> void:
 func set_intensity(n: int) -> void:
 	if n == intensity:
 		return
-	intensity = n
 	var id := music_id
+	var before := _music_path(id, intensity)
+	intensity = n
+	# faixas sem versão mais intensa (ficheiros licenciados) continuam sem recomeçar
+	if _music_path(id, n) == before:
+		return
 	music_id = ""
 	play_music(id, 1.0)
+
+## faixas licenciadas (um só ficheiro, sem versões mais intensas)
+const LICENSED := ["sb_coveiro", "b_caedmon", "b_hilde"]
+
+func _music_path(id: String, lvl: int) -> String:
+	if lvl > 0 and not LICENSED.has(id) and ResourceLoader.exists("res://audio/music/%s_i%d.ogg" % [id, lvl]):
+		return "res://audio/music/%s_i%d.ogg" % [id, lvl]
+	return "res://audio/music/%s.ogg" % id
 
 func stop_music(fade := 1.2) -> void:
 	play_music("", fade)
