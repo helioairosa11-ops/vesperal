@@ -26,7 +26,7 @@ p.write_text(s, encoding='utf-8')
 
 # 3) créditos no jogo
 html = ''.join(f"<div>“{t['title']}” — {t['author']} · {t['license']}</div>" for t in T) + '<div>(OpenGameArt.org)</div>'
-heads = {'pt': 'Música dos chefes', 'en': 'Boss music', 'es': 'Música de los jefes', 'fr': 'Musique des boss'}
+heads = {'pt': 'Música dos chefes e do menu', 'en': 'Boss and menu music', 'es': 'Música de los jefes y del menú', 'fr': 'Musique des boss et du menu'}
 for lang, h in heads.items():
     for p in (ROOT / f'js/data/lang/{lang}.js', ROOT / f'godot/data/lang_{lang}.json'):
         s = p.read_text(encoding='utf-8')
@@ -40,19 +40,19 @@ p.write_text(s, encoding='utf-8')
 # 4) README e LICENSE
 lic_url = {'CC0': 'https://creativecommons.org/publicdomain/zero/1.0/', 'CC-BY 3.0': 'https://creativecommons.org/licenses/by/3.0/',
            'CC-BY 4.0': 'https://creativecommons.org/licenses/by/4.0/'}
-md = 'Música dos chefes (ficheiros em `assets/audio/music/` e `godot/audio/music/`, de OpenGameArt.org):\n' + \
+md = 'Música dos chefes e do menu (ficheiros em `assets/audio/music/` e `godot/audio/music/`, de OpenGameArt.org):\n' + \
      ''.join(f"- {t['boss']} — “{t['title']}”, de {t['author']}, [{t['license']}]({lic_url[t['license']]}) — {t['url']}\n" for t in T) + \
      '\nAs faixas foram cortadas no início e no fim e o volume foi ajustado para o jogo.\n'
 p = ROOT / 'README.md'; s = p.read_text(encoding='utf-8')
-s = re.sub(r'Música dos chefes \(ficheiros em.*?ajustado para o jogo\.\n', lambda m: md, s, flags=re.S)
+s = re.sub(r'Música dos chefes(?: e do menu)? \(ficheiros em.*?ajustado para o jogo\.\n', lambda m: md, s, flags=re.S)
 p.write_text(s, encoding='utf-8')
 files = ', '.join(f"{t['id']}.ogg" for t in T)
-txt = ('A música dos chefes (assets/audio/music/ e godot/audio/music/: ' + files + ')\n'
+txt = ('A música dos chefes e do menu (assets/audio/music/ e godot/audio/music/: ' + files + ')\n'
        'também não está sob esta licença: é de outros autores e mantém a sua:\n' +
        ''.join(f"- \"{t['title']}\" — {t['author']}, {t['license']} ({t['url']})\n" for t in T) +
        '(obtidas em OpenGameArt.org; cortadas no início e no fim e com o volume ajustado)\n')
 p = ROOT / 'LICENSE'; s = p.read_text(encoding='utf-8')
-s = re.sub(r'A música dos chefes .*?com o volume ajustado\)\n', lambda m: txt, s, flags=re.S)
+s = re.sub(r'A música dos chefes (?:e do menu )?.*?com o volume ajustado\)\n', lambda m: txt, s, flags=re.S)
 p.write_text(s, encoding='utf-8')
 for lang in heads:
     json.loads((ROOT / f'godot/data/lang_{lang}.json').read_text(encoding='utf-8'))

@@ -694,15 +694,15 @@ func _draw_credits(_p: Dictionary, vs: Vector2, u: float, a: float) -> void:
 	for sct in sections:
 		text(c, f_label, Data.t(sct[0]), Vector2(cx, y + 18 * u), 17 * u, Color(EMBER, a), 1, 0.12)
 		y += 22 * u
-		var pfs := (14.5 if sct[0] == "cr_bossmusic_title" else 18.0) * u
-		y += para(c, f_body, String(sct[1]), Vector2(cx - inner / 2.0, y), inner, pfs, Color(INK, a), HORIZONTAL_ALIGNMENT_CENTER) + 10 * u
+		var pfs := (13.0 if sct[0] == "cr_bossmusic_title" else 17.0) * u
+		y += para(c, f_body, String(sct[1]), Vector2(cx - inner / 2.0, y), inner, pfs, Color(INK, a), HORIZONTAL_ALIGNMENT_CENTER) + 8 * u
 	var br := Rect2(cx - 110 * u, r.end.y - 190.0 * k - 50 * u, 220 * u, 48 * u)
 	_rects.append({"r": br, "i": 0})
 	plate(c, br.grow_individual(0, -3 * u, 0, -3 * u), true, a)
 	text(c, f_label, Data.t("back"), Vector2(cx, br.get_center().y + 6.5 * u), 19 * u, Color("#fff3dc", a), 1, 0.05)
 
 # música licenciada dos chefes (CC-BY: o crédito tem de aparecer)
-const BOSS_MUSIC := "“Arcanos, Sorcerer of the Old Banished Woods” — Philémon Weber (Helmet) (CC-BY 4.0) · “Epic Boss Battle” — Juhani Junkala (SubspaceAudio) (CC0) · “Heroic Demise” — Matthew Pablo (CC-BY 3.0) · “The Machine Has Become Self Aware” — HitCtrl (CC-BY 3.0) · “Demon Lord” — Scott Elliott (Scrabbit) (CC-BY 4.0) · “Dark Descent” — Matthew Pablo (CC-BY 3.0) · “Evil Approach” — nene (CC0) · “Fall of Nightmares” — nene, Helena Kesti & Matias Lindgren (CC0) · “Church Combat” — Centurion_of_war (CC-BY 4.0) · “Chapel of Hate” — FoxSynergy (CC-BY 3.0) · “Battle Theme A” — cynicmusic (CC0) · “Wasteland Showdown” — Matthew Pablo (CC-BY 3.0) · “New Sunrise” — nene (CC0) · “Solemn March” — Yubatake (CC-BY 4.0) · “Sigil” — Kistol (CC0) · OpenGameArt.org"
+const BOSS_MUSIC := "“Leap Into Eternity (Live Orchestra)” — Matthew Pablo (CC-BY 3.0) · “Arcanos, Sorcerer of the Old Banished Woods” — Philémon Weber (Helmet) (CC-BY 4.0) · “Epic Boss Battle” — Juhani Junkala (SubspaceAudio) (CC0) · “Heroic Demise” — Matthew Pablo (CC-BY 3.0) · “The Machine Has Become Self Aware” — HitCtrl (CC-BY 3.0) · “Demon Lord” — Scott Elliott (Scrabbit) (CC-BY 4.0) · “Dark Descent” — Matthew Pablo (CC-BY 3.0) · “Evil Approach” — nene (CC0) · “Fall of Nightmares” — nene, Helena Kesti & Matias Lindgren (CC0) · “Church Combat” — Centurion_of_war (CC-BY 4.0) · “Chapel of Hate” — FoxSynergy (CC-BY 3.0) · “Battle Theme A” — cynicmusic (CC0) · “Wasteland Showdown” — Matthew Pablo (CC-BY 3.0) · “New Sunrise” — nene (CC0) · “Solemn March” — Yubatake (CC-BY 4.0) · “Sigil” — Kistol (CC0) · OpenGameArt.org"
 
 # ================================================================== ecrãs
 func confirm(msg: String, yes: Callable) -> void:

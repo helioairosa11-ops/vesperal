@@ -11,8 +11,9 @@ As fontes Cinzel e EB Garamond, que vão dentro do jogo (css/fonts.css), não es
 têm a sua própria, a SIL Open Font License 1.1 (textos em assets/fonts/OFL-Cinzel.txt e
 assets/fonts/OFL-EBGaramond.txt).
 
-A música dos chefes (assets/audio/music/ e godot/audio/music/: sb_coveiro.ogg, sb_matilheira.ogg, b_caedmon.ogg, sb_automato.ogg, b_hilde.ogg, sb_mariposa.ogg, b_elowen.ogg, sb_sineiro.ogg, sb_vael.ogg, b_ozias.ogg, sb_gemeos.ogg, b_aldric.ogg, b_seraphine.ogg, b_carpideira.ogg, b_custodio.ogg)
+A música dos chefes e do menu (assets/audio/music/ e godot/audio/music/: menu.ogg, sb_coveiro.ogg, sb_matilheira.ogg, b_caedmon.ogg, sb_automato.ogg, b_hilde.ogg, sb_mariposa.ogg, b_elowen.ogg, sb_sineiro.ogg, sb_vael.ogg, b_ozias.ogg, sb_gemeos.ogg, b_aldric.ogg, b_seraphine.ogg, b_carpideira.ogg, b_custodio.ogg)
 também não está sob esta licença: é de outros autores e mantém a sua:
+- "Leap Into Eternity (Live Orchestra)" — Matthew Pablo, CC-BY 3.0 (https://opengameart.org/content/leap-into-eternity-live-orchestra)
 - "Arcanos, Sorcerer of the Old Banished Woods" — Philémon Weber (Helmet), CC-BY 4.0 (https://opengameart.org/content/dark-souls-type-boss-theme)
 - "Epic Boss Battle" — Juhani Junkala (SubspaceAudio), CC0 (https://opengameart.org/content/boss-battle-music)
 - "Heroic Demise" — Matthew Pablo, CC-BY 3.0 (https://opengameart.org/content/heroic-demise-updated-version)

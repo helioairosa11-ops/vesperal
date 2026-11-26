@@ -94,7 +94,8 @@ As fontes Cinzel e EB Garamond (SIL Open Font License 1.1) vêm dentro do jogo, 
 
 Um jogo de **Lourence Manuel**.
 
-Música dos chefes (ficheiros em `assets/audio/music/` e `godot/audio/music/`, de OpenGameArt.org):
+Música dos chefes e do menu (ficheiros em `assets/audio/music/` e `godot/audio/music/`, de OpenGameArt.org):
+- Menu principal — “Leap Into Eternity (Live Orchestra)”, de Matthew Pablo, [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/) — https://opengameart.org/content/leap-into-eternity-live-orchestra
 - Coveiro — “Arcanos, Sorcerer of the Old Banished Woods”, de Philémon Weber (Helmet), [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/) — https://opengameart.org/content/dark-souls-type-boss-theme
 - Velha Matilheira — “Epic Boss Battle”, de Juhani Junkala (SubspaceAudio), [CC0](https://creativecommons.org/publicdomain/zero/1.0/) — https://opengameart.org/content/boss-battle-music
 - Sir Caedmon — “Heroic Demise”, de Matthew Pablo, [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/) — https://opengameart.org/content/heroic-demise-updated-version

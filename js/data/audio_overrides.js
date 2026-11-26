@@ -7,6 +7,8 @@
 'use strict';
 window.VS = window.VS || {};
 window.VS.AUDIO_OVERRIDES = {
+  // Menu principal: "Leap Into Eternity (Live Orchestra)" — Matthew Pablo, CC-BY 3.0
+  menu: 'assets/audio/music/menu.ogg',
   // Coveiro: "Arcanos, Sorcerer of the Old Banished Woods" — Philémon Weber (Helmet), CC-BY 4.0
   sb_coveiro: 'assets/audio/music/sb_coveiro.ogg',
   // Velha Matilheira: "Epic Boss Battle" — Juhani Junkala (SubspaceAudio), CC0
