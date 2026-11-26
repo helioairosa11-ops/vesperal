@@ -1112,6 +1112,15 @@ func current_frame() -> Dictionary:
 			return Data.phase_frame(sh, an, atk["phase"], atk["t"] / maxf(0.001, d))
 	if last_hit_t < 0.22 and A.has("hurt"):
 		return Data.frame(sh, "hurt", (last_hit_t / 0.22) * A["hurt"]["frames"].size())
+	# os que andam aos saltos (Escória): impulso, queda e aterragem
+	if not flying and A.has("jump"):
+		if not on_ground:
+			_was_air = true
+			return _timed("jump" if vel.y < 0 or not A.has("fall") else "fall")
+		if _was_air:
+			_was_air = false; _land_t = 0.0
+		if _land_t < 0.2 and A.has("land"):
+			return Data.frame(sh, "land", (_land_t / 0.2) * A["land"]["frames"].size())
 	if (flying or absf(vel.x) > 6) and A.has("move"):
 		var mv: Dictionary = A["move"]
 		if mv.get("stride", 0.0) > 0 and not flying:
@@ -1121,6 +1130,8 @@ func current_frame() -> Dictionary:
 
 var _death_t := 0.0
 var _dist := 0.0
+var _was_air := false
+var _land_t := 9.0
 ## material e cor da cinza (VS.NATURE e cfg.ashCol do jogo web)
 const MATS := {"husk": {"mat": "ash"}, "husk_big": {"mat": "ash"}, "crawler": {"mat": "ash", "ashCol": "#ff6010"},
 	"wisp": {"mat": "wax", "ashCol": "#ffb040"}, "sexton": {"mat": "flesh"}, "coveiro": {"mat": "flesh", "ashCol": "#7a6a58"}}
@@ -1133,7 +1144,7 @@ func _timed(an: String) -> Dictionary:
 	return Data.frame(sh, an, anim_kt * float(sh["meta"]["anims"][an]["fps"]))
 
 func _process(delta: float) -> void:
-	anim_kt += delta
+	anim_kt += delta; _land_t += delta
 	if K.get("center", false):
 		position = draw_anchor(size / 2.0)
 	else:
@@ -1168,9 +1179,32 @@ func _draw() -> void:
 		return
 	var f := current_frame()
 	var mod := Color.WHITE
-	draw_set_transform(Vector2.ZERO, 0, Vector2(facing * bulk, bulk))
+	var L := _life()
+	draw_set_transform(L[0], L[1], Vector2(facing * bulk * L[2].x, bulk * L[2].y))
 	Data.draw_frame(self, sh, f, mod)
 	draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
+
+var _phase := randf() * TAU
+## vida no desenho: respirar parado, pairar e inclinar no ar, encolher ao levar e ao aterrar
+func _life() -> Array:
+	var off := Vector2.ZERO; var rot := 0.0; var sc := Vector2.ONE
+	if dead:
+		return [off, rot, sc]
+	var tt := t + _phase
+	if flying and not perched:
+		off.y = sin(tt * 3.1) * 2.5
+		rot = clampf(vel.x / 900.0, -0.18, 0.18)
+	elif on_ground and absf(vel.x) < 6 and atk.is_empty():
+		var b := sin(tt * 2.4) * 0.018
+		sc = Vector2(1.0 - b * 0.5, 1.0 + b)
+	if last_hit_t < 0.14:
+		var k := 1.0 - last_hit_t / 0.14
+		sc *= Vector2(1.0 + 0.08 * k, 1.0 - 0.07 * k)
+		off.x -= facing * 2.0 * k
+	if _land_t < 0.16:
+		var q := 1.0 - _land_t / 0.16
+		sc *= Vector2(1.0 + 0.14 * q, 1.0 - 0.14 * q)
+	return [off, rot, sc]
 
 ## ponto do fotograma em coordenadas deste nó (a âncora é a origem)
 func _pt(f: Dictionary, which: String) -> Variant:
@@ -1191,7 +1225,8 @@ func _draw_add() -> void:
 	var f := current_frame()
 	# clarão de dano: o mesmo fotograma por cima, aditivo a 0,75 (Assets.drawFlash)
 	if flash > 0 and not dead:
-		fx_add.draw_set_transform(Vector2.ZERO, 0, Vector2(facing, 1))
+		var L := _life()
+		fx_add.draw_set_transform(L[0], L[1], Vector2(facing * bulk * L[2].x, bulk * L[2].y))
 		Data.draw_frame(fx_add, sh, f, Color(1, 1, 1, 0.75))
 		fx_add.draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
 	_draw_smear(f)
