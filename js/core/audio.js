@@ -294,16 +294,38 @@
   }
 
   // Faixa substituída por ficheiro áudio (ver js/data/audio_overrides.js)
+  // Faixa de música a partir de um ficheiro. Por http passa pelo Web Audio (barramento de música);
+  // aberto como ficheiro local (file://, também a app de PC) o navegador não deixa o Web Audio ler o
+  // ficheiro, por isso toca direto no elemento de áudio, com o volume e os desvanecimentos feitos à mão.
+  const DIRECT_FILES = location.protocol === 'file:';
+  function busVolume() { return A.vol ? (A.mute && A.mute.music ? 0 : A.vol.music) * A.vol.master : 1; }
   class FileTrack {
     constructor(url, id) {
-      this.id = id; this.el = new Audio(url); this.el.loop = true; this.el.crossOrigin = 'anonymous';
+      this.id = id; this.el = new Audio(url); this.el.loop = true; this.el.preload = 'auto';
+      this.beatDur = 0.5; this.stopped = false; this.level = 0; this.direct = DIRECT_FILES;
+      if (this.direct) { this.el.volume = 0; return; }
+      this.el.crossOrigin = 'anonymous';
       this.out = gainNode(0); this.out.connect(A.buses.music);
-      try { this.src = c.createMediaElementSource(this.el); this.src.connect(this.out); } catch (e) { this.src = null; }
-      this.beatDur = 0.5; this.stopped = false;
+      try { this.src = c.createMediaElementSource(this.el); this.src.connect(this.out); } catch (e) { this.src = null; this.direct = true; }
     }
-    start(t) { this.startTime = t; this.out.gain.setValueAtTime(0.0001, t); this.out.gain.linearRampToValueAtTime(1, t + 1); this.el.play().catch(() => { this.failed = true; }); }
+    applyVolume() { if (this.direct) this.el.volume = Math.max(0, Math.min(1, this.level * busVolume())); }
+    ramp(to, secs, done) {
+      clearInterval(this.iv); const from = this.level, t0 = performance.now(), d = Math.max(0.05, secs) * 1000;
+      this.iv = setInterval(() => { const k = Math.min(1, (performance.now() - t0) / d); this.level = from + (to - from) * k; this.applyVolume(); if (k >= 1) { clearInterval(this.iv); if (done) done(); } }, 40);
+    }
+    start(t) {
+      this.startTime = t;
+      if (this.direct) { this.ramp(1, 1); }
+      else { this.out.gain.setValueAtTime(0.0001, t); this.out.gain.linearRampToValueAtTime(1, t + 1); }
+      this.el.play().catch(() => { this.failed = true; });
+    }
     schedule() { }
-    stop(fade) { const t = c.currentTime; this.out.gain.setValueAtTime(this.out.gain.value, t); this.out.gain.linearRampToValueAtTime(0.0001, t + (fade || 1)); setTimeout(() => { this.el.pause(); this.stopped = true; }, (fade || 1) * 1000 + 100); }
+    stop(fade) {
+      const f = fade || 1;
+      if (this.direct) { this.ramp(0, f, () => { this.el.pause(); this.stopped = true; }); return; }
+      const t = c.currentTime; this.out.gain.setValueAtTime(this.out.gain.value, t); this.out.gain.linearRampToValueAtTime(0.0001, t + f);
+      setTimeout(() => { this.el.pause(); this.stopped = true; }, f * 1000 + 100);
+    }
   }
 
   // ---------- inicialização ----------
@@ -342,6 +364,7 @@
     const t = c.currentTime;
     A.master.gain.setTargetAtTime(A.vol.master, t, 0.05);
     ['music', 'sfx', 'amb'].forEach((b) => A.buses[b].gain.setTargetAtTime(A.mute[b] ? 0 : A.vol[b], t, 0.05));
+    [A.current, A.old].forEach((tr) => { if (tr && tr.applyVolume) tr.applyVolume(); });
   };
 
   A.tick = function () {
@@ -357,7 +380,7 @@
     opts = opts || {};
     if (!c) { A.pendingMusic = { id, opts }; A.currentId = id; return; }
     if (A.currentId === id && A.current && !A.current.stopping && !opts.restart) return;
-    if (A.current) { if (A.old) { A.old.stopped = true; try { A.old.out.disconnect(); } catch (e) { } } A.old = A.current; A.old.stop(opts.fade || 1.5); }
+    if (A.current) { if (A.old) { A.old.stopped = true; try { if (A.old.el) A.old.el.pause(); A.old.out.disconnect(); } catch (e) { } } A.old = A.current; A.old.stop(opts.fade || 1.5); }
     A.current = null; A.currentId = id;
     if (!id) return;
     const spec = VS.MUSIC && VS.MUSIC[id];
