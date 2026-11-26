@@ -293,11 +293,22 @@ var cutscene := false
 
 ## quem está presente (as condições 'cond' das salas do jogo web, para o que já existe na Região 1)
 func _npc_present(id: String) -> bool:
-	var q: int = int(GameState.flags.get("q_hrolf", 0))
+	# as mesmas condições das salas do jogo web (rooms: npc cond)
+	var q := func(k: String) -> int: return int(GameState.flags.get("q_" + k, 0))
+	var B := func(k: String) -> bool: return GameState.bosses.get(k, false)
+	var F := func(k: String) -> bool: return GameState.flags.get(k, false)
+	var ending: bool = F.call("ending")
 	match room.id + ":" + id:
-		"r1_sanct:ione": return not GameState.bosses.get("aldric", false)
-		"r1_market:hrolf": return not GameState.bosses.get("caedmon", false) and q < 50
-		"r1_sanct:hrolf": return GameState.bosses.get("caedmon", false) or q >= 50
+		"r1_sanct:ione": return not B.call("aldric") or ending
+		"r7_throne:ione": return B.call("aldric") and not ending
+		"r1_sanct:maren": return (GameState.embers() >= 1 or q.call("maren") >= 2 or q.call("teodoro") == 3) and q.call("maren") < 90
+		"r2_gate:maren": return GameState.embers() < 1 and q.call("maren") < 2 and q.call("teodoro") != 3
+		"r1_sanct:hrolf": return (B.call("caedmon") or q.call("hrolf") >= 50) and q.call("hrolf") != 60
+		"r1_market:hrolf": return not B.call("caedmon") and q.call("hrolf") < 50
+		"r1_sanct:teodoro": return q.call("teodoro") == 3
+		"r4_greenhouse:teodoro": return q.call("teodoro") < 3
+		"r3_foundry:hrolf_body": return q.call("hrolf") == 60 and not F.call("hrolf_body_found")
+		"r6_reliquary:teodoro_body": return q.call("teodoro") == 4 and not F.call("teo_body_found")
 	return false
 
 func restore_region_audio() -> void:

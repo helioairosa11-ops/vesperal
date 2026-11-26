@@ -59,6 +59,10 @@ func interact() -> void:
 	match nid:
 		"ione": _talk_ione()
 		"hrolf": _talk_hrolf()
+		"maren": _talk_maren()
+		"teodoro": _talk_teodoro()
+		"hrolf_body": _talk_hrolf_body()
+		"teodoro_body": _talk_teodoro_body()
 		_: world.hud.dialogue([{"s": "npc_" + nid, "k": nid + "_meet1"}], [], Callable())
 
 func _say(lines: Array, choices := [], cb := Callable()) -> void:
@@ -97,6 +101,110 @@ func _talk_hrolf() -> void:
 	_say([H.call("hrolf_idle" if Data.has_key("hrolf_idle") else "hrolf_meet3")])
 
 # ------------------------------------------------------------------ desenho (sheetDraw)
+# ------------------------------------------------------------------ MAREN (npcs.js N.maren): vendedora; irmã de Teodoro
+func _q(k: String) -> int:
+	return int(GameState.flags.get("q_" + k, 0))
+
+func _setq(k: String, v: int) -> void:
+	GameState.flags["q_" + k] = v
+
+func _got(id: String) -> void:
+	GameState.give(id); world.hud.item_get(id); GameState.save()
+
+func _maren_stock() -> Array:
+	var s := [["salt", 80, false], ["oil", 140, false], ["incense", 140, false], ["feather", 60, false],
+		["r_heron", 1500, true], ["r_anchor", 1800, true], ["r_amber", 1400, true]]
+	if not GameState.flags.get("bought_ash_steel", false): s.append(["ash_steel", 900, true])
+	if _q("maren") >= 2: s.append(["w_alabarda", 2200, true])
+	if _q("maren") >= 50: s.append(["relic_slot", 2500, true]); s.append(["r_hairshirt", 2000, true])
+	# o que é único e já se tem não volta a aparecer
+	return s.filter(func(e): return not (e[2] and GameState.has(e[0])))
+
+func _talk_maren() -> void:
+	var M := func(key: String) -> Dictionary: return {"s": "npc_maren", "k": key}
+	if _q("maren") == 0:
+		_say([M.call("maren_meet1"), M.call("maren_meet2"), M.call("maren_meet3")], [], func(_c):
+			_setq("maren", 1); _got("teodoro_medal"))
+		return
+	if _q("teodoro") == 3 and _q("maren") < 50:
+		_say([M.call("maren_reunited1"), M.call("maren_reunited2")], [], func(_c):
+			_setq("maren", 50); _got("r_rosary"))
+		return
+	if _q("maren") < 2 and GameState.embers() >= 1:
+		_setq("maren", 2)
+	var greet := "maren_greet_after" if _q("maren") >= 50 else "maren_greet"
+	_say([M.call(greet)], ["opt_buy", "opt_talk", "opt_leave"], func(c):
+		if c == 0: _maren_shop()
+		elif c == 1:
+			var k := "maren_lore_after" if _q("maren") >= 50 else ("maren_lore1" if _q("teodoro") == 0 else "maren_lore2")
+			_say([M.call(k)]))
+
+## loja da Maren: cada escolha é um artigo com o preço; compra com cinza e volta a abrir
+func _maren_shop() -> void:
+	var stock := _maren_stock()
+	var opts: Array = []
+	for e in stock:
+		opts.append("%s — %d" % [Data.t("item_%s_name" % e[0]), e[1]])
+	opts.append("opt_leave")
+	_say([{"s": "npc_maren", "k": "maren_greet"}], opts, func(c):
+		if c < 0 or c >= stock.size():
+			return
+		var e: Array = stock[c]
+		if GameState.ash < int(e[1]):
+			world.hud.toast(Data.t("msg_no_ash") if Data.has_key("msg_no_ash") else "Cinza insuficiente")
+		else:
+			GameState.ash -= int(e[1])
+			if e[0] == "ash_steel": GameState.flags["bought_ash_steel"] = true
+			_got(String(e[0]))
+		_maren_shop())
+
+# ------------------------------------------------------------------ TEODORO (npcs.js N.teodoro): escolha irreversível
+func _talk_teodoro() -> void:
+	var D := func(key: String) -> Dictionary: return {"s": "npc_teodoro", "k": key}
+	if _q("teodoro") == 3:
+		if not GameState.has("ossuary_key") and not GameState.flags.get("got_ossuary_key", false):
+			_say([D.call("teo_key1"), D.call("teo_key2")], [], func(_c):
+				GameState.flags["got_ossuary_key"] = true; _got("ossuary_key"))
+			return
+		if GameState.bosses.get("ozias", false) and _q("teodoro") < 50:
+			_say([D.call("teo_truth1"), D.call("teo_truth2"), D.call("teo_truth3")], [], func(_c):
+				_setq("teodoro", 50); GameState.save())
+			return
+		_say([D.call("teo_after" if GameState.bosses.get("ozias", false) else "teo_wait")])
+		return
+	if _q("teodoro") == 0:
+		_setq("teodoro", 1)
+	if not GameState.has("teodoro_medal"):
+		_say([D.call("teo_meet1"), D.call("teo_meet2"), D.call("teo_nomedal")], [], func(_c): GameState.save())
+		return
+	_say([D.call("teo_meet1"), D.call("teo_medal1"), D.call("teo_medal2"), D.call("teo_medal3")], ["opt_teo_sister", "opt_teo_cathedral", "opt_teo_stay"], func(c):
+		if c == 0:
+			_setq("teodoro", 3); GameState.flags["teodoro_choice"] = "sister"; GameState.take("teodoro_medal")
+			_say([D.call("teo_go_sister")], [], func(_c2): _leave())
+		elif c == 1:
+			_setq("teodoro", 4); GameState.flags["teodoro_choice"] = "cathedral"; GameState.take("teodoro_medal")
+			_say([D.call("teo_go_cathedral")], [], func(_c2): _leave())
+		else:
+			_say([D.call("teo_stay")]))
+
+# ------------------------------------------------------------------ corpos (consequências irreversíveis)
+func _talk_hrolf_body() -> void:
+	_say([{"s": "", "k": "hrolf_body1"}, {"s": "", "k": "hrolf_body2"}], [], func(_c):
+		GameState.flags["hrolf_body_found"] = true; _got("r_hrolf_hammer"); _leave())
+
+func _talk_teodoro_body() -> void:
+	_say([{"s": "", "k": "teo_body1"}, {"s": "", "k": "teo_body2"}, {"s": "", "k": "teo_body3"}], [], func(_c):
+		GameState.flags["teo_body_found"] = true; _setq("teodoro", 60)
+		if _q("maren") < 90: _setq("maren", 95)
+		_got("ossuary_key"); world.hud.toast(Data.t("msg_maren_left")); _leave())
+
+## sai de cena (depois de uma escolha): deixa de se poder falar com ele
+func _leave() -> void:
+	GameState.save()
+	world.npcs.erase(self)
+	world.interactables = world.interactables.filter(func(it): return it.get("node") != self)
+	queue_free()
+
 func _draw() -> void:
 	if sh.is_empty():
 		return

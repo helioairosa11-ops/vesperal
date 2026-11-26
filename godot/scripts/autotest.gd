@@ -51,6 +51,12 @@ func _ready() -> void:
 			for r in ["r1_street", "r2_gate", "r3_foundry", "r4_pond", "r5_stairs", "r6_nave", "r6_dome", "r7_hall", "r7_throne", "r1_crypt"]:
 				steps.append([0.4, "room", r]); steps.append([0.2, "place", "10"]); steps.append([0.8, "shot", "rg_" + r])
 			steps.append([0.2, "quit", ""])
+		"npcs":
+			# Maren nas Muralhas (dá a medalha), Teodoro na Estufa (escolhe ir ter com a irmã), os dois no Santuário
+			steps = [[0.4, "room", "r2_gate"], [0.2, "place", "22"], [0.6, "shot", "m01_maren"], [0.1, "tap", "interact"], [2.0, "shot", "m02_maren_talk"],
+				[0.1, "tap", "interact"], [0.4, "tap", "interact"], [0.4, "tap", "interact"], [0.6, "tap", "interact"], [0.8, "shot", "m03_after"],
+				[0.3, "room", "r4_greenhouse"], [0.2, "place", "14"], [0.6, "shot", "m04_teodoro"], [0.1, "tap", "interact"], [2.0, "shot", "m05_teo_talk"],
+				[0.1, "flag", "q_teodoro=3"], [0.3, "room", "r1_sanct"], [0.2, "place", "5"], [0.8, "shot", "m06_sanct"], [0.1, "tap", "interact"], [2.0, "shot", "m07_maren_shop"], [0.3, "quit", ""]]
 		"npc":
 			steps = [[0.5, "room", "r1_sanct"], [0.2, "place", "22"], [0.6, "shot", "n01_prompt"], [0.1, "tap", "interact"], [0.6, "shot", "n02_typing"],
 				[1.8, "shot", "n03_line1"], [0.1, "tap", "interact"], [0.1, "tap", "interact"], [1.0, "shot", "n04_line2"],
@@ -108,6 +114,9 @@ func _process(delta: float) -> void:
 			w.player.pos = Vector2(8 * 20, 15 * 20 - w.player.size.y)
 		"room":
 			w.load_room(s[2], Vector2.INF)
+		"flag":
+			var kv: PackedStringArray = String(s[2]).split("=")
+			GameState.flags[kv[0]] = int(kv[1])
 		"place":
 			var tx := int(s[2])
 			w.player.pos = Vector2(tx * 20.0 + 4.0, w.room.floor_below(tx * 20.0 + 10.0, 100.0) - w.player.size.y)
