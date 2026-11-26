@@ -380,7 +380,7 @@ func _gui(e: InputEvent) -> void:
 		return
 	var p: Dictionary = stack.back()
 	if e is InputEventMouseMotion:
-		_hover_close = _close_r.has_point(e.position)
+		_hover_close = _close_r.grow(8.0 * c.get_viewport_rect().size.y / 900.0).has_point(e.position)
 		if _drag >= 0:
 			_slide_to(e.position.x); return
 		for r in _rects:
@@ -391,7 +391,7 @@ func _gui(e: InputEvent) -> void:
 	elif e is InputEventMouseButton and e.button_index == MOUSE_BUTTON_LEFT:
 		if not e.pressed:
 			_drag = -1; return
-		if _close_r.has_point(e.position):
+		if _close_r.grow(8.0 * c.get_viewport_rect().size.y / 900.0).has_point(e.position):
 			back(); return
 		for tab_r in _tab_rects:
 			if tab_r["r"].has_point(e.position):
