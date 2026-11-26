@@ -13,7 +13,7 @@ WEB = ROOT / 'assets' / 'sprites'
 GD = ROOT / 'godot'
 GJSON = GD / 'data' / 'sprites.json'
 NO_PURPLE = {'en_b_coveiro', 'en_b_coveiro_p2', 'en_b_mariposa', 'en_moth', 'en_vitrail', 'en_b_seraphine', 'en_b_custodio'}
-FORCE_CUT = {'en_b_coveiro': [16, 19], 'en_b_coveiro_p2': [16, 19]}
+FORCE_CUT = {'en_b_coveiro': [19], 'en_b_coveiro_p2': [19]}
 
 def defringe(a, passes=2):
     a = a.copy()

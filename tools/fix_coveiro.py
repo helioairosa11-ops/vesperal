@@ -214,6 +214,54 @@ def paste_piece(a, src, rect, at):
     m = piece[..., 3] > 60
     dst[m] = piece[m]
 
+RNG_SP = np.random.default_rng(5)
+def draw_spade(a, cx, base_y, w, h, pal, hot=False):
+    """desenha à mão (píxel a píxel) a lâmina de uma pá com o bico para cima: contorno escuro, metal com
+    degradê, aresta central clara e alvado (encaixe do cabo) em baixo"""
+    out, dark, mid, light, ridge = pal
+    tip = int(h * 0.42)
+    rows = []
+    for r in range(h):
+        if r < tip:
+            half = 1.0 + (w / 2.0 - 1.0) * (r / tip) ** 0.85
+        elif r > h - 4:
+            half = w / 2.0 - (r - (h - 4)) * 1.2
+        else:
+            half = w / 2.0
+        rows.append(half)
+    top = base_y - h - 3
+    for r, half in enumerate(rows):
+        y = top + r
+        x0 = int(round(cx - half)); x1 = int(round(cx + half))
+        for x in range(x0, x1 + 1):
+            t = (x - x0) / max(1, x1 - x0)
+            c = np.array(dark) * (1 - t) + np.array(light) * t if t < 0.5 else np.array(light) * (1.5 - t) + np.array(mid) * (t - 0.5)
+            if hot:
+                g = 1.0 - r / h
+                c = c * (0.75 + 0.35 * g)
+            c = c + RNG_SP.integers(-7, 8)
+            if hot:
+                q = RNG_SP.random()
+                if q < 0.10: c = np.array([255, 236, 150])        # brasas vivas
+                elif q < 0.20: c = c * 0.62                        # crosta escura
+            if not hot and RNG_SP.random() < 0.06:
+                c = c * 0.72           # pintas de ferrugem e terra
+            a[y, x, :3] = np.clip(c, 0, 255).astype(np.uint8); a[y, x, 3] = 255
+        a[y, x0, :3] = out; a[y, x1, :3] = out
+        if x0 - 1 >= 0:
+            a[y, x0 - 1, :3] = out; a[y, x0 - 1, 3] = 140
+        if r > 2 and r < h - 2:
+            a[y, int(round(cx)), :3] = ridge
+    for x in range(int(round(cx - rows[0])), int(round(cx + rows[0])) + 1):
+        a[top, x, :3] = out
+    # fundo da lâmina e alvado
+    yb = top + h
+    for x in range(int(cx - w / 2.0 + 2), int(cx + w / 2.0 - 1)):
+        a[yb - 1, x, :3] = out; a[yb - 1, x, 3] = 255
+    for y in range(yb, base_y + 2):
+        for x in range(int(cx) - 2, int(cx) + 3):
+            a[y, x, :3] = out if x in (int(cx) - 2, int(cx) + 2) else mid; a[y, x, 3] = 255
+
 def mirror_band_end(a, x0, y0, x1, y1, xs_from, min_y=0):
     """refaz o fim de um monte de terra espelhando o início do mesmo monte (mesma textura e mesma altura,
     sem degrau): o píxel (x, y) recebe o de (xs_from - (x - x0), y) se for terra (castanho)"""
@@ -264,18 +312,15 @@ def fixes(name, i, a, box, frames):
             erase(a, (X(140), Y(0), X(168), Y(5)))
             remove_smear(a, (X(82), Y(0), X(101), Y(27)))
             remove_smear(a, (X(124), Y(46), X(147), Y(70)))
-            src, sb = frames[42]
-            rect = (sb[0] + 96, sb[1] + 116, sb[0] + 140, sb[1] + 173)
-            src = src.copy()
-            piece = src[rect[1]:rect[3], rect[0]:rect[2]]
-            # só a lâmina: a peça ligada ao meio do recorte (sem terra nem cabo)
-            lab, n = ndi.label(piece[..., 3] > 60, structure=np.ones((3, 3)))
-            mid = lab[piece.shape[0] // 2 + 4, piece.shape[1] // 2 + 2]
-            if mid:
-                piece[lab != mid] = 0
-            cxp = np.average(np.where(piece[..., 3] > 100)[1])
-            top_y = Y(14) - (rect[3] - rect[1])
-            paste(a, src, rect, (int(round(X(153.5) - cxp)), top_y), flip_v=True, under=False)
+            # lâmina desenhada no cimo do cabo + a outra mão a agarrar o cabo (a do quadro 15, por trás da cabeça)
+            erase(a, (X(140), Y(-40), X(170), Y(2)))
+            # tufo cinzento à esquerda da cabeça e rasto claro à direita da cara (de um quadro vizinho): fora
+            erase(a, (X(84), Y(0), X(104), Y(25)))
+            erase(a, (X(104), Y(0), X(110), Y(13)))
+            reg = a[Y(42):Y(74), X(132):X(149)]
+            c3 = reg[..., :3].astype(int)
+            reg[(reg[..., 3] > 0) & (c3.mean(-1) > 62)] = 0
+            draw_spade(a, X(151), Y(4), 30, 34, ((20, 14, 18), (52, 48, 48), (74, 70, 68), (104, 98, 94), (132, 126, 120)))
         if i == 19:
             # golpe de cima: o braço levantado e o cabo saíam pelo topo; continuam para cima e fecham numa mão
             src19 = frames[19][0]
@@ -315,34 +360,19 @@ def fixes(name, i, a, box, frames):
             low[lil] = 0
         # a pá/tocha erguida, o fumo e as chamas saíam pelo topo: desvanecem (só nas colunas deles, a cabeça fica)
         if i == 16:
-            # pá em brasa levantada: a lâmina saía pelo topo; volta a lâmina do quadro 15 (virada, bico para cima)
-            src15, sb = frames[15]
-            rect = (sb[0] + 145, sb[1] + 98, sb[0] + 187, sb[1] + 140)
-            piece = src15[rect[1]:rect[3], rect[0]:rect[2]].copy()
-            lab, n = ndi.label(piece[..., 3] > 60, structure=np.ones((3, 3)))
-            mid = lab[piece.shape[0] // 2, piece.shape[1] // 2]
-            if mid:
-                piece[lab != mid] = 0
-            piece = piece[::-1]
-            ys, xs = np.where(piece[..., 3] > 100)
-            cxp = (xs.min() + xs.max()) / 2.0
-            erase(a, (X(146), Y(0), X(166), Y(6)))
-            px = int(round(X(154.5) - cxp)); py = Y(7) - piece.shape[0]
-            dst = a[py:py + piece.shape[0], px:px + piece.shape[1]]
-            mk = piece[..., 3] > 60
-            dst[mk] = piece[mk]
-            # bico: corta as esquinas de cima em V e põe contorno escuro
-            ys2, xs2 = np.where(a[py:py + piece.shape[0], px:px + piece.shape[1], 3] > 100)
-            top = py + ys2.min(); l = px + xs2.min(); r = px + xs2.max(); c = (l + r) / 2.0
-            for k in range(12):
-                half = (r - l) / 2.0 * (0.2 + 0.8 * k / 12.0)
-                for x in range(l - 1, r + 2):
-                    if abs(x - c) > half:
-                        a[top + k, x] = 0
-            reg = a[top:top + 14, l - 2:r + 3]
-            mm = reg[..., 3] > 100
-            ed = mm & ~ndi.binary_erosion(mm)
-            reg[ed, :3] = (reg[ed, :3] * 0.4).astype(np.uint8)
+            # pá em brasa levantada: lâmina desenhada no cimo do cabo, em brasa
+            erase(a, (X(140), Y(-40), X(172), Y(4)))
+            ys, xs = np.where(a[Y(4):Y(10), X(140):X(172), 3] > 100)
+            cx = X(140) + (xs.min() + xs.max()) / 2.0 if len(xs) else X(155)
+            # o cabo sobe até ao alvado (sem buraco entre o cabo e a lâmina)
+            ys2 = np.where(a[Y(0):Y(40), int(cx) - 1, 3] > 100)[0]
+            if len(ys2):
+                for y in range(Y(0), Y(0) + ys2.min()):
+                    a[y, int(cx) - 2:int(cx) + 3] = a[Y(0) + ys2.min() + 1, int(cx) - 2:int(cx) + 3]
+            reg = a[Y(76):Y(102), X(134):X(150)]
+            c3 = reg[..., :3].astype(int)
+            reg[(reg[..., 3] > 0) & (np.abs(c3[..., 0] - c3[..., 2]) < 20) & (c3.mean(-1) > 90)] = 0
+            draw_spade(a, cx, Y(4), 30, 34, ((60, 14, 8), (190, 60, 20), (240, 130, 40), (255, 210, 110), (255, 240, 190)), hot=True)
         if i == 19:
             src19 = frames[19][0]
             extend_up(a, Y(0), X(116), X(124), -1.0, 16)
