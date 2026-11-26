@@ -47,6 +47,8 @@ func setup(k: String, tx: int, ty: int) -> void:
 	want_face = [-1, 1].pick_random()
 	sh = Data.sheet(K.get("sheet", "en_" + k))
 	home_x = pos.x + size.x / 2.0
+	if k == "drowned":
+		submerged = true; hittable = false; rise = 0.0
 
 var fx_add: Node2D
 var _sm: Dictionary = {}
@@ -152,6 +154,28 @@ static func kinds() -> Dictionary:
 			"cfg": {"w": 16, "h": 30, "hp": 36, "poise": 14, "ash": 22}, "eye": Color(1, 0.45, 0.15),
 			"attacks": {"lob": {"wind": 0.7, "act": 0.05, "rec": 0.8, "tell": "", "sfx": "swing"}},
 			"think": "_think_smelter",
+		},
+		# ---------------- Região 4 (Jardins)
+		"thornmaid": {
+			"cfg": {"w": 16, "h": 32, "hp": 40, "poise": 18, "ash": 20}, "eye": Color(0.63, 1, 0.44), "heavy": true,
+			"attacks": {
+				"whip": {"wind": 0.55, "act": 0.16, "rec": 0.6, "dmg": 15, "hb": [4, 10, 64, 10], "tell": "white", "sfx": "whip"},
+				"burst": {"wind": 0.75, "act": 0.2, "rec": 0.7, "dmg": 18, "hb": [-34, 14, 68, 18], "tell": "red", "sfx": "whip", "centered": true},
+			},
+			"think": "_think_thornmaid",
+		},
+		"drowned": {
+			"cfg": {"w": 16, "h": 32, "hp": 42, "poise": 20, "ash": 24}, "eye": Color(0.56, 0.94, 0.88),
+			"attacks": {
+				"grab": {"wind": 0.6, "act": 0.2, "rec": 0.75, "dmg": 20, "hb": [0, 8, 26, 22], "lunge": 110.0, "tell": "red"},
+				"claw": {"wind": 0.4, "act": 0.12, "rec": 0.5, "dmg": 13, "hb": [0, 10, 24, 20], "lunge": 60.0, "tell": ""},
+			},
+			"think": "_think_drowned",
+		},
+		"moth": {
+			"cfg": {"w": 14, "h": 12, "hp": 15, "poise": 4, "ash": 9, "flying": true},
+			"attacks": {"dive": {"wind": 0.45, "act": 0.45, "rec": 0.4, "dmg": 11, "tell": "", "body": true, "sfx": "moth"}},
+			"think": "_think_moth",
 		},
 	}
 	# gigante (husk_big): o mesmo Cinzento a 1,85×, mais vida e golpes mais fortes
@@ -267,7 +291,8 @@ func _update_attack(dt: float) -> void:
 		"act":
 			if s.has("hb"):
 				var b: Array = s["hb"]
-				attack_boxes.append({"rect": front(b[0], b[1], b[2], b[3]), "dmg": s["dmg"], "id": atk["id"], "parryable": s.get("tell", "") != "red", "unblockable": s.get("tell", "") == "red", "knock": 170.0, "src": self, "fire": s.get("fire", false)})
+				var rr: Rect2 = Rect2(cx + b[0], bottom - b[3], b[2], b[3]) if s.get("centered", false) else front(b[0], b[1], b[2], b[3])
+				attack_boxes.append({"rect": rr, "dmg": s["dmg"], "id": atk["id"], "parryable": s.get("tell", "") != "red", "unblockable": s.get("tell", "") == "red", "knock": 170.0, "src": self, "fire": s.get("fire", false)})
 			if s.get("body", false):
 				attack_boxes.append({"rect": Rect2(pos - Vector2(2, 2), size + Vector2(4, 4)), "dmg": s["dmg"], "id": atk["id"], "parryable": true, "knock": 160.0, "src": self})
 			_during(atk["name"], s, dt)
@@ -307,11 +332,20 @@ func _on_act(nm: String, s: Dictionary) -> void:
 		world.spawn_projectile({"pos": Vector2(cx, pos.y + 4), "vel": Vector2(ddx / 0.9, -330.0), "grav": 700.0, "size": Vector2(10, 10), "dmg": 15.0, "kind": "molten", "color": Color("#ff7020"), "life": 3.0, "parryable": false, "fire": true, "on_wall": "fire"})
 	if s.has("hop") and on_ground:
 		vel.y = s["hop"]
+	if kind == "moth" and nm == "dive":
+		vel = (Vector2(player.cx, player.cy) - Vector2(cx, cy)).normalized() * 260.0
+	if kind == "thornmaid" and nm == "burst":
+		world.audio.sfx("break", 0.5); world.fx.dust(Vector2(cx, bottom), 14)
 	if kind == "wisp" and nm == "dive":
 		var a2 := (Vector2(player.cx, player.cy) - Vector2(cx, cy)).normalized()
 		vel = a2 * 260.0
 
 var guarding := false
+var anim_override := ""
+var anim_idx := 0.0
+var submerged := false     # o Afogado escondido debaixo de água (só se vê a ondulação)
+var rise := 1.0
+var open_t := false
 var circle_t := 0.0
 
 func _during(_name: String, _s: Dictionary, _dt: float) -> void:
@@ -320,7 +354,7 @@ func _during(_name: String, _s: Dictionary, _dt: float) -> void:
 func _on_end(nm: String) -> void:
 	if kind == "crawler" and nm == "bite":
 		vel.x = -facing * 110.0
-	if kind == "wisp":
+	if kind == "wisp" or kind == "moth":
 		vel *= 0.3
 
 # ================================================================== IA
@@ -660,6 +694,58 @@ func _think_smelter(dt: float) -> void:
 	else:
 		_patrol(dt, 14, 50)
 
+# ---------------- Região 4
+## Espinheira: enraizada, adormecida até alguém chegar perto; chicoteia de longe e rebenta raízes de perto
+func _think_thornmaid(dt: float) -> void:
+	vel.x = 0
+	if not atk.is_empty():
+		anim_override = ""; return
+	if _sense(110, 60) or (aggro and absf(dx()) < 110 and absf(dy()) < 60):
+		aggro = true; face(); anim_override = ""
+		if cool <= 0 and _can_take_turn():
+			_start("burst" if absf(dx()) < 30 else "whip")
+	else:
+		aggro = false
+		anim_override = "dormant" if last_hit_t > 0.3 else ""
+
+## Afogado: escondido na água até a protagonista passar perto; ergue-se e agarra
+func _think_drowned(dt: float) -> void:
+	if submerged:
+		hittable = false
+		if absf(dx()) < 70 and absf(dy()) < 60:
+			submerged = false; hittable = true; rise = 0.01; aggro = true
+			world.audio.sfx("splash"); world.fx.dust(Vector2(cx, bottom), 12)
+		return
+	if rise < 1.0:
+		rise = minf(1.0, rise + dt * 1.6)
+		anim_override = "rise"; anim_idx = rise * 6.0
+		return
+	anim_override = ""
+	if not atk.is_empty():
+		return
+	face()
+	var d := absf(dx())
+	if d < 36 and cool <= 0 and _can_take_turn():
+		_start("grab" if randf() < 0.4 else "claw")
+	else:
+		_go(facing, 35, dt)
+
+## Mariposa: voa à volta da cabeça da protagonista e mergulha
+func _think_moth(dt: float) -> void:
+	if not atk.is_empty():
+		if atk["phase"] != "act":
+			vel *= 0.9
+		return
+	var t2 := anim
+	if _perceive(dt, 220, 160):
+		var p = player
+		fly_to(Vector2(p.cx + sin(t2 * 1.7) * 70.0, p.cy - 50.0 + cos(t2 * 2.3) * 30.0), 110, dt)
+		if cool <= 0 and Vector2(dx(), dy()).length() < 140 and _can_take_turn():
+			_start("dive")
+	else:
+		fly_to(Vector2(home_x + sin(t2) * 40.0, pos.y + sin(t2 * 2.1) * 4.0), 50, dt)
+	face()
+
 # ------------------------------------------------------------------ dano
 func on_hit(box: Dictionary) -> bool:
 	if dead or not hittable:
@@ -745,6 +831,9 @@ func current_frame() -> Dictionary:
 	var A: Dictionary = sh["meta"]["anims"]
 	if dead:
 		return Data.frame(sh, "death", (t - (t - anim)) * 0 + _death_k())
+	# estados próprios de alguns tipos (a Espinheira adormecida, o Afogado a sair da água)
+	if anim_override != "" and A.has(anim_override):
+		return Data.frame(sh, anim_override, anim_idx)
 	if stagger > 0 and A.has("stagger"):
 		return _timed("stagger")
 	if not atk.is_empty():
@@ -801,6 +890,11 @@ func tell_glow() -> Color:
 	return Color(0, 0, 0, 0)
 
 func _draw() -> void:
+	if submerged:
+		draw_set_transform(Vector2(0, -1), 0, Vector2(1, 0.2))
+		draw_circle(Vector2.ZERO, 10.0, Color(0.16, 0.27, 0.27, 0.6))
+		draw_set_transform(Vector2.ZERO, 0, Vector2.ONE)
+		return
 	if sh.is_empty():
 		draw_rect(Rect2(-size.x / 2, -size.y, size.x, size.y), Color(0.3, 0.3, 0.35))
 		return

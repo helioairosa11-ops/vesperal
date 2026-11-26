@@ -58,6 +58,9 @@ func _ready() -> void:
 		"r3":
 			steps = [[0.4, "room", "r3_foundry"], [0.2, "place", "8"], [0.2, "spawn2", "thrall:5"], [0.05, "spawn2", "smelter:12"], [0.05, "spawn2", "slag:-5"],
 				[1.4, "shot", "f01"], [1.4, "shot", "f02"], [1.4, "shot", "f03"], [0.3, "quit", ""]]
+		"r4":
+			steps = [[0.4, "room", "r4_pond"], [0.2, "place", "10"], [0.2, "spawn2", "thornmaid:3"], [0.05, "spawn2", "drowned:-2"], [0.05, "spawn2", "moth:6"],
+				[0.8, "shot", "g01"], [1.2, "shot", "g02"], [1.2, "shot", "g03"], [0.3, "quit", ""]]
 		"npcs":
 			# Maren nas Muralhas (dá a medalha), Teodoro na Estufa (escolhe ir ter com a irmã), os dois no Santuário
 			steps = [[0.4, "room", "r2_gate"], [0.2, "place", "22"], [0.6, "shot", "m01_maren"], [0.1, "tap", "interact"], [2.0, "shot", "m02_maren_talk"],
