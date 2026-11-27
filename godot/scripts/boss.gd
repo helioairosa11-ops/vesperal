@@ -243,6 +243,11 @@ func on_parried() -> void:
 		do_stagger(2.4, true); dazed = true
 		world.audio.sfx("choir_hit"); world.flash_screen(Color(1, 0.96, 0.88), 0.3); world.hitstop(0.12)
 
+## poça de fogo no chão (queima quem a pisa)
+func fire_pool(x: float, w := 40.0, life := 3.5) -> void:
+	world.spawn_projectile({"pos": Vector2(x, arena["floor"] - 5), "size": Vector2(w, 9), "dmg": 8.0, "kind": "fire", "color": Color("#ff6010"),
+		"life": life, "solid": false, "parryable": false, "fire": true})
+
 ## chama um inimigo comum para a arena (matilha, sinos, etc.)
 func summon(k: String, x: float) -> void:
 	var en = load("res://scripts/enemy.gd").new()
