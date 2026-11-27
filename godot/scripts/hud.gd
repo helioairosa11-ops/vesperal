@@ -119,8 +119,7 @@ func _dlg_input(e: InputEvent) -> bool:
 const PORTRAITS := {
 	# só os chefes que falam têm retrato (como no jogo web); as pessoas falam sem retrato
 	# chefes que falam: retrato tirado da arte nova (tools/make_portraits.py)
-	"boss_aldric": "boss_aldric", "boss_caedmon": "boss_caedmon", "boss_corvin": "boss_corvin", "boss_elowen": "boss_elowen",
-	"boss_gemeos": "boss_gemeos", "boss_hilde": "boss_hilde", "boss_ozias": "boss_ozias", "boss_seraphine": "boss_seraphine"}
+	"boss_aldric": "boss_aldric", "boss_caedmon": "boss_caedmon", "boss_corvin": "boss_corvin", "boss_elowen": "boss_elowen"}
 func _draw_dialogue(_W: float) -> void:
 	if dlg.is_empty():
 		return
