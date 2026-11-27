@@ -243,6 +243,22 @@ func on_parried() -> void:
 		do_stagger(2.4, true); dazed = true
 		world.audio.sfx("choir_hit"); world.flash_screen(Color(1, 0.96, 0.88), 0.3); world.hitstop(0.12)
 
+## chama um inimigo comum para a arena (matilha, sinos, etc.)
+func summon(k: String, x: float) -> void:
+	var en = load("res://scripts/enemy.gd").new()
+	en.world = world
+	en.setup(k, int(x / 20.0), int((bottom - 1) / 20.0))
+	en.aggro = true; en.summoned = true; en.ash_drop = 0
+	world.actors.add_child(en)
+	world.fx.dust(Vector2(en.cx, en.bottom), 10)
+
+func summoned_alive() -> int:
+	var n := 0
+	for a in world.actors.get_children():
+		if a is Enemy and a != self and a.summoned and not a.dead:
+			n += 1
+	return n
+
 ## devolve true se o chefe trata o aparo à sua maneira
 func _parried() -> bool:
 	return false
@@ -258,7 +274,7 @@ func die() -> void:
 	for a in world.actors.get_children():
 		if a.get_script() == preload("res://scripts/projectile.gd") and a.get("team") == "enemy":
 			a.queue_free()
-		elif a != self and a is Enemy and a.get("summoned") == true:
+		elif a != self and a is Enemy and a.summoned:
 			a.die()
 	world.audio.sfx("boss_die"); world.shake(0.8); world.flash_screen(Color.WHITE, 0.6); world.hitstop(0.4)
 	Audio.stop_music(1.2)

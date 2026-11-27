@@ -467,6 +467,7 @@ var perched := false
 var perch := Vector2.ZERO
 var returning := false
 var circle_t := 0.0
+var summoned := false   # chamado por um chefe (não dá cinza e morre com ele)
 
 func _during(_name: String, _s: Dictionary, _dt: float) -> void:
 	pass
