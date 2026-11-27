@@ -36,7 +36,14 @@ func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--seq="):
 			seq = a.substr(6)
-	if seq.begins_with("b_"):
+	if seq == "bwalk_caedmon":
+		steps = [[0.4, "room", "r2_watch"], [0.2, "bplace", ""], [0.3, "bwalk", ""], [0.9, "release", "left"]]
+		for i in 7: steps.append([0.45, "tap", "interact"])
+		steps.append([0.3, "dodge_away", ""])
+		for i in 10: steps.append([0.1, "shot", "w%02d" % i])
+		steps.append([0.2, "quit", ""])
+		seq = "b_x"
+	elif seq.begins_with("b_"):
 		steps = _boss_seq(seq.substr(2))
 	match seq:
 		"walk":
@@ -192,6 +199,9 @@ func _process(delta: float) -> void:
 		"flag":
 			var kv: PackedStringArray = String(s[2]).split("=")
 			GameState.flags[kv[0]] = int(kv[1])
+		"dodge_away":
+			# afasta a protagonista para o chefe ter de andar até ela
+			w.player.pos.x = minf(w.room.size_px().x - 60, w.boss.cx + 260)
 		"bplace":
 			var tr: float = w.boss_trigger_x
 			var tx2 := int(tr / 20.0) + (3 if w.boss_from_right else -3)

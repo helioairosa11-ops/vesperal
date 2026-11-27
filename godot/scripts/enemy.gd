@@ -1125,7 +1125,7 @@ func current_frame() -> Dictionary:
 	if (flying or absf(vel.x) > 6) and A.has("move"):
 		var mv: Dictionary = A["move"]
 		if mv.get("stride", 0.0) > 0 and not flying:
-			return Data.frame(sh, "move", (_dist / float(mv["stride"])) * mv["frames"].size())
+			return Data.frame(sh, "move", (_dist / (float(mv["stride"]) * bulk)) * mv["frames"].size())
 		return _timed("move")
 	return _timed("idle")
 

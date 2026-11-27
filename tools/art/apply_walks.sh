@@ -5,7 +5,7 @@ set -e
 cd "$(dirname "$0")/../.."
 D=tools/art/poses/walk
 # nome:fps:passo[:folhas extra][:poses a espelhar][:poses a tirar]
-for spec in husk:8:26:en_husk_big sexton:7:28 sentinel:7:28 crossbow:8:28 crawler:10:30::r1_0,r1_1,r1_2 hound:12:40:en_hound_big thrall:6:30:en_thrall_big smelter:7:28::r1_1:r1_2 drowned:6:28:en_drowned_big acolyte:6:26 penitent:9:30:en_penitent_big::r1_1 royalguard:6:30:en_royalguard_big torch:12:34 \
+for spec in husk:8:30:en_husk_big sexton:7:33 sentinel:7:33 crossbow:8:28 crawler:10:38::r1_0,r1_1,r1_2 hound:12:42:en_hound_big thrall:6:35:en_thrall_big smelter:7:35::r1_1:r1_2 drowned:6:28:en_drowned_big acolyte:6:25 penitent:9:35:en_penitent_big::r1_1 royalguard:6:37:en_royalguard_big torch:12:30 \
             $EXTRA; do
   n=$(echo $spec | cut -d: -f1); fps=$(echo $spec | cut -d: -f2); st=$(echo $spec | cut -d: -f3)
   extra=$(echo $spec | cut -d: -f4); flip=$(echo $spec | cut -d: -f5); drop=$(echo $spec | cut -d: -f6)
