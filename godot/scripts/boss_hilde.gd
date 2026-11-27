@@ -107,7 +107,7 @@ func _dur(nm: String, _s: Dictionary, dt: float) -> void:
 			if atk["t"] >= 0.8 and not atk.get("dropped", false):
 				atk["dropped"] = true
 				world.spawn_projectile({"pos": Vector2(anvil_x, world.cam.get_screen_center_position().y - 190), "vel": Vector2(0, 500), "grav": 1400.0,
-					"size": Vector2(30, 20), "dmg": 30.0, "kind": "clod", "color": Color("#ff7020"), "life": 2.0, "parryable": false, "on_wall": "fire"})
+					"size": Vector2(30, 20), "dmg": 30.0, "kind": "anvil", "color": Color("#ff7020"), "life": 2.0, "parryable": false, "on_wall": "fire"})
 				anvil_x = -1.0
 		"eruption":
 			var k := int(atk["t"] / 0.28)

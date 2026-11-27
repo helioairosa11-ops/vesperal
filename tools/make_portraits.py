@@ -16,7 +16,7 @@ BOSSES = ['coveiro', 'matilheira', 'caedmon', 'automato', 'hilde', 'mariposa', '
 FRAME = {}
 # cabeças marcadas à mão (centro x, centro y em píxeis do quadro, lado em fração da altura da figura)
 HEAD_PX = {'maren': (50, 24, 0.27), 'coveiro': (114, 30, 0.34), 'matilheira': (214, 52, 0.44),
-           'caedmon': (126, 36, 0.32), 'automato': (62, 60, 0.36), 'mariposa': (176, 70, 0.42),
+           'caedmon': (130, 42, 0.47), 'automato': (62, 60, 0.36), 'mariposa': (176, 70, 0.42),
            'seraphine': (98, 30, 0.27), 'aldric': (139, 32, 0.27)}
 # chefes com arte nova pintada: o retrato sai da pose original em alta resolução (o quadro do jogo é pequeno e fica aos quadrados)
 SRC_POSE = {'seraphine': ('tools/art/poses/seraphine/si_r0_0.png', (150, 70, 0.42)),
@@ -65,7 +65,13 @@ def make(name, key):
     # o chefe olha para a direita na folha; o retrato fica à esquerda da caixa a olhar para o texto (direita)
     crop = Image.new('RGBA', (side, side), (0, 0, 0, 0))
     crop.alpha_composite(im, (-x, -y))
-    head = crop.resize((SIZE, SIZE), Image.NEAREST)
+    # escala inteira (píxeis nítidos, todos do mesmo tamanho) e depois recorte ao centro
+    k = max(1, round(SIZE / side))
+    big = crop.resize((side * k, side * k), Image.NEAREST)
+    if big.width >= SIZE:
+        o = (big.width - SIZE) // 2; head = big.crop((o, o, o + SIZE, o + SIZE))
+    else:
+        head = big.resize((SIZE, SIZE), Image.NEAREST)
     bg = Image.new('RGBA', (SIZE, SIZE), (8, 6, 10, 255))
     glow = Image.new('L', (SIZE, SIZE), 0); ImageDraw.Draw(glow).ellipse((30, 20, 240, 230), fill=120)
     glow = glow.filter(ImageFilter.GaussianBlur(40))

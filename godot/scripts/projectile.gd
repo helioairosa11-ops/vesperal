@@ -21,6 +21,8 @@ const PROJ := {
 	"clod": ["clod", "spin", 10], "note": ["note", "", 9], "light": ["light", "", 10], "holy": ["light", "", 10], "seed": ["seed", "spin", 8],
 	"thorn": ["thorn", "dir", 10], "moth": ["moth", "flip", 8], "feather": ["feather", "dir", 12], "wave": ["wave", "flip", 22], "fire": ["fire", "", 16],
 	"incense": ["incense", "", 12], "spiritwave": ["spiritwave", "flip", 18], "orbFire": ["orb", "", 9],
+	"glass": ["glassR", "spin", 7], "shockwave": ["shockwave", "flip", 14], "scale": ["scale", "spin", 8], "tongs": ["tongs", "flip", 12],
+	"anvil": ["anvil", "", 30], "dust": ["dust", "", 14],
 }
 
 func setup(o: Dictionary) -> void:
@@ -79,7 +81,10 @@ func _draw() -> void:
 	if sh.is_empty() or def.is_empty() or not Data.has_anim(sh, def[0]):
 		draw_circle(Vector2.ZERO, size.x / 2, color)
 		return
-	var f := Data.frame(sh, def[0], t * 12.0)
+	var an: String = def[0]
+	if kind == "glass":   # vitral: a cor do caco escolhe o vidro
+		an = "glassB" if color.b > color.r and color.b > color.g else ("glassY" if color.g > 0.6 else "glassR")
+	var f := Data.frame(sh, an, t * 12.0)
 	var sc := clampf(maxf(size.x, size.y) / float(def[2]), 0.6, 2.4)
 	var rot := 0.0
 	var sx := sc
