@@ -28,6 +28,7 @@ var light_tex: Texture2D
 var boss = null
 var boss_active := false
 var boss_trigger_x := -1.0
+var boss_from_right := false
 var doors: Array = []
 var interactables: Array = []
 var hitstop_t := 0.0
@@ -99,7 +100,7 @@ func load_room(id: String, global_pos: Vector2) -> void:
 	for n in npcs:
 		if is_instance_valid(n): n.queue_free()
 	npcs.clear()
-	doors.clear(); interactables.clear(); boss = null; boss_active = false; boss_trigger_x = -1.0
+	doors.clear(); interactables.clear(); boss = null; boss_active = false; boss_trigger_x = -1.0; boss_from_right = false
 	hud.boss = null
 	room = preload("res://scripts/room.gd").new()
 	add_child(room); move_child(room, props_node.get_index())
@@ -184,6 +185,14 @@ func _spawn_entities() -> void:
 					boss = preload("res://scripts/boss_coveiro.gd").new()
 					boss.world = self
 					boss.setup_boss(x, y)
+					boss.visible = false
+					actors.add_child(boss)
+				elif e["boss"] != "coveiro" and not GameState.bosses.get(e["boss"], false) and ResourceLoader.exists("res://scripts/boss_%s.gd" % e["boss"]):
+					boss_trigger_x = float(e.get("trigger", x - 6)) * T
+					boss_from_right = e.get("fromRight", false)
+					boss = load("res://scripts/boss_%s.gd" % e["boss"]).new()
+					boss.world = self
+					boss.setup_boss(e["boss"], e)
 					boss.visible = false
 					actors.add_child(boss)
 			"door":
@@ -332,7 +341,7 @@ func _physics_process(delta: float) -> void:
 
 func _step(dt: float) -> void:
 	for a in actors.get_children():
-		if is_instance_valid(a) and a.has_method("tick") and (a != boss or boss_active):
+		if is_instance_valid(a) and a.has_method("tick") and (a != boss or boss_active or boss.dead):
 			a.tick(dt)
 	_combat()
 	_interact(dt)
@@ -499,13 +508,35 @@ func _take_item(it: Dictionary) -> void:
 func _boss_logic() -> void:
 	if boss == null or not is_instance_valid(boss):
 		return
-	if not boss_active and not boss.dead and boss_trigger_x >= 0 and player.cx >= boss_trigger_x and not player.dead:
+	var past: bool = player.cx <= boss_trigger_x if boss_from_right else player.cx >= boss_trigger_x
+	if not boss_active and not boss.dead and boss_trigger_x >= 0 and past and not player.dead:
 		boss_active = true
 		boss.visible = true
 		hud.boss = boss
-		hud.banner(Data.t("boss_coveiro"))
-		Audio.play_music("sb_coveiro", 0.4)
+		if boss.has_method("begin"):
+			boss.begin()
+		else:
+			hud.banner(Data.t("boss_coveiro"))
+			Audio.play_music("sb_coveiro", 0.4)
 		_refresh_doors()
+
+## chefe novo derrotado (boss.gd): abre as portas; as recompensas vêm do próprio chefe
+func boss_down(_b) -> void:
+	boss_active = false
+	hud.boss = null
+	_refresh_doors()
+
+## consequências depois de cada chefe (Story.afterBoss)
+func after_boss(id: String) -> void:
+	GameState.save()
+	if id == "ozias":
+		await get_tree().create_timer(3.6).timeout
+		hud.dialogue([{"k": "chalice_found"}], ["chalice_keep", "chalice_shatter"], func(c = 0):
+			if c == 0:
+				GameState.flags["chalice_choice"] = "keep"; GameState.give("chalice"); hud.item_get("chalice")
+			else:
+				GameState.flags["chalice_choice"] = "shatter"; GameState.give("r_chalice_shard"); hud.item_get("r_chalice_shard"); audio.sfx("glass")
+			GameState.save())
 
 func on_boss_defeated(b) -> void:
 	audio.sfx("boss_die"); audio.sfx("cov_death"); shake(0.8); flash_screen(Color.WHITE, 0.6); hitstop(0.4)

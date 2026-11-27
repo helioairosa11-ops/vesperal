@@ -11,6 +11,23 @@ var idx := 0
 var log_lines: Array = []
 var last_enemy
 
+## chefe genérico: entra na arena, salta as falas, força cada golpe, apara, muda de fase e mata
+const BOSS_ROOMS := {"caedmon": "r2_watch", "matilheira": "r2_kennels", "automato": "r3_bellows", "hilde": "r3_hilde", "mariposa": "r4_moth",
+	"elowen": "r4_elowen", "sineiro": "r5_sineiro", "corvin": "r5_crown", "vael": "r6_vael", "custodio": "r6_dome", "ozias": "r6_ozias",
+	"gemeos": "r7_twins", "aldric": "r7_throne"}
+func _boss_seq(id: String) -> Array:
+	var st: Array = [[0.4, "room", BOSS_ROOMS[id]], [0.2, "bplace", ""], [0.3, "bwalk", ""], [0.9, "release", "left"], [0.0, "release", "right"], [1.8, "shot", "x01_intro"]]
+	for i in 7:
+		st.append([0.45, "tap", "interact"])
+	st.append([1.0, "shot", "x02_fight"])
+	st.append([0.1, "battacks", ""])
+	st += [[1.5, "shot", "x03"], [1.5, "shot", "x04"], [0.1, "parries", "3"], [0.3, "shot", "x05_parried"], [1.0, "boss_hp", "0.5"], [1.0, "shot", "x06_phase2"],
+		[2.0, "shot", "x07"], [1.0, "boss_hp", "0.2"], [1.5, "shot", "x08_phase3"], [0.5, "boss_hp", "0.0"], [1.0, "shot", "x09_dying"]]
+	for i in 6:
+		st.append([0.6, "tap", "interact"])
+	st += [[2.0, "shot", "x10_reward"], [0.3, "quit", ""]]
+	return st
+
 func _ready() -> void:
 	shots_dir = OS.get_environment("SHOTS")
 	if shots_dir == "":
@@ -19,6 +36,8 @@ func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--seq="):
 			seq = a.substr(6)
+	if seq.begins_with("b_"):
+		steps = _boss_seq(seq.substr(2))
 	match seq:
 		"walk":
 			steps = [[0.8, "shot", "01_start"], [0.1, "press", "right"], [1.2, "shot", "02_run"], [0.1, "tap", "jump"], [0.25, "shot", "03_jump"],
@@ -123,6 +142,8 @@ func _ready() -> void:
 	steps.append([0.5, "quit", ""])
 
 func _process(delta: float) -> void:
+	if seq.begins_with("b_") and main.world and main.world.player:
+		main.world.player.hp = main.world.player.max_hp   # no teste dos chefes a protagonista não morre
 	if idx >= steps.size():
 		return
 	t += delta
@@ -142,14 +163,19 @@ func _process(delta: float) -> void:
 				if e.get("kind") != null and e.get("base") != null:
 					log_lines.append("   en %s pos=(%d,%d) hp=%s ak=%s atk=%s vis=%s a=%.2f fade=%.2f" % [e.kind, e.position.x, e.position.y, str(e.get("hp")), e.anim_key, e.atk.get("name", ""), e.visible, e.modulate.a, e.fade])
 			if w.boss and is_instance_valid(w.boss):
+				log_lines.append("   active=%s intro=%s dlg=%s dead=%s dt=%.2f" % [w.boss_active, w.boss.get("intro"), w.hud.dialogue_open(), w.boss.dead, w.boss._death_t])
 				log_lines.append("   boss hp=%d phase=%d atk=%s stagger=%.2f dazed=%s sheet=%s" % [w.boss.hp, w.boss.phase, w.boss.atk.get("name", ""), w.boss.stagger, w.boss.dazed, w.boss.sh["meta"]["name"]])
 		"press":
 			Input.action_press(s[2])
 		"release":
 			Input.action_release(s[2])
 		"tap":
-			Input.action_press(s[2])
-			get_tree().create_timer(0.08).timeout.connect(func(): Input.action_release(s[2]))
+			var ev := InputEventAction.new(); ev.action = s[2]; ev.pressed = true
+			Input.parse_input_event(ev)
+			var ev2 := InputEventAction.new(); ev2.action = s[2]; ev2.pressed = false
+			get_tree().create_timer(0.08).timeout.connect(func(): Input.parse_input_event(ev2))
+			if false:
+				Input.action_press(s[2])
 		"warp":
 			w.load_room("r1_coveiro", Vector2.INF)
 			w.player.pos = Vector2(8 * 20, 15 * 20 - w.player.size.y)
@@ -166,6 +192,24 @@ func _process(delta: float) -> void:
 		"flag":
 			var kv: PackedStringArray = String(s[2]).split("=")
 			GameState.flags[kv[0]] = int(kv[1])
+		"bplace":
+			var tr: float = w.boss_trigger_x
+			var tx2 := int(tr / 20.0) + (3 if w.boss_from_right else -3)
+			w.player.pos = Vector2(tx2 * 20.0 + 4.0, w.room.floor_below(tx2 * 20.0 + 10.0, 200.0) - w.player.size.y)
+			w.player.vel = Vector2.ZERO
+		"bwalk":
+			Input.action_press("left" if w.boss_from_right else "right")
+		"battacks":
+			# força os golpes um a um, espaçados, e regista o que aconteceu
+			var b = w.boss
+			var names: Array = b.K["attacks"].keys()
+			var ins: Array = []
+			for nm in names:
+				if nm == "_repel": continue
+				ins.append([1.6 if not ins.is_empty() else 0.2, "boss_attack", nm])
+				ins.append([0.6, "shot", "a_" + nm])
+			for i in ins.size():
+				steps.insert(idx + i, ins[i])
 		"place":
 			var tx := int(s[2])
 			w.player.pos = Vector2(tx * 20.0 + 4.0, w.room.floor_below(tx * 20.0 + 10.0, 100.0) - w.player.size.y)

@@ -370,7 +370,7 @@ func _draw_hud() -> void:
 		c.draw_texture_rect(_img("hud_boss_l"), Rect2(bxx, byy, 15.49, 16.46), false)
 		c.draw_texture_rect(_img("hud_boss_r"), Rect2(bxx + BW - 14.63, byy, 14.63, 16.46), false)
 		c.draw_texture_rect(_img("hud_boss_c"), Rect2(W / 2.0 - 15.25, byy, 30.49, 16.46), false)
-		_text(font_title, Data.t("boss_coveiro"), Vector2(W / 2.0, byy - 4), 10, Color("#e8d8c0"), true)
+		_text(font_title, Data.t(boss.get("name_key") if boss.get("name_key") else "boss_coveiro"), Vector2(W / 2.0, byy - 4), 10, Color("#e8d8c0"), true)
 	_draw_prompt(W)
 	_draw_dialogue(W)
 	_draw_notes()
