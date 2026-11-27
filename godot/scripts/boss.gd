@@ -59,7 +59,7 @@ func setup_boss(id: String, d: Dictionary) -> void:
 	boss_id = id; spawn_d = d
 	kind = "b_" + id; base = id; name_key = "boss_" + id
 	var D := _def()
-	K = {"cfg": D, "attacks": D.get("attacks", {}), "think": "_think_boss", "heavy": D.get("heavy", true)}
+	K = {"cfg": D, "attacks": D.get("attacks", {}), "think": "_think_boss", "heavy": D.get("heavy", true), "center": D.get("center", false)}
 	K["attacks"]["_repel"] = REPEL
 	size = Vector2(D["w"], D["h"])
 	var tx: int = d["x"]; var ty: int = d["y"]
