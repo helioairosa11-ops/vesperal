@@ -36,7 +36,22 @@ func _ready() -> void:
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--seq="):
 			seq = a.substr(6)
-	if seq == "bwalk_caedmon":
+	if seq == "t_tour":
+		# trailer: corre pelas regiões, salta e ataca
+		for rm in ["r1_street", "r1_market", "r2_wall", "r3_foundry", "r4_pond", "r5_eaves", "r6_nave", "r7_hall"]:
+			steps += [[0.05, "room", rm], [0.05, "place", "3"], [0.15, "press", "right"], [0.5, "tap", "jump"], [0.5, "tap", "attack"], [0.4, "tap", "dodge"], [0.5, "tap", "attack"], [0.4, "release", "right"]]
+		steps.append([0.3, "quit", ""])
+		seq = "b_x"
+	elif seq.begins_with("t_"):
+		# trailer: luta a sério com o chefe (avança, golpeia, esquiva-se, salta, apara)
+		var id := seq.substr(2)
+		steps = [[0.4, "room", BOSS_ROOMS[id]], [0.2, "bplace", ""], [0.3, "bwalk", ""], [0.9, "release", "left"], [0.0, "release", "right"]]
+		for i in 8: steps.append([0.4, "tap", "interact"])
+		for i in 5:
+			steps += [[0.2, "face_boss", ""], [0.35, "release_dirs", ""], [0.12, "tap", "attack"], [0.3, "tap", "attack"], [0.3, "tap", "attack"], [0.35, "tap", "dodge"], [0.4, "tap", "jump"], [0.25, "tap", "attack"], [0.3, "tap", "parry"]]
+		steps.append([0.3, "quit", ""])
+		seq = "b_x"
+	elif seq == "bwalk_caedmon":
 		steps = [[0.4, "room", "r2_watch"], [0.2, "bplace", ""], [0.3, "bwalk", ""], [0.9, "release", "left"]]
 		for i in 7: steps.append([0.45, "tap", "interact"])
 		steps.append([0.3, "dodge_away", ""])
@@ -199,6 +214,11 @@ func _process(delta: float) -> void:
 		"flag":
 			var kv: PackedStringArray = String(s[2]).split("=")
 			GameState.flags[kv[0]] = int(kv[1])
+		"face_boss":
+			if w.boss and is_instance_valid(w.boss):
+				Input.action_press("right" if w.boss.cx > w.player.cx else "left")
+		"release_dirs":
+			Input.action_release("left"); Input.action_release("right")
 		"dodge_away":
 			# afasta a protagonista para o chefe ter de andar até ela
 			w.player.pos.x = minf(w.room.size_px().x - 60, w.boss.cx + 260)

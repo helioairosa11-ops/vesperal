@@ -7,6 +7,9 @@ var menu: Control
 func _ready() -> void:
 	Settings.apply_keys()
 	Data.warm_up()
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--lang="):
+			Settings.set_v("lang", a.substr(7))
 	if OS.get_cmdline_user_args().has("--autotest"):
 		GameState.new_game(); _start_world()
 		var at = load("res://scripts/autotest.gd").new()
