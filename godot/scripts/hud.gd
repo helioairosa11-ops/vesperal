@@ -351,7 +351,7 @@ func _draw_hud() -> void:
 		_text(font_body, "a arder", Vector2(bx + 30, by + 60), 9, Color(1, 0.6, 0.3, 0.6 + 0.4 * sin(tsec * 10.0)))
 	# ---- barra do chefe
 	if boss != null and is_instance_valid(boss) and not boss.dead:
-		var bk := clampf(boss.hp / boss.max_hp, 0, 1)
+		var bk := clampf(boss.bar_hp() if boss.has_method("bar_hp") else boss.hp / boss.max_hp, 0, 1)
 		boss_ghost = move_toward(boss_ghost, bk, 0.004)
 		var BW := minf(380.0, W - 120.0)
 		var bxx := (W - BW) / 2.0
